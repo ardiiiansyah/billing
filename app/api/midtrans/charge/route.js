@@ -1,26 +1,24 @@
 import { NextResponse } from 'next/server';
-import midtransClient from 'midtrans-client';
 
 export async function POST(req) {
     try {
         const { tagihan_id, nominal, nama_pelanggan, no_wa } = await req.json();
 
-        const serverKey = process.env.MIDTRANS_SERVER_KEY ? process.env.MIDTRANS_SERVER_KEY.trim() : '';
+        const serverKey = process.env.MIDTRANS_SERVER_KEY;
 
         if (!serverKey) {
-            return NextResponse.json({ error: 'MIDTRANS_SERVER_KEY belum diatur di Vercel' }, { status: 500 });
+            return NextResponse.json({ error: 'MIDTRANS_SERVER_KEY tidak ditemukan di Vercel' }, { status: 500 });
         }
 
-        // Inisialisasi Snap client Midtrans
-        const snap = new midtransClient.Snap({
-            isProduction: false,
-            serverKey: serverKey,
-        });
+        // Mengubah Server Key ke format Basic Auth yang valid
+        const cleanKey = serverKey.trim().replace(/^["']|["']$/g, '');
+        const authString = `${cleanKey}:`;
+        const authHeader = `Basic ${Buffer.from(authString).toString('base64')}`;
 
         const orderId = `INV-${tagihan_id}-${Date.now()}`;
         const grossAmount = Math.round(Number(nominal) || 0);
 
-        const parameter = {
+        const payload = {
             transaction_details: {
                 order_id: orderId,
                 gross_amount: grossAmount,
@@ -39,14 +37,27 @@ export async function POST(req) {
             ],
         };
 
-        const transaction = await snap.createTransaction(parameter);
+        const response = await fetch('https://app.sandbox.midtrans.com/snap/v1/transactions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': authHeader,
+            },
+            body: JSON.stringify(payload),
+        });
 
-        return NextResponse.json({ token: transaction.token, redirect_url: transaction.redirect_url });
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error('Midtrans API Error:', data);
+            const errorMsg = Array.isArray(data.error_messages) ? data.error_messages.join(', ') : 'Server Key Salah / Ditolak Midtrans';
+            return NextResponse.json({ error: errorMsg }, { status: response.status });
+        }
+
+        return NextResponse.json({ token: data.token, redirect_url: data.redirect_url });
     } catch (error) {
-        console.error('Midtrans Snap Error:', error);
-        return NextResponse.json(
-            { error: error.message || 'Gagal memproses transaksi Midtrans' },
-            { status: 500 }
-        );
+        console.error('Charge API Route Error:', error);
+        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
     }
 }
