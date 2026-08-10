@@ -1,27 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import Link from 'next/link'
 
 export default function DashboardLayout({ children }) {
   const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const pathname = usePathname()
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
-    async function checkAuth() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        // Jika tidak ada sesi (belum login/env belum diset authnya), 
-        // untuk dev/preview jika belum buat user auth bisa lewat dulu atau tetap redirect
-      }
-      setUser(session?.user || null)
-      setLoading(false)
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) router.push('/login')
+      else setUser(user)
     }
-    checkAuth()
+    getUser()
   }, [router])
 
   const handleLogout = async () => {
@@ -29,62 +24,58 @@ export default function DashboardLayout({ children }) {
     router.push('/login')
   }
 
-  const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: '📊' },
-    { name: 'Pelanggan', path: '/dashboard/pelanggan', icon: '👥' },
-    { name: 'Paket Internet', path: '/dashboard/paket', icon: '📦' },
-    { name: 'Tagihan & Kasir', path: '/dashboard/tagihan', icon: '💳' },
+  const menus = [
+    { label: 'Dashboard', href: '/dashboard', icon: '📊' },
+    { label: 'Pelanggan', href: '/dashboard/pelanggan', icon: '👥' },
+    { label: 'Paket', href: '/dashboard/paket', icon: '📦' },
+    { label: 'Tagihan', href: '/dashboard/tagihan', icon: '🧾' },
+    { label: 'Pembayaran', href: '/dashboard/pembayaran', icon: '💳' },
+    { label: 'Laporan', href: '/dashboard/laporan', icon: '📈' },
   ]
 
+  if (!user) return null
+
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col md:flex-row text-slate-100">
-      {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 bg-slate-900 border-r border-slate-800 p-6 flex flex-col justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-8 px-2">
-            <div className="w-10 h-10 rounded-xl bg-cyan-600 flex items-center justify-center text-xl font-bold shadow-lg shadow-cyan-600/30">
-              📶
-            </div>
+    <div className="flex min-h-screen bg-slate-950 text-white">
+      <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col fixed h-full">
+        <div className="p-5 border-b border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-cyan-600 rounded-xl flex items-center justify-center text-lg">📶</div>
             <div>
-              <h2 className="font-extrabold text-lg leading-tight text-white">Sultan WiFi</h2>
-              <p className="text-xs text-slate-400">Admin Panel RT/RW</p>
+              <div className="font-bold text-white text-sm">Sultan WiFi</div>
+              <div className="text-xs text-slate-400">Billing System</div>
             </div>
           </div>
-
-          <nav className="space-y-1.5">
-            {navItems.map((item) => {
-              const isActive = pathname === item.path
-              return (
-                <Link
-                  key={item.path}
-                  href={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${
-                    isActive
-                      ? 'bg-cyan-600/20 text-cyan-400 border border-cyan-500/30'
-                      : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                  }`}
-                >
-                  <span className="text-lg">{item.icon}</span>
-                  {item.name}
-                </Link>
-              )
-            })}
-          </nav>
         </div>
 
-        <div className="pt-6 border-t border-slate-800 mt-6 md:mt-0">
+        <nav className="flex-1 p-4 space-y-1">
+          {menus.map((menu) => (
+            <Link
+              key={menu.href}
+              href={menu.href}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition ${pathname === menu.href
+                ? 'bg-cyan-600/20 text-cyan-400 font-medium'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                }`}
+            >
+              <span>{menu.icon}</span>
+              {menu.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-slate-800">
+          <div className="text-xs text-slate-500 mb-2 truncate">{user.email}</div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-950/40 hover:border-red-900/50 border border-transparent transition"
+            className="w-full px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm rounded-xl transition"
           >
-            <span className="text-lg">🚪</span>
-            Keluar (Logout)
+            Logout
           </button>
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+      <main className="flex-1 ml-64 p-6">
         {children}
       </main>
     </div>

@@ -22,6 +22,9 @@ export default function LoginPage() {
         password,
       })
 
+      console.log('data:', data)
+      console.log('error:', error)
+
       if (error) {
         setErrorMsg(error.message || 'Login gagal. Periksa email & password Anda.')
       } else {

@@ -10,6 +10,7 @@ export default function TagihanPage() {
   const [filterStatus, setFilterStatus] = useState('semua')
   const [showPayModal, setShowPayModal] = useState(false)
   const [selectedTagihan, setSelectedTagihan] = useState(null)
+  const [sendingWa, setSendingWa] = useState(null) // tagihan_id yang sedang diproses
 
   const [bayarForm, setBayarForm] = useState({
     jumlah_bayar: '',
@@ -59,6 +60,50 @@ export default function TagihanPage() {
     }
   }
 
+  // Kirim tagihan via Midtrans → WhatsApp
+  const handleKirimMidtrans = async (tagihan) => {
+    if (!tagihan.pelanggan?.no_wa) {
+      alert(`Pelanggan ${tagihan.pelanggan?.nama} tidak memiliki nomor WhatsApp!`)
+      return
+    }
+
+    setSendingWa(tagihan.id)
+
+    try {
+      const res = await fetch('/api/payment/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tagihan_id: tagihan.id,
+          pelanggan_nama: tagihan.pelanggan?.nama,
+          pelanggan_wa: tagihan.pelanggan?.no_wa,
+          jumlah: tagihan.jumlah_tagihan,
+          bulan: tagihan.bulan,
+          tahun: tagihan.tahun,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || data.error) {
+        alert('Gagal membuat link pembayaran: ' + (data.error || 'Unknown error'))
+        return
+      }
+
+      // Refresh tagihan (payment_url sudah tersimpan)
+      fetchTagihan()
+
+      // Buka WhatsApp di tab baru
+      if (data.whatsapp_url) {
+        window.open(data.whatsapp_url, '_blank')
+      }
+    } catch (err) {
+      alert('Error koneksi ke server.')
+    } finally {
+      setSendingWa(null)
+    }
+  }
+
   const handleOpenPayModal = (tagihan) => {
     setSelectedTagihan(tagihan)
     setBayarForm({
@@ -97,15 +142,28 @@ export default function TagihanPage() {
   })
 
   const formatRupiah = (val) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val)
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      maximumFractionDigits: 0,
+    }).format(val)
+  }
+
+  // Summary counts
+  const counts = {
+    semua: tagihanList.length,
+    belum_bayar: tagihanList.filter((t) => t.status_pembayaran === 'belum_bayar').length,
+    lunas: tagihanList.filter((t) => t.status_pembayaran === 'lunas').length,
+    sebagian: tagihanList.filter((t) => t.status_pembayaran === 'sebagian').length,
   }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Tagihan & Kasir Pembayaran</h1>
-          <p className="text-slate-400 text-sm mt-1">Generate tagihan bulanan & catat pembayaran warga.</p>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">Tagihan & Kasir</h1>
+          <p className="text-slate-400 text-sm mt-1">Generate tagihan bulanan & kirim ke WhatsApp pelanggan.</p>
         </div>
         <button
           onClick={handleGenerateBulanan}
@@ -114,6 +172,21 @@ export default function TagihanPage() {
         >
           <span>⚡</span> {generating ? 'Memproses...' : `Generate Tagihan (${currentMonth}/${currentYear})`}
         </button>
+      </div>
+
+      {/* Stats mini */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Total', count: counts.semua, color: 'border-slate-700 text-slate-300' },
+          { label: 'Belum Bayar', count: counts.belum_bayar, color: 'border-red-800 text-red-400' },
+          { label: 'Lunas', count: counts.lunas, color: 'border-emerald-800 text-emerald-400' },
+          { label: 'Sebagian', count: counts.sebagian, color: 'border-amber-800 text-amber-400' },
+        ].map((s) => (
+          <div key={s.label} className={`bg-slate-900 border ${s.color} rounded-xl p-4 text-center`}>
+            <div className={`text-2xl font-bold ${s.color.split(' ')[1]}`}>{s.count}</div>
+            <div className="text-xs text-slate-400 mt-1">{s.label}</div>
+          </div>
+        ))}
       </div>
 
       {/* Status Filter Tabs */}
@@ -139,36 +212,44 @@ export default function TagihanPage() {
           <table className="w-full text-left text-sm text-slate-300">
             <thead className="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
               <tr>
-                <th className="px-6 py-4">Pelanggan</th>
-                <th className="px-6 py-4">Periode</th>
-                <th className="px-6 py-4">Nominal</th>
-                <th className="px-6 py-4">Jatuh Tempo</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Kasir</th>
+                <th className="px-5 py-4">Pelanggan</th>
+                <th className="px-5 py-4">Periode</th>
+                <th className="px-5 py-4">Nominal</th>
+                <th className="px-5 py-4">Jatuh Tempo</th>
+                <th className="px-5 py-4">Status</th>
+                <th className="px-5 py-4 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">Memuat daftar tagihan...</td>
+                  <td colSpan={6} className="px-5 py-8 text-center text-slate-500">
+                    Memuat daftar tagihan...
+                  </td>
                 </tr>
               ) : filteredTagihan.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">Tidak ada tagihan ditemukan.</td>
+                  <td colSpan={6} className="px-5 py-12 text-center">
+                    <div className="text-slate-500 text-4xl mb-3">🧾</div>
+                    <div className="text-slate-400">Tidak ada tagihan ditemukan.</div>
+                    <div className="text-slate-500 text-xs mt-1">Klik "Generate Tagihan" untuk membuat tagihan bulan ini.</div>
+                  </td>
                 </tr>
               ) : (
                 filteredTagihan.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-800/50 transition">
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-4">
                       <div className="font-semibold text-white">{t.pelanggan?.nama || 'Pelanggan Dihapus'}</div>
-                      <div className="text-xs text-slate-500 font-mono">{t.pelanggan?.kode_pelanggan} ({t.pelanggan?.no_wa})</div>
+                      <div className="text-xs text-slate-500 font-mono">
+                        {t.pelanggan?.kode_pelanggan} · 📱 {t.pelanggan?.no_wa || '-'}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-slate-200 font-medium">Bulan {t.bulan}/{t.tahun}</td>
-                    <td className="px-6 py-4 font-bold text-emerald-400">{formatRupiah(t.jumlah_tagihan)}</td>
-                    <td className="px-6 py-4 text-slate-400">{t.tanggal_jatuh_tempo}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-4 text-slate-200 font-medium">Bulan {t.bulan}/{t.tahun}</td>
+                    <td className="px-5 py-4 font-bold text-emerald-400">{formatRupiah(t.jumlah_tagihan)}</td>
+                    <td className="px-5 py-4 text-slate-400 text-xs">{t.tanggal_jatuh_tempo}</td>
+                    <td className="px-5 py-4">
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${
+                        className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${
                           t.status_pembayaran === 'lunas'
                             ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
                             : t.status_pembayaran === 'sebagian'
@@ -179,16 +260,39 @@ export default function TagihanPage() {
                         {t.status_pembayaran.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-5 py-4">
                       {t.status_pembayaran !== 'lunas' ? (
-                        <button
-                          onClick={() => handleOpenPayModal(t)}
-                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition shadow-md shadow-emerald-900/20"
-                        >
-                          💵 Catat Bayar
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          {/* Tombol kirim via Midtrans + WA */}
+                          <button
+                            onClick={() => handleKirimMidtrans(t)}
+                            disabled={sendingWa === t.id}
+                            title="Generate link bayar Midtrans & kirim ke WhatsApp pelanggan"
+                            className="px-3 py-1.5 bg-green-700 hover:bg-green-600 text-white text-xs font-semibold rounded-lg transition shadow-md shadow-green-900/20 flex items-center gap-1 disabled:opacity-50"
+                          >
+                            {sendingWa === t.id ? (
+                              <span>⏳ Proses...</span>
+                            ) : (
+                              <>
+                                <span>💬</span>
+                                <span>{t.payment_url ? 'Kirim Ulang WA' : 'Kirim WA'}</span>
+                              </>
+                            )}
+                          </button>
+
+                          {/* Tombol kasir manual (cash) */}
+                          <button
+                            onClick={() => handleOpenPayModal(t)}
+                            title="Catat pembayaran tunai / transfer manual"
+                            className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold rounded-lg transition"
+                          >
+                            💵 Tunai
+                          </button>
+                        </div>
                       ) : (
-                        <span className="text-xs text-slate-500 font-medium">✓ Terbayar</span>
+                        <div className="text-right">
+                          <span className="text-xs text-emerald-500 font-medium">✓ Lunas</span>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -199,13 +303,23 @@ export default function TagihanPage() {
         </div>
       </div>
 
-      {/* Modal Kasir Pembayaran */}
+      {/* Keterangan fitur */}
+      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-xs text-slate-400 space-y-1">
+        <div className="font-semibold text-slate-300 mb-2">ℹ️ Panduan Penggunaan</div>
+        <div>• <span className="text-green-400 font-semibold">💬 Kirim WA</span> — Generate link bayar Midtrans (QRIS / Transfer Bank / Alfamart / Indomaret) & otomatis buka WhatsApp pelanggan.</div>
+        <div>• <span className="text-slate-300 font-semibold">💵 Tunai</span> — Catat pembayaran manual (cash/transfer) langsung oleh kasir.</div>
+        <div>• Status tagihan otomatis berubah ke <span className="text-emerald-400 font-semibold">Lunas</span> setelah pembayaran dikonfirmasi Midtrans.</div>
+      </div>
+
+      {/* Modal Kasir Manual */}
       {showPayModal && selectedTagihan && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl">
-            <h3 className="text-xl font-bold text-white mb-2">Kasir Pembayaran Tagihan</h3>
+            <h3 className="text-xl font-bold text-white mb-1">Kasir Pembayaran Tunai</h3>
             <p className="text-xs text-slate-400 mb-6">
-              Pelanggan: <strong className="text-white">{selectedTagihan.pelanggan?.nama}</strong> ({selectedTagihan.pelanggan?.kode_pelanggan})
+              Pelanggan: <strong className="text-white">{selectedTagihan.pelanggan?.nama}</strong>{' '}
+              ({selectedTagihan.pelanggan?.kode_pelanggan}) ·{' '}
+              <span className="text-emerald-400 font-bold">{formatRupiah(selectedTagihan.jumlah_tagihan)}</span>
             </p>
 
             <form onSubmit={handleProcessPayment} className="space-y-4">
