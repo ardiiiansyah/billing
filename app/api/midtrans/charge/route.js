@@ -2,55 +2,69 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req) {
     try {
-        const { tagihan_id, nominal, nama_pelanggan, no_wa } = await req.json();
+        const body = await req.json();
+        console.log('Incoming charge request body:', body);
+
+        const { tagihan_id, nominal, nama_pelanggan, no_wa } = body;
 
         const serverKey = process.env.MIDTRANS_SERVER_KEY;
-        const authHeader = Buffer.from(`${serverKey}:`).toString('base64');
+        if (!serverKey) {
+            console.error('ERROR: MIDTRANS_SERVER_KEY is undefined!');
+            return NextResponse.json({ error: 'MIDTRANS_SERVER_KEY belum diatur di Vercel' }, { status: 500 });
+        }
 
-        // Format Order ID unik: INV-[tagihan_id]-[timestamp]
+        // Bersihkan kunci dari spasi atau karakter tak terlihat
+        const cleanServerKey = serverKey.trim();
+        const authHeader = Buffer.from(`${cleanServerKey}:`).toString('base64');
+
         const orderId = `INV-${tagihan_id}-${Date.now()}`;
+        const grossAmount = Math.round(Number(nominal) || 0);
 
         const payload = {
             transaction_details: {
                 order_id: orderId,
-                gross_amount: nominal,
+                gross_amount: grossAmount,
             },
             customer_details: {
-                first_name: nama_pelanggan,
-                phone: no_wa,
+                first_name: nama_pelanggan || 'Pelanggan',
+                phone: no_wa || '08123456789',
             },
-            // Mengaktifkan QRIS, Alfamart, Indomaret, E-Wallet & Bank Transfer
             enabled_payments: [
-                'qris',          // QRIS (GoPay, OVO, Dana, ShopeePay, LinkAja, BCA, dll)
-                'gopay',         // Direct GoPay
-                'shopeepay',     // Direct ShopeePay
-                'alfamart',      // Kasir Alfamart / Alfa Midi
-                'indomaret',     // Kasir Indomaret
-                'bank_transfer', // Virtual Account (BCA, Mandiri, BNI, BRI, Permata)
+                'qris',
+                'gopay',
+                'shopeepay',
+                'alfamart',
+                'indomaret',
+                'bank_transfer',
             ],
         };
+
+        console.log('Sending payload to Midtrans Sandbox:', payload);
 
         const response = await fetch('https://app.sandbox.midtrans.com/snap/v1/transactions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Basic ${authHeader}`,
+                'Accept': 'application/json',
             },
             body: JSON.stringify(payload),
         });
 
         const data = await response.json();
+        console.log('Midtrans API Response Status:', response.status);
+        console.log('Midtrans API Response Body:', data);
 
         if (!response.ok) {
-            return NextResponse.json(
-                { error: data.error_messages?.[0] || 'Gagal membuat transaksi Midtrans' },
-                { status: 500 }
-            );
+            const errorMsg = Array.isArray(data.error_messages)
+                ? data.error_messages.join(', ')
+                : (data.message || 'Ditolak oleh Midtrans');
+            return NextResponse.json({ error: errorMsg }, { status: response.status });
         }
 
         return NextResponse.json({ token: data.token, redirect_url: data.redirect_url });
     } catch (error) {
-        console.error('Midtrans Charge Error:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        console.error('Charge API Critical Error:', error);
+        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
     }
 }
