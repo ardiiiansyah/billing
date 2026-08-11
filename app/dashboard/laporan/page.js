@@ -40,37 +40,23 @@ export default function LaporanKeuanganPage() {
     async function fetchLaporan() {
         setLoading(true)
 
-        // Filter berdasarkan kolom bulan dan tahun
+        // Query tagihan langsung join ke pelanggan, wilayah, dan paket
         let query = supabase
             .from('tagihan')
             .select(`
-                id,
-                created_at,
-                tanggal_jatuh_tempo,
-                jumlah_tagihan,
-                status,
-                metode_pembayaran,
-                tanggal_bayar,
-                bulan,
-                tahun,
+                *,
                 pelanggan (
                     id,
                     nama,
                     no_wa,
-                    wilayah (
-                        id,
-                        rt,
-                        rw,
-                        nama
-                    ),
-                    paket (
-                        nama_paket,
-                        harga
-                    )
+                    wilayah_id,
+                    paket_id,
+                    wilayah (*),
+                    paket (*)
                 )
             `)
-            .eq('bulan', selectedBulan)
-            .eq('tahun', selectedTahun)
+            .eq('bulan', Number(selectedBulan))
+            .eq('tahun', Number(selectedTahun))
             .order('created_at', { ascending: false })
 
         if (selectedStatus) {
@@ -87,10 +73,10 @@ export default function LaporanKeuanganPage() {
 
         let filteredData = data || []
 
-        // Filter manual wilayah jika dipilih
+        // Filter manual wilayah jika di-select
         if (selectedWilayah) {
             filteredData = filteredData.filter(
-                (item) => item.pelanggan?.wilayah?.id === selectedWilayah
+                (item) => String(item.pelanggan?.wilayah_id) === String(selectedWilayah) || String(item.pelanggan?.wilayah?.id) === String(selectedWilayah)
             )
         }
 
@@ -103,7 +89,7 @@ export default function LaporanKeuanganPage() {
         let nunggakCount = 0
 
         filteredData.forEach((item) => {
-            const nominal = Number(item.jumlah_tagihan) || 0
+            const nominal = Number(item.jumlah_tagihan) || Number(item.nominal) || 0
             if (item.status === 'lunas') {
                 pemasukan += nominal
                 lunasCount++
@@ -135,9 +121,9 @@ export default function LaporanKeuanganPage() {
             No: index + 1,
             'Nama Pelanggan': item.pelanggan?.nama || '-',
             'No. WhatsApp': item.pelanggan?.no_wa || '-',
-            Wilayah: `RT ${item.pelanggan?.wilayah?.rt || '-'}/RW ${item.pelanggan?.wilayah?.rw || '-'}`,
+            Wilayah: item.pelanggan?.wilayah ? `RT ${item.pelanggan.wilayah.rt}/RW ${item.pelanggan.wilayah.rw}` : '-',
             Paket: item.pelanggan?.paket?.nama_paket || '-',
-            Nominal: item.jumlah_tagihan || 0,
+            Nominal: Number(item.jumlah_tagihan) || Number(item.nominal) || 0,
             Status: item.status?.toUpperCase() || '-',
             'Metode Bayar': item.metode_pembayaran || '-',
             'Tanggal Tagihan': item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-',
@@ -320,13 +306,13 @@ export default function LaporanKeuanganPage() {
                                             <div className="text-xs text-slate-500 font-mono">{item.pelanggan?.no_wa || '-'}</div>
                                         </td>
                                         <td className="px-6 py-4 font-mono text-cyan-400 text-xs">
-                                            RT {item.pelanggan?.wilayah?.rt || '-'}/RW {item.pelanggan?.wilayah?.rw || '-'}
+                                            {item.pelanggan?.wilayah ? `RT ${item.pelanggan.wilayah.rt}/RW ${item.pelanggan.wilayah.rw}` : '-'}
                                         </td>
                                         <td className="px-6 py-4 text-xs text-slate-300">
                                             {item.pelanggan?.paket?.nama_paket || '-'}
                                         </td>
                                         <td className="px-6 py-4 font-mono font-bold text-white">
-                                            Rp {(Number(item.jumlah_tagihan) || 0).toLocaleString('id-ID')}
+                                            Rp {(Number(item.jumlah_tagihan) || Number(item.nominal) || 0).toLocaleString('id-ID')}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${item.status === 'lunas'
