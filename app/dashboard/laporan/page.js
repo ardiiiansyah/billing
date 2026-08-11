@@ -24,6 +24,11 @@ export default function LaporanKeuanganPage() {
         jumlahMenunggak: 0
     })
 
+    const namaBulanList = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ]
+
     useEffect(() => {
         fetchWilayah()
     }, [])
@@ -127,7 +132,7 @@ export default function LaporanKeuanganPage() {
             'No. WhatsApp': item.pelanggan?.no_wa || '-',
             Wilayah: item.pelanggan?.wilayah ? `RT ${item.pelanggan.wilayah.rt}/RW ${item.pelanggan.wilayah.rw}` : '-',
             Paket: item.pelanggan?.paket?.nama_paket || '-',
-            Bulan: item.bulan || '-',
+            Bulan: item.bulan ? (namaBulanList[Number(item.bulan) - 1] || item.bulan) : '-', // Konversi Angka ke Nama Bulan
             Tahun: item.tahun || '-',
             Nominal: Number(item.jumlah_tagihan) || Number(item.nominal) || 0,
             Status: item.status?.toUpperCase() || '-',
@@ -146,7 +151,7 @@ export default function LaporanKeuanganPage() {
             { wch: 15 },
             { wch: 15 },
             { wch: 20 },
-            { wch: 8 },
+            { wch: 14 },
             { wch: 8 },
             { wch: 15 },
             { wch: 12 },
@@ -155,14 +160,11 @@ export default function LaporanKeuanganPage() {
             { wch: 15 }
         ]
 
-        const namaBulan = Number(selectedBulan) === 0
+        const namaFileBulan = Number(selectedBulan) === 0
             ? 'Tahunan'
-            : [
-                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-            ][selectedBulan - 1]
+            : (namaBulanList[selectedBulan - 1] || 'Bulanan')
 
-        XLSX.writeFile(workbook, `Laporan_Keuangan_SultanWiFi_${namaBulan}_${selectedTahun}.xlsx`)
+        XLSX.writeFile(workbook, `Laporan_Keuangan_SultanWiFi_${namaFileBulan}_${selectedTahun}.xlsx`)
     }
 
     const daftarBulan = [
@@ -294,7 +296,7 @@ export default function LaporanKeuanganPage() {
                                 <th className="px-6 py-4">Pelanggan</th>
                                 <th className="px-6 py-4">Wilayah</th>
                                 <th className="px-6 py-4">Paket</th>
-                                <th className="px-6 py-4">Bulan/Thn</th>
+                                <th className="px-6 py-4">Bulan / Thn</th>
                                 <th className="px-6 py-4">Nominal</th>
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4">Metode Bayar</th>
@@ -323,8 +325,8 @@ export default function LaporanKeuanganPage() {
                                         <td className="px-6 py-4 text-xs text-slate-300">
                                             {item.pelanggan?.paket?.nama_paket || '-'}
                                         </td>
-                                        <td className="px-6 py-4 text-xs font-mono text-slate-400">
-                                            {item.bulan}/{item.tahun}
+                                        <td className="px-6 py-4 text-xs text-slate-300 font-semibold">
+                                            {item.bulan ? (namaBulanList[Number(item.bulan) - 1] || item.bulan) : '-'} {item.tahun}
                                         </td>
                                         <td className="px-6 py-4 font-mono font-bold text-white">
                                             Rp {(Number(item.jumlah_tagihan) || Number(item.nominal) || 0).toLocaleString('id-ID')}
