@@ -9,9 +9,9 @@ export default function LaporanKeuanganPage() {
     const [tagihanList, setTagihanList] = useState([])
     const [wilayahList, setWilayahList] = useState([])
 
-    // Filter States
+    // Filter States (default bulan = 0 artinya Semua Bulan / Tahunan)
     const [selectedWilayah, setSelectedWilayah] = useState('')
-    const [selectedBulan, setSelectedBulan] = useState(new Date().getMonth() + 1)
+    const [selectedBulan, setSelectedBulan] = useState(0)
     const [selectedTahun, setSelectedTahun] = useState(new Date().getFullYear())
     const [selectedStatus, setSelectedStatus] = useState('')
 
@@ -40,7 +40,7 @@ export default function LaporanKeuanganPage() {
     async function fetchLaporan() {
         setLoading(true)
 
-        // Query tagihan langsung join ke pelanggan, wilayah, dan paket
+        // Query tagihan filter berdasarkan tahun
         let query = supabase
             .from('tagihan')
             .select(`
@@ -55,9 +55,13 @@ export default function LaporanKeuanganPage() {
                     paket (*)
                 )
             `)
-            .eq('bulan', Number(selectedBulan))
             .eq('tahun', Number(selectedTahun))
             .order('created_at', { ascending: false })
+
+        // Jika memilih bulan spesifik (bukan Semua Bulan / 0)
+        if (selectedBulan && Number(selectedBulan) !== 0) {
+            query = query.eq('bulan', Number(selectedBulan))
+        }
 
         if (selectedStatus) {
             query = query.eq('status', selectedStatus)
@@ -73,7 +77,7 @@ export default function LaporanKeuanganPage() {
 
         let filteredData = data || []
 
-        // Filter manual wilayah jika di-select
+        // Filter manual berdasarkan wilayah jika dipilih
         if (selectedWilayah) {
             filteredData = filteredData.filter(
                 (item) => String(item.pelanggan?.wilayah_id) === String(selectedWilayah) || String(item.pelanggan?.wilayah?.id) === String(selectedWilayah)
@@ -82,7 +86,7 @@ export default function LaporanKeuanganPage() {
 
         setTagihanList(filteredData)
 
-        // Hitung Summary
+        // Hitung Ringkasan (Summary)
         let pemasukan = 0
         let nunggak = 0
         let lunasCount = 0
@@ -123,6 +127,8 @@ export default function LaporanKeuanganPage() {
             'No. WhatsApp': item.pelanggan?.no_wa || '-',
             Wilayah: item.pelanggan?.wilayah ? `RT ${item.pelanggan.wilayah.rt}/RW ${item.pelanggan.wilayah.rw}` : '-',
             Paket: item.pelanggan?.paket?.nama_paket || '-',
+            Bulan: item.bulan || '-',
+            Tahun: item.tahun || '-',
             Nominal: Number(item.jumlah_tagihan) || Number(item.nominal) || 0,
             Status: item.status?.toUpperCase() || '-',
             'Metode Bayar': item.metode_pembayaran || '-',
@@ -140,6 +146,8 @@ export default function LaporanKeuanganPage() {
             { wch: 15 },
             { wch: 15 },
             { wch: 20 },
+            { wch: 8 },
+            { wch: 8 },
             { wch: 15 },
             { wch: 12 },
             { wch: 15 },
@@ -147,15 +155,18 @@ export default function LaporanKeuanganPage() {
             { wch: 15 }
         ]
 
-        const namaBulan = [
-            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-        ][selectedBulan - 1]
+        const namaBulan = Number(selectedBulan) === 0
+            ? 'Tahunan'
+            : [
+                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ][selectedBulan - 1]
 
         XLSX.writeFile(workbook, `Laporan_Keuangan_SultanWiFi_${namaBulan}_${selectedTahun}.xlsx`)
     }
 
     const daftarBulan = [
+        { val: 0, label: '🗓️ Semua Bulan (Tahunan)' },
         { val: 1, label: 'Januari' },
         { val: 2, label: 'Februari' },
         { val: 3, label: 'Maret' },
@@ -175,7 +186,7 @@ export default function LaporanKeuanganPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-extrabold text-white tracking-tight">Laporan Keuangan</h1>
-                    <p className="text-slate-400 text-sm mt-1">Rekapitulasi transaksi, pendapatan, dan tunggakan tagihan.</p>
+                    <p className="text-slate-400 text-sm mt-1">Rekapitulasi transaksi, pendapatan, dan tunggakan tagihan bulanan & tahunan.</p>
                 </div>
                 <button
                     onClick={handleExportExcel}
@@ -219,7 +230,7 @@ export default function LaporanKeuanganPage() {
             {/* Filter Bar */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-slate-900 border border-slate-800 p-4 rounded-2xl">
                 <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">Bulan</label>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Periode Bulan</label>
                     <select
                         value={selectedBulan}
                         onChange={(e) => setSelectedBulan(Number(e.target.value))}
@@ -283,6 +294,7 @@ export default function LaporanKeuanganPage() {
                                 <th className="px-6 py-4">Pelanggan</th>
                                 <th className="px-6 py-4">Wilayah</th>
                                 <th className="px-6 py-4">Paket</th>
+                                <th className="px-6 py-4">Bulan/Thn</th>
                                 <th className="px-6 py-4">Nominal</th>
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4">Metode Bayar</th>
@@ -292,11 +304,11 @@ export default function LaporanKeuanganPage() {
                         <tbody className="divide-y divide-slate-800">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-8 text-center text-slate-500">Memuat laporan keuangan...</td>
+                                    <td colSpan={8} className="px-6 py-8 text-center text-slate-500">Memuat laporan keuangan...</td>
                                 </tr>
                             ) : tagihanList.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-8 text-center text-slate-500">Tidak ada data transaksi pada periode ini.</td>
+                                    <td colSpan={8} className="px-6 py-8 text-center text-slate-500">Tidak ada data transaksi pada periode ini.</td>
                                 </tr>
                             ) : (
                                 tagihanList.map((item) => (
@@ -310,6 +322,9 @@ export default function LaporanKeuanganPage() {
                                         </td>
                                         <td className="px-6 py-4 text-xs text-slate-300">
                                             {item.pelanggan?.paket?.nama_paket || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 text-xs font-mono text-slate-400">
+                                            {item.bulan}/{item.tahun}
                                         </td>
                                         <td className="px-6 py-4 font-mono font-bold text-white">
                                             Rp {(Number(item.jumlah_tagihan) || Number(item.nominal) || 0).toLocaleString('id-ID')}
