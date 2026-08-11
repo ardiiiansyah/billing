@@ -69,8 +69,8 @@ export async function POST(request) {
         `Halo Bapak/Ibu *${pelanggan_nama}*, ` +
         `tagihan WiFi Sultan bulan ${formatBulan(bulan)} ${tahun} sebesar *${formatRupiah(jumlah)}* ` +
         `sudah siap dibayar.\n\n` +
-        `Klik link berikut untuk bayar via QRIS, Alfamart, Indomaret, atau Transfer Bank:\n` +
-        `${paymentUrl}\n\n` +
+        `Klik link berikut untuk bayar:\n` +
+        `${process.env.NEXT_PUBLIC_APP_URL}/bayar/${tagihan_id}\n\n` +
         `Terima kasih 🙏`
 
       await kirimWA(pelanggan_wa, pesan)
