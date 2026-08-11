@@ -49,10 +49,48 @@ export default function TagihanPage() {
 
       if (error) {
         alert('Gagal generate tagihan: ' + error.message)
-      } else {
-        alert(`Berhasil generate tagihan untuk ${data || 0} pelanggan!`)
-        fetchTagihan()
+        return
       }
+
+      // Ambil tagihan bulan ini dan kirim WA
+      const { data: tagihanBaru } = await supabase
+        .from('tagihan')
+        .select('*, pelanggan(nama, no_wa)')
+        .eq('bulan', currentMonth)
+        .eq('tahun', currentYear)
+        .eq('status_pembayaran', 'belum_bayar')
+        .not('pelanggan', 'is', null)
+
+      let waberhasil = 0
+      let wagagal = 0
+
+      if (tagihanBaru) {
+        for (const t of tagihanBaru) {
+          const { nama, no_wa } = t.pelanggan
+          if (!no_wa) { wagagal++; continue }
+
+          const linkBayar = `${window.location.origin}/bayar/${t.id}`
+          const pesan =
+            `Halo Bapak/Ibu *${nama}*, ` +
+            `tagihan WiFi Sultan bulan *${currentMonth}/${currentYear}* ` +
+            `sebesar *Rp ${Number(t.jumlah_tagihan).toLocaleString('id-ID')}* telah diterbitkan.\n\n` +
+            `Jatuh tempo: *${t.tanggal_jatuh_tempo}*\n\n` +
+            `Klik link berikut untuk bayar:\n${linkBayar}\n\n` +
+            `Terima kasih 🙏`
+
+          const res = await fetch('/api/wa/kirim', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nomor: no_wa, pesan }),
+          })
+          const result = await res.json()
+          if (result.sukses) waberhasil++
+          else wagagal++
+        }
+      }
+
+      alert(`Berhasil generate ${data || 0} tagihan!\nWA terkirim: ${waberhasil}, Gagal: ${wagagal}`)
+      fetchTagihan()
     } catch (err) {
       alert('Error koneksi.')
     } finally {
@@ -195,11 +233,10 @@ export default function TagihanPage() {
           <button
             key={st}
             onClick={() => setFilterStatus(st)}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition ${
-              filterStatus === st
+            className={`px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition ${filterStatus === st
                 ? 'bg-slate-800 text-white border border-slate-700'
                 : 'text-slate-400 hover:text-slate-200'
-            }`}
+              }`}
           >
             {st.replace('_', ' ')}
           </button>
@@ -249,13 +286,12 @@ export default function TagihanPage() {
                     <td className="px-5 py-4 text-slate-400 text-xs">{t.tanggal_jatuh_tempo}</td>
                     <td className="px-5 py-4">
                       <span
-                        className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${
-                          t.status_pembayaran === 'lunas'
+                        className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${t.status_pembayaran === 'lunas'
                             ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
                             : t.status_pembayaran === 'sebagian'
-                            ? 'bg-amber-950/80 text-amber-400 border border-amber-800'
-                            : 'bg-red-950/80 text-red-400 border border-red-800'
-                        }`}
+                              ? 'bg-amber-950/80 text-amber-400 border border-amber-800'
+                              : 'bg-red-950/80 text-red-400 border border-red-800'
+                          }`}
                       >
                         {t.status_pembayaran.replace('_', ' ')}
                       </span>
