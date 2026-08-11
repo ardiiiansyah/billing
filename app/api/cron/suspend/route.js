@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
-import { sendWhatsApp, formatBulan, formatRupiah } from '@/lib/whatsapp'
+import sendWhatsApp, { formatBulan, formatRupiah } from '@/lib/whatsapp'
 
 export async function GET(request) {
     try {
