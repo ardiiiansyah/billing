@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
+import { sendWA } from '@/lib/whatsapp' // atau penamaan fungsi pengirim WA di lib kamu
 
 export async function GET(request) {
     try {
@@ -43,6 +44,7 @@ export async function GET(request) {
                     pelangganToSuspend.push(t.pelanggan_id)
                     notifQueue.push({
                         tagihan_id: t.id,
+                        pelanggan_id: t.pelanggan.id,
                         nama: t.pelanggan.nama,
                         kode: t.pelanggan.kode_pelanggan,
                         no_wa: t.pelanggan.no_wa,
@@ -69,26 +71,36 @@ export async function GET(request) {
 
         if (updateErr) throw updateErr
 
-        // 3. Kirim WhatsApp via API Gateway internal
+        // 3. Kirim WA & Simpan Log Notifikasi
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sandbox-wifi.vercel.app'
+        const logResults = []
 
         for (const item of notifQueue) {
+            if (!item.no_wa) continue
+
             const linkBayar = `${baseUrl}/bayar/${item.tagihan_id}`
             const pesan = `🛑 *PEMBERITAHUAN ISOLIR INTERNET*\n\nYth. Pelanggan Sultan WiFi (*${item.nama}*),\n\nMohon maaf, akses internet Anda untuk ID *${item.kode}* saat ini *DITANGGUHKAN / DI-ISOLIR* sementara karena tagihan bulan *${item.bulan}/${item.tahun}* telah melewati batas jatuh tempo.\n\n💳 *Total Tagihan:* Rp ${Number(item.nominal).toLocaleString('id-ID')}\n🔗 *Link Pembayaran Instan:*\n${linkBayar}\n\n_Akses internet akan otomatis AKTIF kembali beberapa saat setelah pembayaran Anda berhasil dikonfirmasi._\n\nTerima kasih,\n*Sultan WiFi Team*`
 
-            if (item.no_wa) {
-                await fetch(`${baseUrl}/api/whatsapp/send`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ no_wa: item.no_wa, pesan }),
-                }).catch(() => null)
-            }
+            // Kirim via fungsi lib WA
+            const result = await sendWA(item.no_wa, pesan)
+
+            // Catat ke tabel log_notifikasi
+            await supabase.from('log_notifikasi').insert({
+                pelanggan_id: item.pelanggan_id,
+                no_wa: item.no_wa,
+                pesan: pesan,
+                jenis: 'isolir',
+                status: result ? 'terkirim' : 'gagal'
+            })
+
+            logResults.push({ nama: item.nama, no_wa: item.no_wa, status: result ? 'terkirim' : 'gagal' })
         }
 
         return NextResponse.json({
             success: true,
-            message: `Berhasil meng-isolir ${pelangganToSuspend.length} pelanggan & notifikasi WA diproses.`,
+            message: `Berhasil meng-isolir ${pelangganToSuspend.length} pelanggan.`,
             suspended_ids: pelangganToSuspend,
+            wa_logs: logResults
         })
     } catch (err) {
         return NextResponse.json({ error: err.message }, { status: 500 })
