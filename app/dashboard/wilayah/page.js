@@ -61,6 +61,25 @@ export default function WilayahPage() {
         setStatistikMap(map)
     }
 
+    // Template WA Otomatis
+    const handleSelectTemplate = (jenisTemplate, wilayah) => {
+        const namaWilayah = wilayah.nama || `RT ${wilayah.rt} / RW ${wilayah.rw}`
+
+        if (jenisTemplate === 'maintenance') {
+            setPesanWA(
+                `*PENGUMUMAN PEMELIHARAAN JARINGAN*\n\nHalo Bapak/Ibu pelanggan Sultan WiFi wilayah *${namaWilayah}*.\n\nAkan dilakukan pemeliharaan jaringan pada jam 13:00 - 15:00 WIB. Koneksi internet mungkin akan mengalami gangguan sementara.\n\nMohon maaf atas ketidaknyamanannya. Terima kasih! 🙏`
+            )
+        } else if (jenisTemplate === 'reminder_tagihan') {
+            setPesanWA(
+                `*INFO PEMBAYARAN TAGIHAN WIFI*\n\nHalo Bapak/Ibu pelanggan Sultan WiFi wilayah *${namaWilayah}*.\n\nDiingatkan kembali bagi yang belum melakukan pembayaran tagihan bulan ini untuk segera melakukan pembayaran agar koneksi internet tetap lancar dan tidak terisolir.\n\nTerima kasih atas perhatiannya! 🙏`
+            )
+        } else if (jenisTemplate === 'gangguan') {
+            setPesanWA(
+                `*INFORMASI GANGGUAN JARINGAN*\n\nHalo Bapak/Ibu pelanggan Sultan WiFi wilayah *${namaWilayah}*.\n\nSaat ini sedang terjadi gangguan jaringan utama di area Anda. Tim teknisi kami sedang melakukan perbaikan di lapangan.\n\nEstimasi penanganan 1-2 jam. Terima kasih atas kesabarannya. 🙏`
+            )
+        }
+    }
+
     // Modal Detail Pelanggan
     const handleOpenPelangganModal = async (wilayah) => {
         setSelectedWilayah(wilayah)
@@ -82,7 +101,7 @@ export default function WilayahPage() {
         setLoadingPelanggan(false)
     }
 
-    // Handle Kirim WA Blast per Wilayah via Fonnte API
+    // Kirim WA Blast
     const handleSendWABlast = async (e) => {
         e.preventDefault()
         setSendingWA(true)
@@ -175,7 +194,7 @@ export default function WilayahPage() {
                 </button>
             </div>
 
-            {/* Filter & Search */}
+            {/* Search */}
             <div className="flex items-center gap-4 bg-slate-900 border border-slate-800 p-4 rounded-2xl">
                 <span className="text-lg">🔍</span>
                 <input
@@ -243,6 +262,7 @@ export default function WilayahPage() {
                                                 <button
                                                     onClick={() => {
                                                         setSelectedWilayahWA(w)
+                                                        setPesanWA('')
                                                         setShowWABlastModal(true)
                                                     }}
                                                     className="px-3 py-1.5 bg-emerald-950/80 hover:bg-emerald-900/80 text-emerald-300 rounded-lg text-xs transition border border-emerald-800"
@@ -271,42 +291,71 @@ export default function WilayahPage() {
                 </div>
             </div>
 
-            {/* Modal WA Blast */}
+            {/* MODAL WA BLAST TEMPLATE OTOMATIS */}
             {showWABlastModal && selectedWilayahWA && (
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md space-y-4">
+                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md space-y-4 shadow-2xl">
                         <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-                            <h3 className="text-lg font-bold text-white">
-                                WA Blast — RT {selectedWilayahWA.rt} / RW {selectedWilayahWA.rw}
-                            </h3>
+                            <div>
+                                <h3 className="text-lg font-bold text-white">WA Blast Otomatis</h3>
+                                <p className="text-xs text-slate-400">Wilayah: RT {selectedWilayahWA.rt} / RW {selectedWilayahWA.rw}</p>
+                            </div>
                             <button onClick={() => setShowWABlastModal(false)} className="text-slate-400 hover:text-white">✕</button>
                         </div>
+
+                        <div>
+                            <label className="block text-xs font-medium text-slate-400 mb-2">⚡ Pilih Template Cepat:</label>
+                            <div className="flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleSelectTemplate('maintenance', selectedWilayahWA)}
+                                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-cyan-950 hover:text-cyan-400 border border-slate-700 hover:border-cyan-800 text-slate-300 rounded-lg text-xs transition"
+                                >
+                                    🛠️ Pemeliharaan
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleSelectTemplate('reminder_tagihan', selectedWilayahWA)}
+                                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-amber-950 hover:text-amber-400 border border-slate-700 hover:border-amber-800 text-slate-300 rounded-lg text-xs transition"
+                                >
+                                    🔔 Reminder Tagihan
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleSelectTemplate('gangguan', selectedWilayahWA)}
+                                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-red-950 hover:text-red-400 border border-slate-700 hover:border-red-800 text-slate-300 rounded-lg text-xs transition"
+                                >
+                                    🚨 Info Gangguan
+                                </button>
+                            </div>
+                        </div>
+
                         <form onSubmit={handleSendWABlast} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-medium text-slate-400 mb-1">Pesan Pengumuman</label>
+                                <label className="block text-xs font-medium text-slate-400 mb-1">Isi Pesan (Bisa Diisi Otomatis / Edit):</label>
                                 <textarea
-                                    rows={4}
+                                    rows={6}
                                     required
-                                    placeholder="Tulis pesan pengumuman/pemeliharaan jaringan di sini..."
+                                    placeholder="Klik salah satu template di atas atau ketik manual di sini..."
                                     value={pesanWA}
                                     onChange={(e) => setPesanWA(e.target.value)}
-                                    className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono leading-relaxed"
                                 />
                             </div>
-                            <div className="flex justify-end gap-3">
+                            <div className="flex justify-end gap-3 pt-2">
                                 <button
                                     type="button"
                                     onClick={() => setShowWABlastModal(false)}
-                                    className="px-4 py-2 bg-slate-800 text-slate-300 text-sm rounded-xl"
+                                    className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl hover:bg-slate-700"
                                 >
                                     Batal
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={sendingWA}
-                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl"
+                                    disabled={sendingWA || !pesanWA}
+                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white text-xs font-semibold rounded-xl transition"
                                 >
-                                    {sendingWA ? 'Mengirim...' : 'Kirim Ke Wilayah Ini'}
+                                    {sendingWA ? 'Mengirim...' : '🚀 Langsung Kirim WA'}
                                 </button>
                             </div>
                         </form>
