@@ -4,14 +4,15 @@ export async function POST(req) {
     try {
         const { tagihan_id, nominal, nama_pelanggan, no_wa } = await req.json();
 
-        // 1. Ambil Kunci dari Env (atau String jika tes hardcode)
-        let serverKey = process.env.MIDTRANS_SERVER_KEY || 'Mid-server-AoMSaK7-nxZYW6jpqyp6a6O3';
+        const serverKey = process.env.MIDTRANS_SERVER_KEY;
 
-        // Clean string dari spasi, kutip, atau newlines
-        serverKey = serverKey.trim().replace(/^["']|["']$/g, '');
+        if (!serverKey) {
+            return NextResponse.json({ error: 'MIDTRANS_SERVER_KEY tidak ditemukan di Vercel' }, { status: 500 });
+        }
 
-        // 2. Format Authorization Basic Auth
-        const basicAuthToken = Buffer.from(`${serverKey}:`).toString('base64');
+        const cleanKey = serverKey.trim().replace(/^["']|["']$/g, '');
+        const authString = `${cleanKey}:`;
+        const authHeader = `Basic ${Buffer.from(authString).toString('base64')}`;
 
         const orderId = `INV-${tagihan_id}-${Date.now()}`;
         const grossAmount = Math.round(Number(nominal) || 0);
@@ -35,13 +36,12 @@ export async function POST(req) {
             ],
         };
 
-        // 3. Fetch ke Midtrans Snap Sandbox Endpoint
         const response = await fetch('https://app.sandbox.midtrans.com/snap/v1/transactions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'Authorization': `Basic ${basicAuthToken}`,
+                'Authorization': authHeader,
             },
             body: JSON.stringify(payload),
         });
@@ -49,16 +49,11 @@ export async function POST(req) {
         const data = await response.json();
 
         if (!response.ok) {
-            console.error('Midtrans Snap Error Detail:', data);
-            return NextResponse.json(
-                { error: data.error_messages?.[0] || 'Ditolak oleh Midtrans' },
-                { status: response.status }
-            );
+            return NextResponse.json({ error: data.error_messages?.[0] || 'Ditolak Midtrans' }, { status: response.status });
         }
 
         return NextResponse.json({ token: data.token, redirect_url: data.redirect_url });
     } catch (error) {
-        console.error('Internal Charge Error:', error);
         return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
     }
 }
