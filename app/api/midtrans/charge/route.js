@@ -4,15 +4,10 @@ export async function POST(req) {
     try {
         const { tagihan_id, nominal, nama_pelanggan, no_wa } = await req.json();
 
-        const serverKey = process.env.MIDTRANS_SERVER_KEY;
+        // Tempelkan Server Key Sandbox kamu secara langsung di sini (tanpa spasi)
+        const serverKey = 'SB-Mid-server-AoMSaK7-nxZYW6jpqyp6a6O3';
 
-        if (!serverKey) {
-            return NextResponse.json({ error: 'MIDTRANS_SERVER_KEY tidak ditemukan di Vercel' }, { status: 500 });
-        }
-
-        // Mengubah Server Key ke format Basic Auth yang valid
-        const cleanKey = serverKey.trim().replace(/^["']|["']$/g, '');
-        const authString = `${cleanKey}:`;
+        const authString = `${serverKey.trim()}:`;
         const authHeader = `Basic ${Buffer.from(authString).toString('base64')}`;
 
         const orderId = `INV-${tagihan_id}-${Date.now()}`;
@@ -51,13 +46,11 @@ export async function POST(req) {
 
         if (!response.ok) {
             console.error('Midtrans API Error:', data);
-            const errorMsg = Array.isArray(data.error_messages) ? data.error_messages.join(', ') : 'Server Key Salah / Ditolak Midtrans';
-            return NextResponse.json({ error: errorMsg }, { status: response.status });
+            return NextResponse.json({ error: data.error_messages?.[0] || 'Ditolak Midtrans' }, { status: response.status });
         }
 
         return NextResponse.json({ token: data.token, redirect_url: data.redirect_url });
     } catch (error) {
-        console.error('Charge API Route Error:', error);
         return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
     }
 }
