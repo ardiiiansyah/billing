@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
-import { sendWA } from '@/lib/whatsapp' // atau penamaan fungsi pengirim WA di lib kamu
+import { kirimWA } from '@/lib/whatsapp'
 
 export async function GET(request) {
     try {
@@ -71,7 +71,7 @@ export async function GET(request) {
 
         if (updateErr) throw updateErr
 
-        // 3. Kirim WA & Simpan Log Notifikasi
+        // 3. Kirim WA via kirimWA & Simpan Log Notifikasi
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sandbox-wifi.vercel.app'
         const logResults = []
 
@@ -81,10 +81,10 @@ export async function GET(request) {
             const linkBayar = `${baseUrl}/bayar/${item.tagihan_id}`
             const pesan = `🛑 *PEMBERITAHUAN ISOLIR INTERNET*\n\nYth. Pelanggan Sultan WiFi (*${item.nama}*),\n\nMohon maaf, akses internet Anda untuk ID *${item.kode}* saat ini *DITANGGUHKAN / DI-ISOLIR* sementara karena tagihan bulan *${item.bulan}/${item.tahun}* telah melewati batas jatuh tempo.\n\n💳 *Total Tagihan:* Rp ${Number(item.nominal).toLocaleString('id-ID')}\n🔗 *Link Pembayaran Instan:*\n${linkBayar}\n\n_Akses internet akan otomatis AKTIF kembali beberapa saat setelah pembayaran Anda berhasil dikonfirmasi._\n\nTerima kasih,\n*Sultan WiFi Team*`
 
-            // Kirim via fungsi lib WA
-            const result = await sendWA(item.no_wa, pesan)
+            // Kirim via kirimWA
+            const result = await kirimWA(item.no_wa, pesan)
 
-            // Catat ke tabel log_notifikasi
+            // Catat log
             await supabase.from('log_notifikasi').insert({
                 pelanggan_id: item.pelanggan_id,
                 no_wa: item.no_wa,
