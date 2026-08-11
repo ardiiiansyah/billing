@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { formatBulan, formatRupiah } from '@/lib/whatsapp'
 
 export default function BayarPage({ params }) {
+    const { id } = use(params)
     const [tagihan, setTagihan] = useState(null)
     const [loading, setLoading] = useState(true)
     const [paying, setPaying] = useState(false)
@@ -18,7 +19,7 @@ export default function BayarPage({ params }) {
         const { data, error } = await supabase
             .from('tagihan')
             .select('*, pelanggan(nama, kode_pelanggan, no_wa, alamat, paket(nama_paket, kecepatan))')
-            .eq('id', params.id)
+            .eq('id', id)
             .single()
 
         if (error || !data) {
@@ -54,7 +55,6 @@ export default function BayarPage({ params }) {
                 return
             }
 
-            // Redirect ke halaman pembayaran Midtrans
             window.location.href = data.payment_url
         } catch (err) {
             alert('Error koneksi ke server.')
@@ -88,16 +88,13 @@ export default function BayarPage({ params }) {
     return (
         <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
             <div className="w-full max-w-md">
-                {/* Header */}
                 <div className="text-center mb-6">
                     <div className="w-14 h-14 bg-cyan-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">📶</div>
                     <h1 className="text-xl font-bold text-white">Sultan WiFi</h1>
                     <p className="text-slate-400 text-sm">Portal Pembayaran Pelanggan</p>
                 </div>
 
-                {/* Card Tagihan */}
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-                    {/* Status Banner */}
                     {isLunas ? (
                         <div className="bg-emerald-900/50 border-b border-emerald-800 px-5 py-3 flex items-center gap-2">
                             <span className="text-emerald-400 text-lg">✅</span>
@@ -110,7 +107,6 @@ export default function BayarPage({ params }) {
                         </div>
                     )}
 
-                    {/* Info Pelanggan */}
                     <div className="p-5 border-b border-slate-800">
                         <div className="flex justify-between items-start mb-3">
                             <div>
@@ -126,7 +122,6 @@ export default function BayarPage({ params }) {
                         <div className="text-xs text-slate-500">{tagihan.pelanggan?.alamat}</div>
                     </div>
 
-                    {/* Detail Tagihan */}
                     <div className="p-5 border-b border-slate-800 space-y-3">
                         <div className="flex justify-between text-sm">
                             <span className="text-slate-400">Periode</span>
@@ -148,7 +143,6 @@ export default function BayarPage({ params }) {
                         </div>
                     </div>
 
-                    {/* Tombol Bayar */}
                     <div className="p-5">
                         {isLunas ? (
                             <div className="text-center py-3">
