@@ -11,6 +11,12 @@ export default function WilayahPage() {
     const [showModal, setShowModal] = useState(false)
     const [editId, setEditId] = useState(null)
 
+    // State baru untuk Modal Popup Detail Pelanggan
+    const [showPelangganModal, setShowPelangganModal] = useState(false)
+    const [selectedWilayah, setSelectedWilayah] = useState(null)
+    const [pelangganList, setPelangganList] = useState([])
+    const [loadingPelanggan, setLoadingPelanggan] = useState(false)
+
     const [formData, setFormData] = useState({
         rt: '',
         rw: '',
@@ -42,12 +48,32 @@ export default function WilayahPage() {
             console.error('Error fetching statistik wilayah:', error)
             return
         }
-        // map by wilayah_id -> data statistik (total_pelanggan, total_pelanggan_aktif, dll)
         const map = {}
             ; (data || []).forEach((row) => {
                 map[row.wilayah_id] = row
             })
         setStatistikMap(map)
+    }
+
+    // Fungsi untuk membuka Detail Pelanggan per Wilayah dari View vw_detail_wilayah
+    const handleOpenPelangganModal = async (wilayah) => {
+        setSelectedWilayah(wilayah)
+        setShowPelangganModal(true)
+        setLoadingPelanggan(true)
+
+        const { data, error } = await supabase
+            .from('vw_detail_wilayah')
+            .select('list_pelanggan')
+            .eq('id', wilayah.id)
+            .single()
+
+        if (error) {
+            console.error('Error fetching pelanggan wilayah:', error)
+            setPelangganList([])
+        } else {
+            setPelangganList(data?.list_pelanggan || [])
+        }
+        setLoadingPelanggan(false)
     }
 
     const handleOpenModal = (wilayah = null) => {
@@ -71,7 +97,6 @@ export default function WilayahPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        // pastikan format 2 digit (01, 04, dst) sebelum simpan, konsisten dengan hasil cleaning data
         const payload = {
             ...formData,
             rt: formData.rt ? String(formData.rt).padStart(2, '0') : null,
@@ -154,6 +179,7 @@ export default function WilayahPage() {
                             ) : (
                                 filteredWilayah.map((w) => {
                                     const stat = statistikMap[w.id]
+                                    const totalPelanggan = stat?.total_pelanggan ?? 0
                                     return (
                                         <tr key={w.id} className="hover:bg-slate-800/50 transition">
                                             <td className="px-6 py-4 font-mono text-cyan-400 font-semibold">{w.rt || '-'}</td>
@@ -164,7 +190,18 @@ export default function WilayahPage() {
                                                     {stat?.total_pelanggan_aktif ?? 0} aktif
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-slate-300">{stat?.total_pelanggan ?? 0} pelanggan</td>
+                                            <td className="px-6 py-4">
+                                                {/* Dibuat tombol interaktif untuk melihat daftar pelanggan */}
+                                                <button
+                                                    onClick={() => handleOpenPelangganModal(w)}
+                                                    className="hover:text-cyan-400 hover:underline font-medium transition cursor-pointer flex items-center gap-2 group"
+                                                >
+                                                    <span>{totalPelanggan} pelanggan</span>
+                                                    <span className="text-[10px] bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded-md group-hover:bg-cyan-900 transition">
+                                                        👁️ Lihat
+                                                    </span>
+                                                </button>
+                                            </td>
                                             <td className="px-6 py-4 text-right space-x-2">
                                                 <button
                                                     onClick={() => handleOpenModal(w)}
@@ -188,7 +225,78 @@ export default function WilayahPage() {
                 </div>
             </div>
 
-            {/* Modal Form Tambah / Edit */}
+            {/* Modal Detail Pelanggan Per Wilayah */}
+            {showPelangganModal && selectedWilayah && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-xl shadow-2xl space-y-4">
+                        <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                            <div>
+                                <h3 className="text-xl font-bold text-white">Daftar Pelanggan</h3>
+                                <p className="text-xs text-slate-400 mt-0.5">
+                                    Wilayah: <span className="text-cyan-400 font-semibold">{selectedWilayah.nama || `RT ${selectedWilayah.rt} / RW ${selectedWilayah.rw}`}</span>
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowPelangganModal(false)}
+                                className="text-slate-400 hover:text-white transition p-1 text-lg"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Content Tabel Modal */}
+                        <div className="max-h-80 overflow-y-auto rounded-xl border border-slate-800">
+                            <table className="w-full text-left text-sm text-slate-300">
+                                <thead className="bg-slate-950 text-slate-400 uppercase text-xs sticky top-0 border-b border-slate-800">
+                                    <tr>
+                                        <th className="px-4 py-3">Nama Pelanggan</th>
+                                        <th className="px-4 py-3">No. WhatsApp</th>
+                                        <th className="px-4 py-3 text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-800">
+                                    {loadingPelanggan ? (
+                                        <tr>
+                                            <td colSpan={3} className="px-4 py-6 text-center text-slate-500">Memuat daftar pelanggan...</td>
+                                        </tr>
+                                    ) : pelangganList.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={3} className="px-4 py-6 text-center text-slate-500">Belum ada pelanggan terdaftar di wilayah ini.</td>
+                                        </tr>
+                                    ) : (
+                                        pelangganList.map((p) => (
+                                            <tr key={p.id} className="hover:bg-slate-800/40">
+                                                <td className="px-4 py-3 font-semibold text-white">{p.nama}</td>
+                                                <td className="px-4 py-3 font-mono text-slate-400">{p.no_hp || '-'}</td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${p.status === 'aktif'
+                                                            ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
+                                                            : 'bg-red-950/80 text-red-400 border border-red-800'
+                                                        }`}>
+                                                        {p.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-2 text-xs text-slate-400 border-t border-slate-800">
+                            <span>Total: <b className="text-white">{pelangganList.length}</b> pelanggan</span>
+                            <button
+                                onClick={() => setShowPelangganModal(false)}
+                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-xl text-xs transition"
+                            >
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Form Tambah / Edit Wilayah */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
