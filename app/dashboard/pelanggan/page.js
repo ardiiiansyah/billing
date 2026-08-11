@@ -135,7 +135,7 @@ export default function PelangganPage() {
           placeholder="Cari berdasarkan nama, kode (WIFI-001), atau No WA..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
+          className="w-full bg-transparent text-sm text-slate-100 placeholde  r-slate-500 focus:outline-none"
         />
       </div>
 
@@ -186,11 +186,10 @@ export default function PelangganPage() {
                     <td className="px-6 py-4">
                       <button
                         onClick={() => handleToggleStatus(p)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition ${
-                          p.status === 'aktif'
+                        className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition ${p.status === 'aktif'
                             ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800 hover:bg-emerald-900'
                             : 'bg-red-950/80 text-red-400 border border-red-800 hover:bg-red-900'
-                        }`}
+                          }`}
                       >
                         {p.status === 'aktif' ? '🟢 Aktif' : '🔴 Isolir'}
                       </button>

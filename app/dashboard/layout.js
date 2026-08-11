@@ -27,6 +27,7 @@ export default function DashboardLayout({ children }) {
   const menus = [
     { label: 'Dashboard', href: '/dashboard', icon: '📊' },
     { label: 'Pelanggan', href: '/dashboard/pelanggan', icon: '👥' },
+    { label: 'Wilayah', href: '/dashboard/wilayah', icon: '🗺️' },
     { label: 'Paket', href: '/dashboard/paket', icon: '📦' },
     { label: 'Tagihan', href: '/dashboard/tagihan', icon: '🧾' },
     { label: 'Pembayaran', href: '/dashboard/pembayaran', icon: '💳' },
