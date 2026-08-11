@@ -11,11 +11,17 @@ export default function WilayahPage() {
     const [showModal, setShowModal] = useState(false)
     const [editId, setEditId] = useState(null)
 
-    // State baru untuk Modal Popup Detail Pelanggan
+    // State Modal Detail Pelanggan
     const [showPelangganModal, setShowPelangganModal] = useState(false)
     const [selectedWilayah, setSelectedWilayah] = useState(null)
     const [pelangganList, setPelangganList] = useState([])
     const [loadingPelanggan, setLoadingPelanggan] = useState(false)
+
+    // State Modal WA Blast
+    const [showWABlastModal, setShowWABlastModal] = useState(false)
+    const [selectedWilayahWA, setSelectedWilayahWA] = useState(null)
+    const [pesanWA, setPesanWA] = useState('')
+    const [sendingWA, setSendingWA] = useState(false)
 
     const [formData, setFormData] = useState({
         rt: '',
@@ -55,7 +61,7 @@ export default function WilayahPage() {
         setStatistikMap(map)
     }
 
-    // Fungsi untuk membuka Detail Pelanggan per Wilayah dari View vw_detail_wilayah
+    // Modal Detail Pelanggan
     const handleOpenPelangganModal = async (wilayah) => {
         setSelectedWilayah(wilayah)
         setShowPelangganModal(true)
@@ -74,6 +80,34 @@ export default function WilayahPage() {
             setPelangganList(data?.list_pelanggan || [])
         }
         setLoadingPelanggan(false)
+    }
+
+    // Handle Kirim WA Blast per Wilayah via Fonnte API
+    const handleSendWABlast = async (e) => {
+        e.preventDefault()
+        setSendingWA(true)
+
+        try {
+            const res = await fetch('/api/wa/blast-wilayah', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    wilayah_id: selectedWilayahWA.id,
+                    pesan: pesanWA
+                })
+            })
+            if (res.ok) {
+                alert('Pesan WA Blast berhasil dikirim!')
+                setShowWABlastModal(false)
+                setPesanWA('')
+            } else {
+                alert('Gagal mengirim pesan WA Blast.')
+            }
+        } catch (err) {
+            console.error(err)
+        } finally {
+            setSendingWA(false)
+        }
     }
 
     const handleOpenModal = (wilayah = null) => {
@@ -131,7 +165,7 @@ export default function WilayahPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-extrabold text-white tracking-tight">Data Wilayah</h1>
-                    <p className="text-slate-400 text-sm mt-1">Kelola data RT/RW dan lihat jumlah pelanggan per wilayah.</p>
+                    <p className="text-slate-400 text-sm mt-1">Kelola data RT/RW, lihat pelanggan, dan potensi omset wilayah.</p>
                 </div>
                 <button
                     onClick={() => handleOpenModal()}
@@ -159,11 +193,11 @@ export default function WilayahPage() {
                     <table className="w-full text-left text-sm text-slate-300">
                         <thead className="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
                             <tr>
-                                <th className="px-6 py-4">RT</th>
-                                <th className="px-6 py-4">RW</th>
+                                <th className="px-6 py-4">RT / RW</th>
                                 <th className="px-6 py-4">Nama Wilayah</th>
                                 <th className="px-6 py-4">Pelanggan Aktif</th>
                                 <th className="px-6 py-4">Total Pelanggan</th>
+                                <th className="px-6 py-4">Potensi Omset</th>
                                 <th className="px-6 py-4 text-right">Aksi</th>
                             </tr>
                         </thead>
@@ -182,8 +216,9 @@ export default function WilayahPage() {
                                     const totalPelanggan = stat?.total_pelanggan ?? 0
                                     return (
                                         <tr key={w.id} className="hover:bg-slate-800/50 transition">
-                                            <td className="px-6 py-4 font-mono text-cyan-400 font-semibold">{w.rt || '-'}</td>
-                                            <td className="px-6 py-4 font-mono text-cyan-400 font-semibold">{w.rw || '-'}</td>
+                                            <td className="px-6 py-4 font-mono text-cyan-400 font-semibold">
+                                                RT {w.rt || '-'} / RW {w.rw || '-'}
+                                            </td>
                                             <td className="px-6 py-4 font-medium text-white">{w.nama || '-'}</td>
                                             <td className="px-6 py-4">
                                                 <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800">
@@ -191,7 +226,6 @@ export default function WilayahPage() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                {/* Dibuat tombol interaktif untuk melihat daftar pelanggan */}
                                                 <button
                                                     onClick={() => handleOpenPelangganModal(w)}
                                                     className="hover:text-cyan-400 hover:underline font-medium transition cursor-pointer flex items-center gap-2 group"
@@ -202,7 +236,19 @@ export default function WilayahPage() {
                                                     </span>
                                                 </button>
                                             </td>
+                                            <td className="px-6 py-4 font-mono text-emerald-400 font-bold">
+                                                Rp {(stat?.potensi_pendapatan ?? 0).toLocaleString('id-ID')}
+                                            </td>
                                             <td className="px-6 py-4 text-right space-x-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedWilayahWA(w)
+                                                        setShowWABlastModal(true)
+                                                    }}
+                                                    className="px-3 py-1.5 bg-emerald-950/80 hover:bg-emerald-900/80 text-emerald-300 rounded-lg text-xs transition border border-emerald-800"
+                                                >
+                                                    📢 WA Blast
+                                                </button>
                                                 <button
                                                     onClick={() => handleOpenModal(w)}
                                                     className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition"
@@ -225,7 +271,50 @@ export default function WilayahPage() {
                 </div>
             </div>
 
-            {/* Modal Detail Pelanggan Per Wilayah */}
+            {/* Modal WA Blast */}
+            {showWABlastModal && selectedWilayahWA && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md space-y-4">
+                        <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                            <h3 className="text-lg font-bold text-white">
+                                WA Blast — RT {selectedWilayahWA.rt} / RW {selectedWilayahWA.rw}
+                            </h3>
+                            <button onClick={() => setShowWABlastModal(false)} className="text-slate-400 hover:text-white">✕</button>
+                        </div>
+                        <form onSubmit={handleSendWABlast} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-medium text-slate-400 mb-1">Pesan Pengumuman</label>
+                                <textarea
+                                    rows={4}
+                                    required
+                                    placeholder="Tulis pesan pengumuman/pemeliharaan jaringan di sini..."
+                                    value={pesanWA}
+                                    onChange={(e) => setPesanWA(e.target.value)}
+                                    className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                />
+                            </div>
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowWABlastModal(false)}
+                                    className="px-4 py-2 bg-slate-800 text-slate-300 text-sm rounded-xl"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={sendingWA}
+                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl"
+                                >
+                                    {sendingWA ? 'Mengirim...' : 'Kirim Ke Wilayah Ini'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Detail Pelanggan */}
             {showPelangganModal && selectedWilayah && (
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-xl shadow-2xl space-y-4">
@@ -236,15 +325,8 @@ export default function WilayahPage() {
                                     Wilayah: <span className="text-cyan-400 font-semibold">{selectedWilayah.nama || `RT ${selectedWilayah.rt} / RW ${selectedWilayah.rw}`}</span>
                                 </p>
                             </div>
-                            <button
-                                onClick={() => setShowPelangganModal(false)}
-                                className="text-slate-400 hover:text-white transition p-1 text-lg"
-                            >
-                                ✕
-                            </button>
+                            <button onClick={() => setShowPelangganModal(false)} className="text-slate-400 hover:text-white p-1 text-lg">✕</button>
                         </div>
-
-                        {/* Content Tabel Modal */}
                         <div className="max-h-80 overflow-y-auto rounded-xl border border-slate-800">
                             <table className="w-full text-left text-sm text-slate-300">
                                 <thead className="bg-slate-950 text-slate-400 uppercase text-xs sticky top-0 border-b border-slate-800">
@@ -256,13 +338,9 @@ export default function WilayahPage() {
                                 </thead>
                                 <tbody className="divide-y divide-slate-800">
                                     {loadingPelanggan ? (
-                                        <tr>
-                                            <td colSpan={3} className="px-4 py-6 text-center text-slate-500">Memuat daftar pelanggan...</td>
-                                        </tr>
+                                        <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">Memuat data...</td></tr>
                                     ) : pelangganList.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={3} className="px-4 py-6 text-center text-slate-500">Belum ada pelanggan terdaftar di wilayah ini.</td>
-                                        </tr>
+                                        <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">Belum ada pelanggan terdaftar.</td></tr>
                                     ) : (
                                         pelangganList.map((p) => (
                                             <tr key={p.id} className="hover:bg-slate-800/40">
@@ -282,15 +360,9 @@ export default function WilayahPage() {
                                 </tbody>
                             </table>
                         </div>
-
                         <div className="flex justify-between items-center pt-2 text-xs text-slate-400 border-t border-slate-800">
                             <span>Total: <b className="text-white">{pelangganList.length}</b> pelanggan</span>
-                            <button
-                                onClick={() => setShowPelangganModal(false)}
-                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-xl text-xs transition"
-                            >
-                                Tutup
-                            </button>
+                            <button onClick={() => setShowPelangganModal(false)} className="px-4 py-2 bg-slate-800 text-slate-200 rounded-xl text-xs">Tutup</button>
                         </div>
                     </div>
                 </div>
@@ -299,7 +371,7 @@ export default function WilayahPage() {
             {/* Modal Form Tambah / Edit Wilayah */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl overflow-y-auto max-h-[90vh]">
+                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl">
                         <h3 className="text-xl font-bold text-white mb-4">
                             {editId ? 'Edit Data Wilayah' : 'Tambah Wilayah Baru'}
                         </h3>
@@ -328,7 +400,6 @@ export default function WilayahPage() {
                                     />
                                 </div>
                             </div>
-
                             <div>
                                 <label className="block text-xs font-medium text-slate-400 mb-1">Nama Wilayah</label>
                                 <input
@@ -339,21 +410,9 @@ export default function WilayahPage() {
                                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                 />
                             </div>
-
                             <div className="flex justify-end gap-3 pt-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm rounded-xl transition"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded-xl transition"
-                                >
-                                    Simpan Wilayah
-                                </button>
+                                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 bg-slate-800 text-slate-300 text-sm rounded-xl">Batal</button>
+                                <button type="submit" className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded-xl">Simpan Wilayah</button>
                             </div>
                         </form>
                     </div>
