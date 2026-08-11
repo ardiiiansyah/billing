@@ -4,9 +4,11 @@ import { supabase } from '@/lib/supabaseClient'
 export async function GET(request) {
     try {
         const MAX_HARI_NUNGGAK = 3
+        // Set jam ke 00:00:00 untuk pembandingan tanggal murni
         const today = new Date()
+        today.setHours(0, 0, 0, 0)
 
-        // 1. Ambil tagihan yang belum bayar beserta data pelanggannya
+        // 1. Ambil tagihan yang belum bayar
         const { data: tagihanList, error: tagihanErr } = await supabase
             .from('tagihan')
             .select('id, tanggal_jatuh_tempo, status_pembayaran, pelanggan_id, pelanggan(id, status)')
@@ -19,12 +21,16 @@ export async function GET(request) {
         tagihanList?.forEach((t) => {
             if (!t.tanggal_jatuh_tempo) return
 
-            const jatuhTempo = new Date(t.tanggal_jatuh_tempo)
+            // Parse tanggal jatuh tempo (YYYY-MM-DD)
+            const [year, month, day] = t.tanggal_jatuh_tempo.split('-')
+            const jatuhTempo = new Date(year, month - 1, day)
+            jatuhTempo.setHours(0, 0, 0, 0)
+
             // Hitung selisih hari
             const diffTime = today.getTime() - jatuhTempo.getTime()
             const selisihHari = Math.floor(diffTime / (1000 * 3600 * 24))
 
-            // Jika menunggak lebih dari toleransi hari & status pelanggan aktif
+            // Jika tunggakan melebihi 3 hari dan status pelanggan masih 'aktif'
             if (selisihHari > MAX_HARI_NUNGGAK && t.pelanggan?.status === 'aktif') {
                 pelangganToSuspend.push(t.pelanggan_id)
             }
