@@ -33,6 +33,7 @@ export default function DashboardLayout({ children }) {
     { label: 'Tagihan', href: '/dashboard/tagihan', icon: '🧾' },
     { label: 'Pembayaran', href: '/dashboard/pembayaran', icon: '💳' },
     { label: 'Laporan', href: '/dashboard/laporan', icon: '📈' },
+    { label: 'Log WA', href: '/dashboard/laporan/notifikasi', icon: '💬' },
   ]
 
   if (!user) return null
