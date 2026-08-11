@@ -40,24 +40,25 @@ export default function LaporanKeuanganPage() {
     async function fetchLaporan() {
         setLoading(true)
 
-        // Formating range tanggal untuk filter bulan & tahun
-        const startDate = new Date(selectedTahun, selectedBulan - 1, 1).toISOString()
-        const endDate = new Date(selectedTahun, selectedBulan, 0, 23, 59, 59).toISOString()
-
+        // Filter berdasarkan kolom bulan dan tahun
         let query = supabase
             .from('tagihan')
             .select(`
                 id,
                 created_at,
-                jatuh_tempo,
-                jumlah,
+                tanggal_jatuh_tempo,
+                jumlah_tagihan,
                 status,
                 metode_pembayaran,
                 tanggal_bayar,
+                bulan,
+                tahun,
                 pelanggan (
+                    id,
                     nama,
                     no_wa,
                     wilayah (
+                        id,
                         rt,
                         rw,
                         nama
@@ -68,8 +69,8 @@ export default function LaporanKeuanganPage() {
                     )
                 )
             `)
-            .gte('created_at', startDate)
-            .lte('created_at', endDate)
+            .eq('bulan', selectedBulan)
+            .eq('tahun', selectedTahun)
             .order('created_at', { ascending: false })
 
         if (selectedStatus) {
@@ -102,7 +103,7 @@ export default function LaporanKeuanganPage() {
         let nunggakCount = 0
 
         filteredData.forEach((item) => {
-            const nominal = item.jumlah || 0
+            const nominal = Number(item.jumlah_tagihan) || 0
             if (item.status === 'lunas') {
                 pemasukan += nominal
                 lunasCount++
@@ -136,7 +137,7 @@ export default function LaporanKeuanganPage() {
             'No. WhatsApp': item.pelanggan?.no_wa || '-',
             Wilayah: `RT ${item.pelanggan?.wilayah?.rt || '-'}/RW ${item.pelanggan?.wilayah?.rw || '-'}`,
             Paket: item.pelanggan?.paket?.nama_paket || '-',
-            Nominal: item.jumlah || 0,
+            Nominal: item.jumlah_tagihan || 0,
             Status: item.status?.toUpperCase() || '-',
             'Metode Bayar': item.metode_pembayaran || '-',
             'Tanggal Tagihan': item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-',
@@ -147,7 +148,6 @@ export default function LaporanKeuanganPage() {
         const workbook = XLSX.utils.book_new()
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Keuangan')
 
-        // Auto-fit width kolom sederhana
         worksheet['!cols'] = [
             { wch: 5 },
             { wch: 25 },
@@ -326,7 +326,7 @@ export default function LaporanKeuanganPage() {
                                             {item.pelanggan?.paket?.nama_paket || '-'}
                                         </td>
                                         <td className="px-6 py-4 font-mono font-bold text-white">
-                                            Rp {(item.jumlah || 0).toLocaleString('id-ID')}
+                                            Rp {(Number(item.jumlah_tagihan) || 0).toLocaleString('id-ID')}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${item.status === 'lunas'
