@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
-import sendWhatsApp, { formatBulan, formatRupiah } from '@/lib/whatsapp'
 
 export async function GET(request) {
     try {
@@ -8,7 +7,7 @@ export async function GET(request) {
         const today = new Date()
         today.setHours(0, 0, 0, 0)
 
-        // 1. Ambil tagihan belum bayar beserta data pelanggan
+        // 1. Ambil tagihan belum bayar
         const { data: tagihanList, error: tagihanErr } = await supabase
             .from('tagihan')
             .select('id, bulan, tahun, jumlah_tagihan, tanggal_jatuh_tempo, status_pembayaran, pelanggan_id, pelanggan(id, nama, kode_pelanggan, no_wa, status)')
@@ -70,21 +69,25 @@ export async function GET(request) {
 
         if (updateErr) throw updateErr
 
-        // 3. Kirim WhatsApp pemberitahuan isolir ke setiap pelanggan
+        // 3. Kirim WhatsApp via API Gateway internal
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sandbox-wifi.vercel.app'
 
         for (const item of notifQueue) {
             const linkBayar = `${baseUrl}/bayar/${item.tagihan_id}`
-            const pesan = `🛑 *PEMBERITAHUAN ISOLIR INTERNET*\n\nYth. Pelanggan Sultan WiFi (*${item.nama}*),\n\nMohon maaf, akses internet Anda untuk ID *${item.kode}* saat ini *DITANGGUHKAN / DI-ISOLIR* sementara karena tagihan bulan *${formatBulan(item.bulan)} ${item.tahun}* telah melewati batas jatuh tempo.\n\n💳 *Total Tagihan:* ${formatRupiah(item.nominal)}\n🔗 *Link Pembayaran Instan:*\n${linkBayar}\n\n_Akses internet akan otomatis AKTIF kembali beberapa saat setelah pembayaran Anda berhasil dikonfirmasi._\n\nTerima kasih,\n*Sultan WiFi Team*`
+            const pesan = `🛑 *PEMBERITAHUAN ISOLIR INTERNET*\n\nYth. Pelanggan Sultan WiFi (*${item.nama}*),\n\nMohon maaf, akses internet Anda untuk ID *${item.kode}* saat ini *DITANGGUHKAN / DI-ISOLIR* sementara karena tagihan bulan *${item.bulan}/${item.tahun}* telah melewati batas jatuh tempo.\n\n💳 *Total Tagihan:* Rp ${Number(item.nominal).toLocaleString('id-ID')}\n🔗 *Link Pembayaran Instan:*\n${linkBayar}\n\n_Akses internet akan otomatis AKTIF kembali beberapa saat setelah pembayaran Anda berhasil dikonfirmasi._\n\nTerima kasih,\n*Sultan WiFi Team*`
 
             if (item.no_wa) {
-                await sendWhatsApp(item.no_wa, pesan)
+                await fetch(`${baseUrl}/api/whatsapp/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ no_wa: item.no_wa, pesan }),
+                }).catch(() => null)
             }
         }
 
         return NextResponse.json({
             success: true,
-            message: `Berhasil meng-isolir ${pelangganToSuspend.length} pelanggan & notifikasi WA terkirim.`,
+            message: `Berhasil meng-isolir ${pelangganToSuspend.length} pelanggan & notifikasi WA diproses.`,
             suspended_ids: pelangganToSuspend,
         })
     } catch (err) {
