@@ -4,6 +4,58 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
+'use client'
+
+import { useState, useEffect } from 'react'
+
+// Komponen Tombol Prompt Install PWA
+function InstallPWAButton() {
+  const [deferredPrompt, setDeferredPrompt] = useState(null)
+  const [showInstallBtn, setShowInstallBtn] = useState(false)
+
+  useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+      setShowInstallBtn(true)
+    })
+  }, [])
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null)
+      setShowInstallBtn(false)
+    }
+  }
+
+  if (!showInstallBtn) return null
+
+  return (
+    <button
+      onClick={handleInstallClick}
+      className="fixed bottom-5 right-5 z-50 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 text-sm transition animate-bounce"
+    >
+      <span>📲</span> Install Aplikasi Sultan WiFi
+    </button>
+  )
+}
+
+export default function DashboardLayout({ children }) {
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex">
+      {/* Sidebar & Konten Utama Dashboard Kamu */}
+      <main className="flex-1 p-6">
+        {children}
+      </main>
+
+      {/* Pasang Tombol Install PWA di Sini */}
+      <InstallPWAButton />
+    </div>
+  )
+}
 
 export default function DashboardLayout({ children }) {
   const [user, setUser] = useState(null)
