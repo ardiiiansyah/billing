@@ -52,9 +52,29 @@ export default function PelangganPage() {
     status: 'aktif',
   })
 
+  // ── AUTO-SYNC REALTIME & POLLING ──────────────────────────────────
   useEffect(() => {
     fetchPelanggan()
     fetchPaketOptions()
+
+    // 1. Auto re-fetch saat tab browser difokuskan kembali
+    const handleFocus = () => {
+      if (document.visibilityState === 'visible') {
+        fetchPelanggan()
+      }
+    }
+
+    // 2. Polling otomatis setiap 10 detik di latar belakang
+    const interval = setInterval(() => {
+      fetchPelanggan()
+    }, 10000)
+
+    document.addEventListener('visibilitychange', handleFocus)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleFocus)
+      clearInterval(interval)
+    }
   }, [])
 
   async function fetchPaketOptions() {
@@ -63,7 +83,6 @@ export default function PelangganPage() {
   }
 
   async function fetchPelanggan() {
-    setLoading(true)
     const { data, error } = await supabase
       .from('pelanggan')
       .select('*, paket(nama_paket, harga)')
@@ -413,8 +432,8 @@ export default function PelangganPage() {
                       <button
                         onClick={() => handleToggleStatus(p)}
                         className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition ${p.status === 'aktif'
-                            ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800 hover:bg-emerald-900'
-                            : 'bg-red-950/80 text-red-400 border border-red-800 hover:bg-red-900'
+                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800 hover:bg-emerald-900'
+                          : 'bg-red-950/80 text-red-400 border border-red-800 hover:bg-red-900'
                           }`}
                       >
                         {p.status === 'aktif' ? '🟢 Aktif' : '🔴 Isolir'}
