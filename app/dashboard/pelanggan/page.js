@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import BulkActionBar from '@/components/BulkActionBar'
 
@@ -8,9 +8,14 @@ export default function PelangganPage() {
   const [pelangganList, setPelangganList] = useState([])
   const [paketOptions, setPaketOptions] = useState([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editId, setEditId] = useState(null)
+
+  // ── State Filter Advanced ─────────────────────────────────────────
+  const [search, setSearch] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
+  const [filterRt, setFilterRt] = useState('')
+  const [filterPaket, setFilterPaket] = useState('')
 
   // ── State Bulk Action ──────────────────────────────────────────────
   const [selectedIds, setSelectedIds] = useState([])
@@ -69,6 +74,28 @@ export default function PelangganPage() {
     setLoading(false)
   }
 
+  // List opsi RT dinamis dari data pelanggan
+  const rtOptions = useMemo(() => {
+    const rts = pelangganList.map((p) => p.rt).filter(Boolean)
+    return [...new Set(rts)].sort()
+  }, [pelangganList])
+
+  // Logika Filter Multi-Kriteria
+  const filteredPelanggan = useMemo(() => {
+    return pelangganList.filter((p) => {
+      const matchSearch =
+        p.nama?.toLowerCase().includes(search.toLowerCase()) ||
+        p.kode_pelanggan?.toLowerCase().includes(search.toLowerCase()) ||
+        p.no_wa?.includes(search)
+
+      const matchStatus = filterStatus ? p.status === filterStatus : true
+      const matchRt = filterRt ? String(p.rt) === String(filterRt) : true
+      const matchPaket = filterPaket ? p.paket_id === filterPaket : true
+
+      return matchSearch && matchStatus && matchRt && matchPaket
+    })
+  }, [pelangganList, search, filterStatus, filterRt, filterPaket])
+
   const handleOpenModal = (pelanggan = null) => {
     if (pelanggan) {
       setEditId(pelanggan.id)
@@ -125,30 +152,23 @@ export default function PelangganPage() {
     }
   }
 
-  const filteredPelanggan = pelangganList.filter(
-    (p) =>
-      p.nama.toLowerCase().includes(search.toLowerCase()) ||
-      p.kode_pelanggan.toLowerCase().includes(search.toLowerCase()) ||
-      p.no_wa.includes(search)
-  )
-
   const formatRupiah = (val) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val)
   }
 
   // ── Bulk Action Handlers ────────────────────────────────────────────
-  const isAllSelected = filteredPelanggan.length > 0 && filteredPelanggan.every(p => selectedIds.includes(p.id))
+  const isAllSelected = filteredPelanggan.length > 0 && filteredPelanggan.every((p) => selectedIds.includes(p.id))
 
   const handleToggleAll = () => {
     if (isAllSelected) {
-      setSelectedIds(prev => prev.filter(id => !filteredPelanggan.map(p => p.id).includes(id)))
+      setSelectedIds((prev) => prev.filter((id) => !filteredPelanggan.map((p) => p.id).includes(id)))
     } else {
-      setSelectedIds(prev => [...new Set([...prev, ...filteredPelanggan.map(p => p.id)])])
+      setSelectedIds((prev) => [...new Set([...prev, ...filteredPelanggan.map((p) => p.id)])])
     }
   }
 
   const handleToggleOne = (id) => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]))
   }
 
   const executeBulkStatus = async (status) => {
@@ -158,7 +178,7 @@ export default function PelangganPage() {
       const res = await fetch('/api/bulk/pelanggan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update_status', ids: selectedIds, payload: { status } })
+        body: JSON.stringify({ action: 'update_status', ids: selectedIds, payload: { status } }),
       })
       const data = await res.json()
       if (data.sukses) {
@@ -180,7 +200,7 @@ export default function PelangganPage() {
       const res = await fetch('/api/bulk/pelanggan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate_tagihan', ids: selectedIds, payload: { bulan: genBulan, tahun: genTahun } })
+        body: JSON.stringify({ action: 'generate_tagihan', ids: selectedIds, payload: { bulan: genBulan, tahun: genTahun } }),
       })
       const data = await res.json()
       if (data.sukses) {
@@ -205,7 +225,7 @@ export default function PelangganPage() {
       const res = await fetch('/api/bulk/wa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'pelanggan', ids: selectedIds, pesan: templateWaBulk })
+        body: JSON.stringify({ mode: 'pelanggan', ids: selectedIds, pesan: templateWaBulk }),
       })
       const data = await res.json()
       if (data.sukses) {
@@ -219,6 +239,13 @@ export default function PelangganPage() {
       alert('Error koneksi ke server.')
       setShowWaProgress(false)
     }
+  }
+
+  const resetFilter = () => {
+    setSearch('')
+    setFilterStatus('')
+    setFilterRt('')
+    setFilterPaket('')
   }
 
   return (
@@ -236,16 +263,72 @@ export default function PelangganPage() {
         </button>
       </div>
 
-      {/* Filter & Search */}
-      <div className="flex items-center gap-4 bg-slate-900 border border-slate-800 p-4 rounded-2xl">
-        <span className="text-lg">🔍</span>
-        <input
-          type="text"
-          placeholder="Cari berdasarkan nama, kode (WIFI-001), atau No WA..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
-        />
+      {/* ── BARIS FILTER ADVANCED ──────────────────────────────────────── */}
+      <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          {/* Search Bar */}
+          <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 px-3.5 py-2 rounded-xl">
+            <span>🔍</span>
+            <input
+              type="text"
+              placeholder="Cari Nama / Kode / WA..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-transparent text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+            />
+          </div>
+
+          {/* Filter Status */}
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3.5 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-cyan-500"
+          >
+            <option value="">Semua Status</option>
+            <option value="aktif">🟢 Status: Aktif</option>
+            <option value="isolir">🔴 Status: Isolir</option>
+          </select>
+
+          {/* Filter RT */}
+          <select
+            value={filterRt}
+            onChange={(e) => setFilterRt(e.target.value)}
+            className="bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3.5 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-cyan-500"
+          >
+            <option value="">Semua Wilayah RT</option>
+            {rtOptions.map((rt) => (
+              <option key={rt} value={rt}>
+                Wilayah RT {rt}
+              </option>
+            ))}
+          </select>
+
+          {/* Filter Paket */}
+          <select
+            value={filterPaket}
+            onChange={(e) => setFilterPaket(e.target.value)}
+            className="bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3.5 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-cyan-500"
+          >
+            <option value="">Semua Paket</option>
+            {paketOptions.map((pkt) => (
+              <option key={pkt.id} value={pkt.id}>
+                {pkt.nama_paket}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Ringkasan & Reset Filter */}
+        {(search || filterStatus || filterRt || filterPaket) && (
+          <div className="flex justify-between items-center text-xs text-slate-400 pt-1 border-t border-slate-800/60">
+            <span>
+              Ditemukan <b className="text-cyan-400">{filteredPelanggan.length}</b> dari {pelangganList.length} pelanggan
+            </span>
+            <button onClick={resetFilter} className="text-rose-400 hover:text-rose-300 font-medium">
+              ✕ Reset Filter
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Tabel Pelanggan */}
@@ -274,15 +357,23 @@ export default function PelangganPage() {
             <tbody className="divide-y divide-slate-800">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-slate-500">Memuat data pelanggan...</td>
+                  <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
+                    Memuat data pelanggan...
+                  </td>
                 </tr>
               ) : filteredPelanggan.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-slate-500">Tidak ada pelanggan ditemukan.</td>
+                  <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
+                    Tidak ada pelanggan ditemukan.
+                  </td>
                 </tr>
               ) : (
                 filteredPelanggan.map((p) => (
-                  <tr key={p.id} className={`hover:bg-slate-800/50 transition ${selectedIds.includes(p.id) ? 'bg-cyan-950/20' : ''}`}>
+                  <tr
+                    key={p.id}
+                    className={`hover:bg-slate-800/50 transition ${selectedIds.includes(p.id) ? 'bg-cyan-950/20' : ''
+                      }`}
+                  >
                     <td className="px-4 py-4">
                       <input
                         type="checkbox"
@@ -294,7 +385,9 @@ export default function PelangganPage() {
                     <td className="px-6 py-4 font-mono text-cyan-400 font-semibold">{p.kode_pelanggan}</td>
                     <td className="px-6 py-4 font-medium text-white">
                       <div>{p.nama}</div>
-                      <div className="text-xs text-slate-500">{p.alamat} (RT {p.rt || '-'}/RW {p.rw || '-'})</div>
+                      <div className="text-xs text-slate-500">
+                        {p.alamat} (RT {p.rt || '-'}/RW {p.rw || '-'})
+                      </div>
                     </td>
                     <td className="px-6 py-4">{p.no_wa}</td>
                     <td className="px-6 py-4">
@@ -312,8 +405,8 @@ export default function PelangganPage() {
                       <button
                         onClick={() => handleToggleStatus(p)}
                         className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition ${p.status === 'aktif'
-                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800 hover:bg-emerald-900'
-                          : 'bg-red-950/80 text-red-400 border border-red-800 hover:bg-red-900'
+                            ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800 hover:bg-emerald-900'
+                            : 'bg-red-950/80 text-red-400 border border-red-800 hover:bg-red-900'
                           }`}
                       >
                         {p.status === 'aktif' ? '🟢 Aktif' : '🔴 Isolir'}
@@ -469,7 +562,7 @@ export default function PelangganPage() {
         </div>
       )}
 
-      {/* ── Bulk Action Bar Rapi ─────────────────────────────────────────── */}
+      {/* ── Bulk Action Bar ─────────────────────────────────────────── */}
       <BulkActionBar
         selectedCount={selectedIds.length}
         onClear={() => setSelectedIds([])}
@@ -505,14 +598,12 @@ export default function PelangganPage() {
         ]}
       />
 
-      {/* ── Custom Modal Konfirmasi Status ──────────────────────────── */}
+      {/* Modal Custom Konfirmasi Status */}
       {confirmStatusModal.show && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4">
             <div className="text-center space-y-2">
-              <span className="text-4xl block">
-                {confirmStatusModal.status === 'aktif' ? '🟢' : '🔴'}
-              </span>
+              <span className="text-4xl block">{confirmStatusModal.status === 'aktif' ? '🟢' : '🔴'}</span>
               <h3 className="text-lg font-bold text-white">Konfirmasi Perubahan Status</h3>
               <p className="text-xs text-slate-400">
                 Ubah status <b className="text-white">{selectedIds.length} pelanggan</b> terpilih menjadi{' '}
@@ -532,9 +623,7 @@ export default function PelangganPage() {
               <button
                 onClick={() => executeBulkStatus(confirmStatusModal.status)}
                 disabled={bulkLoading}
-                className={`px-4 py-2 text-white text-xs font-semibold rounded-xl transition ${confirmStatusModal.status === 'aktif'
-                  ? 'bg-emerald-600 hover:bg-emerald-500'
-                  : 'bg-amber-600 hover:bg-amber-500'
+                className={`px-4 py-2 text-white text-xs font-semibold rounded-xl transition ${confirmStatusModal.status === 'aktif' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-amber-600 hover:bg-amber-500'
                   }`}
               >
                 Ya, Lanjutkan
@@ -544,7 +633,7 @@ export default function PelangganPage() {
         </div>
       )}
 
-      {/* ── Modal Generate Tagihan Terpilih ─────────────────────────── */}
+      {/* Modal Generate Tagihan Terpilih */}
       {showBulkGenModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4">
@@ -553,7 +642,9 @@ export default function PelangganPage() {
                 <h3 className="text-lg font-bold text-white">Generate Tagihan Terpilih</h3>
                 <p className="text-xs text-slate-400 mt-0.5">{selectedIds.length} pelanggan aktif dipilih</p>
               </div>
-              <button onClick={() => setShowBulkGenModal(false)} className="text-slate-400 hover:text-white">✕</button>
+              <button onClick={() => setShowBulkGenModal(false)} className="text-slate-400 hover:text-white">
+                ✕
+              </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -561,11 +652,13 @@ export default function PelangganPage() {
                 <label className="block text-xs font-medium text-slate-400 mb-1">Bulan</label>
                 <select
                   value={genBulan}
-                  onChange={e => setGenBulan(Number(e.target.value))}
+                  onChange={(e) => setGenBulan(Number(e.target.value))}
                   className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 >
                   {[...Array(12)].map((_, i) => (
-                    <option key={i + 1} value={i + 1}>{i + 1}</option>
+                    <option key={i + 1} value={i + 1}>
+                      {i + 1}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -574,7 +667,7 @@ export default function PelangganPage() {
                 <input
                   type="number"
                   value={genTahun}
-                  onChange={e => setGenTahun(Number(e.target.value))}
+                  onChange={(e) => setGenTahun(Number(e.target.value))}
                   min={2020}
                   max={2099}
                   className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
@@ -601,7 +694,7 @@ export default function PelangganPage() {
         </div>
       )}
 
-      {/* ── Modal WA Pengumuman Masal ─────────────────────────────── */}
+      {/* Modal WA Pengumuman Masal */}
       {showBulkWaModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl space-y-4">
@@ -610,12 +703,16 @@ export default function PelangganPage() {
                 <h3 className="text-lg font-bold text-white">Kirim WA Pengumuman Masal</h3>
                 <p className="text-xs text-slate-400 mt-0.5">{selectedIds.length} pelanggan dipilih</p>
               </div>
-              <button onClick={() => setShowBulkWaModal(false)} className="text-slate-400 hover:text-white">✕</button>
+              <button onClick={() => setShowBulkWaModal(false)} className="text-slate-400 hover:text-white">
+                ✕
+              </button>
             </div>
 
             <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-3 text-xs text-slate-400">
               <p className="text-slate-300 font-semibold mb-1">💡 Variabel tersedia:</p>
-              <p><code className="text-cyan-400">[nama]</code> — Nama pelanggan</p>
+              <p>
+                <code className="text-cyan-400">[nama]</code> — Nama pelanggan
+              </p>
             </div>
 
             <div>
@@ -623,13 +720,15 @@ export default function PelangganPage() {
               <textarea
                 rows={5}
                 value={templateWaBulk}
-                onChange={e => setTemplateWaBulk(e.target.value)}
+                onChange={(e) => setTemplateWaBulk(e.target.value)}
                 className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono leading-relaxed"
               />
             </div>
 
             <div className="flex justify-end gap-3 pt-1">
-              <button onClick={() => setShowBulkWaModal(false)} className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl hover:bg-slate-700">Batal</button>
+              <button onClick={() => setShowBulkWaModal(false)} className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl hover:bg-slate-700">
+                Batal
+              </button>
               <button
                 onClick={handleBulkWaSend}
                 disabled={!templateWaBulk.trim()}
@@ -642,21 +741,29 @@ export default function PelangganPage() {
         </div>
       )}
 
-      {/* ── Modal Progress WA ───────────────────────────────────────── */}
+      {/* Modal Progress WA */}
       {showWaProgress && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl space-y-4">
             <h3 className="text-lg font-bold text-white border-b border-slate-800 pb-3">📲 Progres Pengiriman WA</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-slate-400">
-                <span>Terkirim: <b className="text-emerald-400">{waProgress.terkirim}</b></span>
-                <span>Gagal: <b className="text-red-400">{waProgress.gagal}</b></span>
-                <span>Total: <b className="text-white">{waProgress.total}</b></span>
+                <span>
+                  Terkirim: <b className="text-emerald-400">{waProgress.terkirim}</b>
+                </span>
+                <span>
+                  Gagal: <b className="text-red-400">{waProgress.gagal}</b>
+                </span>
+                <span>
+                  Total: <b className="text-white">{waProgress.total}</b>
+                </span>
               </div>
               <div className="w-full bg-slate-800 rounded-full h-2.5">
                 <div
                   className="bg-emerald-500 h-2.5 rounded-full transition-all duration-500"
-                  style={{ width: waProgress.total > 0 ? `${((waProgress.terkirim + waProgress.gagal) / waProgress.total) * 100}%` : '0%' }}
+                  style={{
+                    width: waProgress.total > 0 ? `${((waProgress.terkirim + waProgress.gagal) / waProgress.total) * 100}%` : '0%',
+                  }}
                 />
               </div>
             </div>
@@ -672,7 +779,7 @@ export default function PelangganPage() {
                 ))}
               </div>
             )}
-            {(waProgress.terkirim + waProgress.gagal) < waProgress.total ? (
+            {waProgress.terkirim + waProgress.gagal < waProgress.total ? (
               <p className="text-center text-xs text-slate-400 animate-pulse">⏳ Mengirim pesan, mohon tunggu...</p>
             ) : (
               <button
