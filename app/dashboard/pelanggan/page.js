@@ -263,7 +263,7 @@ export default function PelangganPage() {
         </button>
       </div>
 
-      {/* ── BARIS FILTER ADVANCED ──────────────────────────────────────── */}
+      {/* BARIS FILTER ADVANCED */}
       <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           {/* Search Bar */}
@@ -382,9 +382,17 @@ export default function PelangganPage() {
                         className="w-4 h-4 rounded border-slate-600 bg-slate-800 cursor-pointer accent-cyan-500"
                       />
                     </td>
-                    <td className="px-6 py-4 font-mono text-cyan-400 font-semibold">{p.kode_pelanggan}</td>
+                    <td className="px-6 py-4 font-mono text-cyan-400 font-semibold">
+                      <a href={`/dashboard/pelanggan/${p.id}`} className="hover:underline">
+                        {p.kode_pelanggan}
+                      </a>
+                    </td>
                     <td className="px-6 py-4 font-medium text-white">
-                      <div>{p.nama}</div>
+                      <div>
+                        <a href={`/dashboard/pelanggan/${p.id}`} className="hover:underline hover:text-cyan-400 font-semibold">
+                          {p.nama}
+                        </a>
+                      </div>
                       <div className="text-xs text-slate-500">
                         {p.alamat} (RT {p.rt || '-'}/RW {p.rw || '-'})
                       </div>
@@ -562,7 +570,7 @@ export default function PelangganPage() {
         </div>
       )}
 
-      {/* ── Bulk Action Bar ─────────────────────────────────────────── */}
+      {/* Bulk Action Bar */}
       <BulkActionBar
         selectedCount={selectedIds.length}
         onClear={() => setSelectedIds([])}
