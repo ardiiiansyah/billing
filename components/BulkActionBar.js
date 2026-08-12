@@ -1,21 +1,33 @@
 'use client'
 
-// components/BulkActionBar.js
-// Floating action bar yang muncul saat ada item yang diseleksi
-
-export default function BulkActionBar({ selectedCount, onClear, actions }) {
+export default function BulkActionBar({ selectedCount, onClear, actions = [] }) {
     if (selectedCount === 0) return null
+
+    // Helper pemetaan variasi warna tombol agar lebih rapi & kontras
+    const getVariantStyle = (variant) => {
+        switch (variant) {
+            case 'danger':
+                return 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border-red-500/30'
+            case 'success':
+                return 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+            case 'warning':
+                return 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/30'
+            default:
+                return 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+        }
+    }
 
     return (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 duration-300">
-            <div className="flex items-center gap-3 bg-slate-800 border border-slate-600 shadow-2xl shadow-black/60 rounded-2xl px-5 py-3.5">
+            <div className="flex items-center gap-3 bg-slate-900/90 backdrop-blur-md border border-slate-800 shadow-2xl shadow-black/80 rounded-full px-4 py-2.5">
+
                 {/* Badge Jumlah Item */}
-                <div className="flex items-center gap-2 pr-3 border-r border-slate-600">
-                    <span className="w-6 h-6 flex items-center justify-center bg-cyan-600 text-white text-xs font-bold rounded-full">
+                <div className="flex items-center gap-2 pr-3 border-r border-slate-800">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500/20 text-xs font-bold text-cyan-400">
                         {selectedCount}
                     </span>
-                    <span className="text-slate-300 text-sm font-medium whitespace-nowrap">
-                        item dipilih
+                    <span className="text-slate-300 text-xs font-medium whitespace-nowrap">
+                        terpilih
                     </span>
                 </div>
 
@@ -28,17 +40,10 @@ export default function BulkActionBar({ selectedCount, onClear, actions }) {
                             disabled={action.loading}
                             title={action.title || action.label}
                             className={`
-                                flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition
-                                disabled:opacity-50 disabled:cursor-not-allowed
-                                ${action.variant === 'danger'
-                                    ? 'bg-red-950/70 hover:bg-red-900/80 text-red-300 border border-red-800'
-                                    : action.variant === 'success'
-                                        ? 'bg-emerald-950/70 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-800'
-                                        : action.variant === 'warning'
-                                            ? 'bg-amber-950/70 hover:bg-amber-900/80 text-amber-300 border border-amber-800'
-                                            : 'bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600'
-                                }
-                            `}
+                flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all duration-200
+                disabled:opacity-50 disabled:cursor-not-allowed
+                ${getVariantStyle(action.variant)}
+              `}
                         >
                             <span>{action.icon}</span>
                             <span>{action.loading ? 'Memproses...' : action.label}</span>
@@ -49,7 +54,7 @@ export default function BulkActionBar({ selectedCount, onClear, actions }) {
                 {/* Tombol Batal */}
                 <button
                     onClick={onClear}
-                    className="ml-1 w-7 h-7 flex items-center justify-center rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition text-sm"
+                    className="ml-1 p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors"
                     title="Batal seleksi"
                 >
                     ✕

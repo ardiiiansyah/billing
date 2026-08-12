@@ -16,6 +16,12 @@ export default function PelangganPage() {
   const [selectedIds, setSelectedIds] = useState([])
   const [bulkLoading, setBulkLoading] = useState(false)
 
+  // Modal Confirm Custom Bulk Status
+  const [confirmStatusModal, setConfirmStatusModal] = useState({
+    show: false,
+    status: null,
+  })
+
   // Modal WA Pengumuman Masal
   const [showBulkWaModal, setShowBulkWaModal] = useState(false)
   const [templateWaBulk, setTemplateWaBulk] = useState(
@@ -145,10 +151,9 @@ export default function PelangganPage() {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
   }
 
-  const handleBulkStatus = async (status) => {
-    const label = { aktif: 'Aktifkan', isolir: 'Isolir', nonaktif: 'Nonaktifkan' }[status] || status
-    if (!confirm(`${label} ${selectedIds.length} pelanggan terpilih?`)) return
+  const executeBulkStatus = async (status) => {
     setBulkLoading(true)
+    setConfirmStatusModal({ show: false, status: null })
     try {
       const res = await fetch('/api/bulk/pelanggan', {
         method: 'POST',
@@ -157,7 +162,6 @@ export default function PelangganPage() {
       })
       const data = await res.json()
       if (data.sukses) {
-        alert(data.message)
         setSelectedIds([])
         fetchPelanggan()
       } else {
@@ -180,7 +184,6 @@ export default function PelangganPage() {
       })
       const data = await res.json()
       if (data.sukses) {
-        alert(data.message)
         setSelectedIds([])
         setShowBulkGenModal(false)
       } else {
@@ -241,7 +244,7 @@ export default function PelangganPage() {
           placeholder="Cari berdasarkan nama, kode (WIFI-001), atau No WA..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-transparent text-sm text-slate-100 placeholde  r-slate-500 focus:outline-none"
+          className="w-full bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
         />
       </div>
 
@@ -309,8 +312,8 @@ export default function PelangganPage() {
                       <button
                         onClick={() => handleToggleStatus(p)}
                         className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition ${p.status === 'aktif'
-                            ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800 hover:bg-emerald-900'
-                            : 'bg-red-950/80 text-red-400 border border-red-800 hover:bg-red-900'
+                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800 hover:bg-emerald-900'
+                          : 'bg-red-950/80 text-red-400 border border-red-800 hover:bg-red-900'
                           }`}
                       >
                         {p.status === 'aktif' ? '🟢 Aktif' : '🔴 Isolir'}
@@ -466,7 +469,7 @@ export default function PelangganPage() {
         </div>
       )}
 
-      {/* ── Bulk Action Bar ─────────────────────────────────────────── */}
+      {/* ── Bulk Action Bar Rapi ─────────────────────────────────────────── */}
       <BulkActionBar
         selectedCount={selectedIds.length}
         onClear={() => setSelectedIds([])}
@@ -483,14 +486,14 @@ export default function PelangganPage() {
             icon: '🟢',
             variant: 'success',
             loading: bulkLoading,
-            onClick: () => handleBulkStatus('aktif'),
+            onClick: () => setConfirmStatusModal({ show: true, status: 'aktif' }),
           },
           {
             label: 'Isolir',
             icon: '🔴',
             variant: 'warning',
             loading: bulkLoading,
-            onClick: () => handleBulkStatus('isolir'),
+            onClick: () => setConfirmStatusModal({ show: true, status: 'isolir' }),
           },
           {
             label: 'Kirim WA',
@@ -501,6 +504,45 @@ export default function PelangganPage() {
           },
         ]}
       />
+
+      {/* ── Custom Modal Konfirmasi Status ──────────────────────────── */}
+      {confirmStatusModal.show && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4">
+            <div className="text-center space-y-2">
+              <span className="text-4xl block">
+                {confirmStatusModal.status === 'aktif' ? '🟢' : '🔴'}
+              </span>
+              <h3 className="text-lg font-bold text-white">Konfirmasi Perubahan Status</h3>
+              <p className="text-xs text-slate-400">
+                Ubah status <b className="text-white">{selectedIds.length} pelanggan</b> terpilih menjadi{' '}
+                <b className={confirmStatusModal.status === 'aktif' ? 'text-emerald-400' : 'text-amber-400'}>
+                  {confirmStatusModal.status.toUpperCase()}
+                </b>?
+              </p>
+            </div>
+
+            <div className="flex justify-center gap-3 pt-2">
+              <button
+                onClick={() => setConfirmStatusModal({ show: false, status: null })}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => executeBulkStatus(confirmStatusModal.status)}
+                disabled={bulkLoading}
+                className={`px-4 py-2 text-white text-xs font-semibold rounded-xl transition ${confirmStatusModal.status === 'aktif'
+                  ? 'bg-emerald-600 hover:bg-emerald-500'
+                  : 'bg-amber-600 hover:bg-amber-500'
+                  }`}
+              >
+                Ya, Lanjutkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal Generate Tagihan Terpilih ─────────────────────────── */}
       {showBulkGenModal && (
