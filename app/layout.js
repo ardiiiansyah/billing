@@ -4,6 +4,9 @@ export const metadata = {
   title: 'Sultan WiFi Billing & Management',
   description: 'Aplikasi Manajemen & Tagihan WiFi RT/RW',
   manifest: '/manifest.json',
+}
+
+export const viewport = {
   themeColor: '#0f172a',
 }
 
@@ -12,7 +15,6 @@ export default function RootLayout({ children }) {
     <html lang="id">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#0f172a" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
       <body className="min-h-screen antialiased bg-slate-900 text-slate-100">
