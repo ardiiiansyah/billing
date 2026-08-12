@@ -12,6 +12,15 @@ CREATE TABLE IF NOT EXISTS public.paket (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 1.5 TABEL WILAYAH
+CREATE TABLE IF NOT EXISTS public.wilayah (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    rt VARCHAR(10) NOT NULL,
+    rw VARCHAR(10) NOT NULL,
+    nama VARCHAR(150),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- 2. TABEL PELANGGAN
 CREATE TABLE IF NOT EXISTS public.pelanggan (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -22,6 +31,7 @@ CREATE TABLE IF NOT EXISTS public.pelanggan (
     rt VARCHAR(10),
     rw VARCHAR(10),
     paket_id UUID REFERENCES public.paket(id) ON DELETE SET NULL,
+    wilayah_id UUID REFERENCES public.wilayah(id) ON DELETE SET NULL,
     tanggal_jatuh_tempo INT DEFAULT 10, -- Tanggal 1-28 tiap bulan
     status VARCHAR(20) DEFAULT 'aktif' CHECK (status IN ('aktif', 'isolir', 'nonaktif')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -139,3 +149,39 @@ INSERT INTO public.paket (nama_paket, kecepatan, harga, deskripsi) VALUES
 ('Hemat 10M', '10 Mbps', 100000, 'Paket internet ekonomis untuk rumah tangga 1-3 perangkat'),
 ('Reguler 20M', '20 Mbps', 150000, 'Paket internet standar keluarga 3-5 perangkat'),
 ('Super 50M', '50 Mbps', 250000, 'Paket internet cepat untuk usaha / streaming 4K');
+
+-- ========================================================
+-- VIEWS FOR WILAYAH
+-- ========================================================
+
+-- View untuk statistik wilayah (total pelanggan, aktif, potensi omset)
+CREATE OR REPLACE VIEW public.vw_statistik_wilayah AS
+SELECT 
+    w.id AS wilayah_id,
+    COALESCE(COUNT(p.id), 0) AS total_pelanggan,
+    COALESCE(SUM(CASE WHEN p.status = 'aktif' THEN 1 ELSE 0 END), 0) AS total_pelanggan_aktif,
+    COALESCE(SUM(CASE WHEN p.status = 'aktif' THEN pkt.harga ELSE 0 END), 0) AS potensi_pendapatan
+FROM public.wilayah w
+LEFT JOIN public.pelanggan p ON p.wilayah_id = w.id
+LEFT JOIN public.paket pkt ON p.paket_id = pkt.id
+GROUP BY w.id;
+
+-- View untuk detail pelanggan per wilayah
+CREATE OR REPLACE VIEW public.vw_detail_wilayah AS
+SELECT 
+    w.id,
+    COALESCE(
+        json_agg(
+            json_build_object(
+                'id', p.id,
+                'nama', p.nama,
+                'no_hp', p.no_wa,
+                'status', p.status
+            )
+        ) FILTER (WHERE p.id IS NOT NULL),
+        '[]'::json
+    ) AS list_pelanggan
+FROM public.wilayah w
+LEFT JOIN public.pelanggan p ON p.wilayah_id = w.id
+GROUP BY w.id;
+
