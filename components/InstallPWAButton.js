@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button' // atau Relative path: '../components/ui/button'
+import { Download } from 'lucide-react'
 
 export default function InstallPWAButton() {
     const [deferredPrompt, setDeferredPrompt] = useState(null)
@@ -50,11 +52,13 @@ export default function InstallPWAButton() {
     if (isInstalled) return null
 
     return (
-        <button
+        <Button
             onClick={handleInstallClick}
-            className="fixed bottom-5 right-5 z-50 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 text-sm transition transform hover:scale-105 border border-cyan-300"
+            variant="outline"
+            className="w-full justify-start text-cyan-400 border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 hover:text-cyan-300 transition-all"
         >
-            <span>📲</span> Install Aplikasi
-        </button>
+            <Download className="mr-2 h-4 w-4" />
+            Install Aplikasi
+        </Button>
     )
 }
