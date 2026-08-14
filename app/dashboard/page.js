@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import Link from 'next/link'
 
 const COLORS = ['#06b6d4', '#10b981', '#f59e0b', '#6366f1', '#ec4899']
-
 const BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 
 export default function DashboardPage() {
@@ -55,7 +54,6 @@ export default function DashboardPage() {
         supabase.from('pelanggan').select('*, paket(nama_paket)').order('created_at', { ascending: false }).limit(5),
       ])
 
-      // Stats
       const totalUnpaid = tagihanUnpaid?.reduce((a, b) => a + Number(b.jumlah_tagihan), 0) || 0
       const totalPaid = pembayaranBulanIni?.reduce((a, b) => a + Number(b.jumlah_bayar), 0) || 0
 
@@ -67,7 +65,6 @@ export default function DashboardPage() {
         isolir: isolir || 0,
       })
 
-      // Grafik 6 bulan
       const grafik = []
       for (let i = 5; i >= 0; i--) {
         const d = new Date(tahunIni, bulanIni - 1 - i, 1)
@@ -81,7 +78,6 @@ export default function DashboardPage() {
       }
       setGrafikData(grafik)
 
-      // Distribusi paket
       const paketCount = {}
       pelangganDenganPaket?.forEach(p => {
         const nama = p.paket?.nama_paket || 'Tidak ada paket'
@@ -103,15 +99,14 @@ export default function DashboardPage() {
 
   const statusBadge = (status) => {
     const map = {
-      belum_bayar: 'bg-amber-900/60 text-amber-400 border border-amber-800',
-      lunas: 'bg-emerald-900/60 text-emerald-400 border border-emerald-800',
-      sebagian: 'bg-blue-900/60 text-blue-400 border border-blue-800',
-      dibatalkan: 'bg-red-900/60 text-red-400 border border-red-800',
+      belum_bayar: 'bg-amber-500/10 text-amber-400 border border-amber-500/30',
+      lunas: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30',
+      sebagian: 'bg-blue-500/10 text-blue-400 border border-blue-500/30',
+      dibatalkan: 'bg-rose-500/10 text-rose-400 border border-rose-500/30',
     }
-    return map[status] || 'bg-slate-700 text-slate-300'
+    return map[status] || 'bg-slate-800 text-slate-400 border border-slate-700'
   }
 
-  // Pengaturan Kotak Timbul 3D (Floating & Glow)
   const statCards = [
     {
       label: 'Total Pelanggan',
@@ -119,8 +114,8 @@ export default function DashboardPage() {
       icon: '👥',
       valueColor: 'text-white',
       bgIcon: 'bg-blue-500/10 text-blue-400',
-      glow: 'hover:shadow-blue-500/20 hover:border-blue-500/50',
-      gradient: 'from-blue-950/30 to-slate-900'
+      glow: 'hover:shadow-blue-500/20 hover:border-blue-500/40',
+      gradient: 'from-blue-950/20 to-slate-900/90'
     },
     {
       label: 'Pelanggan Aktif',
@@ -128,8 +123,8 @@ export default function DashboardPage() {
       icon: '✅',
       valueColor: 'text-emerald-400',
       bgIcon: 'bg-emerald-500/10 text-emerald-400',
-      glow: 'hover:shadow-emerald-500/20 hover:border-emerald-500/50',
-      gradient: 'from-emerald-950/30 to-slate-900'
+      glow: 'hover:shadow-emerald-500/20 hover:border-emerald-500/40',
+      gradient: 'from-emerald-950/20 to-slate-900/90'
     },
     {
       label: 'Tagihan Belum Bayar',
@@ -137,8 +132,8 @@ export default function DashboardPage() {
       icon: '⚠️',
       valueColor: 'text-amber-400',
       bgIcon: 'bg-amber-500/10 text-amber-400',
-      glow: 'hover:shadow-amber-500/20 hover:border-amber-500/50',
-      gradient: 'from-amber-950/30 to-slate-900'
+      glow: 'hover:shadow-amber-500/20 hover:border-amber-500/40',
+      gradient: 'from-amber-950/20 to-slate-900/90'
     },
     {
       label: 'Pendapatan Bulan Ini',
@@ -146,8 +141,8 @@ export default function DashboardPage() {
       icon: '💰',
       valueColor: 'text-cyan-400',
       bgIcon: 'bg-cyan-500/10 text-cyan-400',
-      glow: 'hover:shadow-cyan-500/20 hover:border-cyan-500/50',
-      gradient: 'from-cyan-950/30 to-slate-900'
+      glow: 'hover:shadow-cyan-500/20 hover:border-cyan-500/40',
+      gradient: 'from-cyan-950/20 to-slate-900/90'
     },
     {
       label: 'Isolir',
@@ -155,31 +150,35 @@ export default function DashboardPage() {
       icon: '🔴',
       valueColor: 'text-rose-400',
       bgIcon: 'bg-rose-500/10 text-rose-400',
-      glow: 'hover:shadow-rose-500/20 hover:border-rose-500/50',
-      gradient: 'from-rose-950/30 to-slate-900'
+      glow: 'hover:shadow-rose-500/20 hover:border-rose-500/40',
+      gradient: 'from-rose-950/20 to-slate-900/90'
     },
   ]
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Dashboard</h1>
+          <h1 className="text-2xl font-extrabold text-white tracking-tight">Dashboard</h1>
           <p className="text-slate-400 text-sm mt-0.5">Selamat datang! Berikut ringkasan sistem hari ini.</p>
         </div>
-        <Link href="/dashboard/tagihan" className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-cyan-600/20">
+        <Link
+          href="/dashboard/tagihan"
+          className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-cyan-600/25 active:scale-95"
+        >
           + Tagihan Baru
         </Link>
       </div>
 
-      {/* Stat Cards dengan Efek Timbul 3D & Elevation */}
+      {/* Stat Cards 3D */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {statCards.map((s) => (
           <div
             key={s.label}
             className={`
               bg-gradient-to-b ${s.gradient} 
-              border border-slate-800 
+              border border-slate-800/80 
               rounded-2xl p-4 
               shadow-lg shadow-black/40 
               transition-all duration-300 ease-out 
@@ -188,7 +187,7 @@ export default function DashboardPage() {
             `}
           >
             <div className="flex justify-between items-start mb-3">
-              <span className="text-xs font-medium text-slate-400">{s.label}</span>
+              <span className="text-xs font-semibold text-slate-400">{s.label}</span>
               <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-semibold shadow-inner ${s.bgIcon}`}>
                 {s.icon}
               </span>
@@ -200,38 +199,74 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Grafik & Distribusi */}
+      {/* Grafik & Distribusi Paket */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg shadow-black/30">
-          <h3 className="text-sm font-semibold text-slate-300 mb-4">📈 Pendapatan 6 Bulan Terakhir</h3>
+        {/* Grafik Pendapatan */}
+        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-xl shadow-black/20 hover:border-slate-700/80 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+              <span>📈</span> Pendapatan 6 Bulan Terakhir
+            </h3>
+            <span className="text-[11px] text-slate-500 font-medium">Tren Pembayaran</span>
+          </div>
+
           {loading ? (
-            <div className="h-48 flex items-center justify-center text-slate-500">Memuat...</div>
+            <div className="h-52 flex items-center justify-center text-slate-500 text-xs">Memuat data...</div>
           ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={grafikData}>
-                <XAxis dataKey="bulan" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}rb`} />
-                <Tooltip formatter={v => formatRupiah(v)} contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 12, color: '#f1f5f9' }} />
-                <Line type="monotone" dataKey="total" stroke="#06b6d4" strokeWidth={2.5} dot={{ fill: '#06b6d4', r: 4 }} />
-              </LineChart>
+            <ResponsiveContainer width="100%" height={210}>
+              <AreaChart data={grafikData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="bulan" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}rb`} />
+                <Tooltip
+                  formatter={v => [formatRupiah(v), 'Total']}
+                  contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 12, color: '#f8fafc', fontSize: '12px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)' }}
+                />
+                <Area type="monotone" dataKey="total" stroke="#06b6d4" strokeWidth={2.5} fillOpacity={1} fill="url(#colorTotal)" />
+              </AreaChart>
             </ResponsiveContainer>
           )}
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg shadow-black/30">
-          <h3 className="text-sm font-semibold text-slate-300 mb-4">🥧 Distribusi Paket</h3>
+        {/* Distribusi Paket */}
+        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-xl shadow-black/20 hover:border-slate-700/80 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+              <span>🥧</span> Distribusi Paket
+            </h3>
+            <span className="text-[11px] text-slate-500 font-medium">Pelanggan Aktif</span>
+          </div>
+
           {loading ? (
-            <div className="h-48 flex items-center justify-center text-slate-500">Memuat...</div>
+            <div className="h-52 flex items-center justify-center text-slate-500 text-xs">Memuat data...</div>
           ) : distribusiPaket.length === 0 ? (
-            <div className="h-48 flex items-center justify-center text-slate-500">Belum ada data paket</div>
+            <div className="h-52 flex flex-col items-center justify-center text-slate-500 text-xs gap-1">
+              <span className="text-xl">📦</span>
+              <span>Belum ada data paket</span>
+            </div>
           ) : (
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={210}>
               <PieChart>
-                <Pie data={distribusiPaket} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
-                  {distribusiPaket.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                <Pie
+                  data={distribusiPaket}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={45}
+                  outerRadius={75}
+                  paddingAngle={4}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  labelLine={false}
+                >
+                  {distribusiPaket.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} cornerRadius={4} />)}
                 </Pie>
-                <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 12 }} />
-                <Legend />
+                <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 12, fontSize: '12px' }} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
               </PieChart>
             </ResponsiveContainer>
           )}
@@ -240,71 +275,106 @@ export default function DashboardPage() {
 
       {/* Tabel Tagihan & Pelanggan Baru */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg shadow-black/30">
-          <div className="flex justify-between items-center px-5 py-4 border-b border-slate-800">
-            <h3 className="text-sm font-semibold text-slate-300">🧾 Tagihan Terbaru</h3>
-            <Link href="/dashboard/tagihan" className="text-xs text-cyan-400 hover:underline">Lihat Semua</Link>
+        {/* Tagihan Terbaru */}
+        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl shadow-black/20 hover:border-slate-700/80 transition-all duration-300">
+          <div className="flex justify-between items-center px-5 py-3.5 border-b border-slate-800/80 bg-slate-950/40">
+            <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+              <span>🧾</span> Tagihan Terbaru
+            </h3>
+            <Link href="/dashboard/tagihan" className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition">
+              Lihat Semua →
+            </Link>
           </div>
-          <table className="w-full text-xs text-slate-300">
-            <thead className="text-slate-500 border-b border-slate-800">
-              <tr>
-                <th className="text-left px-5 py-2">Pelanggan</th>
-                <th className="text-left px-5 py-2">Nominal</th>
-                <th className="text-left px-5 py-2">Status</th>
-                <th className="text-left px-5 py-2">Jatuh Tempo</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {loading ? (
-                <tr><td colSpan={4} className="text-center py-6 text-slate-500">Memuat...</td></tr>
-              ) : tagihanTerbaru.length === 0 ? (
-                <tr><td colSpan={4} className="text-center py-6 text-slate-500">Belum ada tagihan</td></tr>
-              ) : tagihanTerbaru.map(t => (
-                <tr key={t.id} className="hover:bg-slate-800/50 transition">
-                  <td className="px-5 py-3">{t.pelanggan?.nama || '-'}</td>
-                  <td className="px-5 py-3 text-emerald-400 font-medium">{formatRupiah(t.jumlah_tagihan)}</td>
-                  <td className="px-5 py-3"><span className={`px-2 py-0.5 rounded-full text-xs ${statusBadge(t.status_pembayaran)}`}>{t.status_pembayaran}</span></td>
-                  <td className="px-5 py-3">{new Date(t.tanggal_jatuh_tempo).toLocaleDateString('id-ID')}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-slate-300">
+              <thead className="text-slate-400 bg-slate-950/60 uppercase text-[10px] tracking-wider border-b border-slate-800/60">
+                <tr>
+                  <th className="text-left px-5 py-2.5 font-semibold">Pelanggan</th>
+                  <th className="text-left px-5 py-2.5 font-semibold">Nominal</th>
+                  <th className="text-left px-5 py-2.5 font-semibold">Status</th>
+                  <th className="text-left px-5 py-2.5 font-semibold">Jatuh Tempo</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-800/50">
+                {loading ? (
+                  <tr><td colSpan={4} className="text-center py-8 text-slate-500">Memuat data...</td></tr>
+                ) : tagihanTerbaru.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="text-center py-8 text-slate-500">
+                      <div className="flex flex-col items-center gap-1">
+                        <span>📝</span>
+                        <span>Belum ada tagihan</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : tagihanTerbaru.map(t => (
+                  <tr key={t.id} className="hover:bg-slate-800/40 transition-colors duration-150">
+                    <td className="px-5 py-3 font-medium text-white">{t.pelanggan?.nama || '-'}</td>
+                    <td className="px-5 py-3 text-emerald-400 font-semibold">{formatRupiah(t.jumlah_tagihan)}</td>
+                    <td className="px-5 py-3">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide ${statusBadge(t.status_pembayaran)}`}>
+                        {t.status_pembayaran?.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-slate-400">{new Date(t.tanggal_jatuh_tempo).toLocaleDateString('id-ID')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg shadow-black/30">
-          <div className="flex justify-between items-center px-5 py-4 border-b border-slate-800">
-            <h3 className="text-sm font-semibold text-slate-300">👥 Pelanggan Baru</h3>
-            <Link href="/dashboard/pelanggan" className="text-xs text-cyan-400 hover:underline">Lihat Semua</Link>
+        {/* Pelanggan Baru */}
+        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl shadow-black/20 hover:border-slate-700/80 transition-all duration-300">
+          <div className="flex justify-between items-center px-5 py-3.5 border-b border-slate-800/80 bg-slate-950/40">
+            <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+              <span>👥</span> Pelanggan Baru
+            </h3>
+            <Link href="/dashboard/pelanggan" className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition">
+              Lihat Semua →
+            </Link>
           </div>
-          <table className="w-full text-xs text-slate-300">
-            <thead className="text-slate-500 border-b border-slate-800">
-              <tr>
-                <th className="text-left px-5 py-2">Nama</th>
-                <th className="text-left px-5 py-2">Paket</th>
-                <th className="text-left px-5 py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800">
-              {loading ? (
-                <tr><td colSpan={3} className="text-center py-6 text-slate-500">Memuat...</td></tr>
-              ) : pelangganBaru.length === 0 ? (
-                <tr><td colSpan={3} className="text-center py-6 text-slate-500">Belum ada pelanggan</td></tr>
-              ) : pelangganBaru.map(p => (
-                <tr key={p.id} className="hover:bg-slate-800/50 transition">
-                  <td className="px-5 py-3">
-                    <div className="font-medium text-white">{p.nama}</div>
-                    <div className="text-slate-500">{p.kode_pelanggan}</div>
-                  </td>
-                  <td className="px-5 py-3">{p.paket?.nama_paket || '-'}</td>
-                  <td className="px-5 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${p.status === 'aktif' ? 'bg-emerald-900/60 text-emerald-400 border border-emerald-800' : 'bg-red-900/60 text-red-400 border border-red-800'}`}>
-                      {p.status}
-                    </span>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-slate-300">
+              <thead className="text-slate-400 bg-slate-950/60 uppercase text-[10px] tracking-wider border-b border-slate-800/60">
+                <tr>
+                  <th className="text-left px-5 py-2.5 font-semibold">Nama</th>
+                  <th className="text-left px-5 py-2.5 font-semibold">Paket</th>
+                  <th className="text-left px-5 py-2.5 font-semibold">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-800/50">
+                {loading ? (
+                  <tr><td colSpan={3} className="text-center py-8 text-slate-500">Memuat data...</td></tr>
+                ) : pelangganBaru.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="text-center py-8 text-slate-500">
+                      <div className="flex flex-col items-center gap-1">
+                        <span>👤</span>
+                        <span>Belum ada pelanggan</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : pelangganBaru.map(p => (
+                  <tr key={p.id} className="hover:bg-slate-800/40 transition-colors duration-150">
+                    <td className="px-5 py-3">
+                      <div className="font-semibold text-white">{p.nama}</div>
+                      <div className="text-[10px] text-slate-500 font-mono mt-0.5">{p.kode_pelanggan}</div>
+                    </td>
+                    <td className="px-5 py-3 text-slate-300 font-medium">{p.paket?.nama_paket || '-'}</td>
+                    <td className="px-5 py-3">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide ${p.status === 'aktif'
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                        }`}>
+                        {p.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
