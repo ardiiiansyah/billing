@@ -157,18 +157,39 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+      {/* Header Dashboard Modern */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/60 p-4 sm:p-5 rounded-2xl border border-slate-800/80 shadow-xl shadow-black/20 backdrop-blur-md">
         <div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">Dashboard</h1>
-          <p className="text-slate-400 text-sm mt-0.5">Selamat datang! Berikut ringkasan sistem hari ini.</p>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-400">
+              Dashboard
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+              Live System
+            </span>
+          </div>
+          <p className="text-slate-400 text-xs sm:text-sm mt-1 flex items-center gap-1.5">
+            <span>👋</span> Selamat datang kembali! Berikut ringkasan performa usaha WiFi kamu hari ini.
+          </p>
         </div>
-        <Link
-          href="/dashboard/tagihan"
-          className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-cyan-600/25 active:scale-95"
-        >
-          + Tagihan Baru
-        </Link>
+
+        <div className="flex items-center gap-3 self-end sm:self-auto w-full sm:w-auto justify-between sm:justify-end">
+          {/* Badge Tanggal Hari Ini */}
+          <div className="flex flex-col items-start sm:items-end text-xs text-slate-400 font-medium px-3.5 py-1.5 bg-slate-950/60 rounded-xl border border-slate-800/80">
+            <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Hari Ini</span>
+            <span className="text-slate-200 font-bold text-xs">
+              {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}
+            </span>
+          </div>
+
+          <Link
+            href="/dashboard/tagihan"
+            className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 shadow-lg shadow-cyan-600/25 active:scale-95 flex items-center gap-1.5"
+          >
+            <span className="text-base leading-none">+</span> Tagihan Baru
+          </Link>
+        </div>
       </div>
 
       {/* Stat Cards 3D */}
