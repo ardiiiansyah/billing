@@ -463,7 +463,7 @@ export default function PelangganPage() {
                     className={`hover:bg-slate-800/40 transition-colors duration-150 ${selectedIds.includes(p.id) ? 'bg-cyan-950/25' : ''
                       }`}
                   >
-                    <td className="px-4 py-3.5 text-center">
+                    <td className="px-4 py-4 text-center">
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(p.id)}
@@ -471,33 +471,33 @@ export default function PelangganPage() {
                         className="w-4 h-4 rounded border-slate-700 bg-slate-900 cursor-pointer accent-cyan-500"
                       />
                     </td>
-                    <td className="px-5 py-3.5 font-mono text-cyan-400 font-bold">
+                    <td className="px-5 py-4 font-mono text-cyan-400 font-bold text-xs">
                       <a href={`/dashboard/pelanggan/${p.id}`} className="hover:underline">
                         {p.kode_pelanggan}
                       </a>
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-cyan-400 text-xs shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-cyan-400 text-xs shrink-0 shadow-inner">
                           {getInitials(p.nama)}
                         </div>
                         <div>
-                          <a href={`/dashboard/pelanggan/${p.id}`} className="hover:underline text-white font-bold block">
+                          <a href={`/dashboard/pelanggan/${p.id}`} className="hover:underline text-white font-bold text-sm block">
                             {p.nama}
                           </a>
-                          <div className="text-[11px] text-slate-500 mt-0.5">
-                            {p.alamat} (RT {p.rt || '-'}/RW {p.rw || '-'})
+                          <div className="text-xs text-slate-400 mt-0.5">
+                            {p.alamat} <span className="text-slate-500">(RT {p.rt || '-'}/RW {p.rw || '-'})</span>
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 font-medium">
+                    <td className="px-5 py-4 font-medium">
                       {p.no_wa ? (
                         <a
                           href={`https://wa.me/${p.no_wa.replace(/^0/, '62')}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-emerald-400 hover:underline font-mono"
+                          className="inline-flex items-center gap-1.5 text-emerald-400 hover:underline font-mono text-xs font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20"
                         >
                           <span>💬</span> {p.no_wa}
                         </a>
@@ -505,38 +505,38 @@ export default function PelangganPage() {
                         <span className="text-slate-500">-</span>
                       )}
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-4">
                       {p.paket ? (
                         <div>
-                          <span className="font-bold text-slate-200">{p.paket.nama_paket}</span>
-                          <div className="text-[11px] text-emerald-400 font-medium">{formatRupiah(p.paket.harga)}</div>
+                          <span className="font-bold text-slate-200 text-xs">{p.paket.nama_paket}</span>
+                          <div className="text-xs text-emerald-400 font-semibold mt-0.5">{formatRupiah(p.paket.harga)}</div>
                         </div>
                       ) : (
                         <span className="text-slate-500">-</span>
                       )}
                     </td>
-                    <td className="px-5 py-3.5 text-slate-300 font-medium">Tgl {p.tanggal_jatuh_tempo}</td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-4 text-slate-300 font-medium text-xs">Tgl {p.tanggal_jatuh_tempo}</td>
+                    <td className="px-5 py-4">
                       <button
                         onClick={() => handleToggleStatus(p)}
-                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide transition-all duration-200 ${p.status === 'aktif'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
-                          : 'bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20'
+                        className={`px-3 py-1 rounded-full text-[11px] font-bold tracking-wide transition-all duration-200 ${p.status === 'aktif'
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
+                            : 'bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20'
                           }`}
                       >
                         {p.status === 'aktif' ? '🟢 Aktif' : '🔴 Isolir'}
                       </button>
                     </td>
-                    <td className="px-5 py-3.5 text-right space-x-1.5">
+                    <td className="px-5 py-4 text-right whitespace-nowrap space-x-1.5">
                       <button
                         onClick={() => handleOpenModal(p)}
-                        className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[11px] font-medium transition"
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition"
                       >
                         ✏️ Edit
                       </button>
                       <button
                         onClick={() => handleDelete(p.id)}
-                        className="px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg text-[11px] font-medium transition border border-rose-500/20"
+                        className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20"
                       >
                         🗑️ Hapus
                       </button>
