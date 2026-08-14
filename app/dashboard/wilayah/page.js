@@ -24,28 +24,45 @@ export default function WilayahPage() {
     async function fetchWilayah() {
         setLoading(true)
         try {
-            // Mengambil data wilayah beserta relasi pelanggan untuk menghitung total & omset
-            const { data, error } = await supabase
+            // 1. Ambil SEMUA data wilayah terlebih dahulu
+            const { data: dataWilayah, error } = await supabase
                 .from('wilayah')
-                .select(`
-          *,
-          pelanggan (
-            id,
-            status,
-            paket ( harga )
-          )
-        `)
+                .select('*')
                 .order('rt', { ascending: true })
 
             if (error) {
-                // Fallback jika tabel wilayah sederhana tanpa relasi langsung
-                const { data: rawWilayah } = await supabase.from('wilayah').select('*')
-                setWilayahList(rawWilayah || [])
-            } else {
-                setWilayahList(data || [])
+                console.error('Error fetch wilayah:', error)
+                setLoading(false)
+                return
             }
+
+            // 2. Ambil data pelanggan untuk hitung statistik
+            const { data: dataPelanggan } = await supabase
+                .from('pelanggan')
+                .select('rt, status, paket(harga)')
+
+            // 3. Hitung jumlah warga & omset per RT
+            const merged = (dataWilayah || []).map((w) => {
+                const wargaWilayah = (dataPelanggan || []).filter(
+                    (p) => String(p.rt) === String(w.rt)
+                )
+                const pelangganAktif = wargaWilayah.filter((p) => p.status === 'aktif').length
+                const totalPelanggan = wargaWilayah.length
+                const potensiOmset = wargaWilayah
+                    .filter((p) => p.status === 'aktif')
+                    .reduce((sum, p) => sum + Number(p.paket?.harga || 0), 0)
+
+                return {
+                    ...w,
+                    pelangganAktif,
+                    totalPelanggan,
+                    potensiOmset,
+                }
+            })
+
+            setWilayahList(merged)
         } catch (err) {
-            console.error('Error fetching wilayah:', err)
+            console.error('Catch error:', err)
         } finally {
             setLoading(false)
         }
