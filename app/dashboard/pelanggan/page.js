@@ -301,34 +301,50 @@ export default function PelangganPage() {
       </div>
 
       {/* Kartu Ringkasan Cepat (Mini Stat Cards) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-3.5 shadow-lg flex items-center justify-between">
+      {/* Kartu Ringkasan Cepat (Mini Stat Cards - Efek Timbul 3D) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Pelanggan */}
+        <div className="bg-gradient-to-b from-blue-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-500/50 cursor-pointer flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-semibold text-slate-400">Total Pelanggan</p>
-            <p className="text-lg font-black text-white mt-0.5">{statsSummary.total}</p>
+            <p className="text-xs font-semibold text-slate-400">Total Pelanggan</p>
+            <p className="text-xl font-extrabold text-white mt-1">{statsSummary.total}</p>
           </div>
-          <span className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm">👥</span>
+          <span className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-base shadow-inner">
+            👥
+          </span>
         </div>
-        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-3.5 shadow-lg flex items-center justify-between">
+
+        {/* Pelanggan Aktif */}
+        <div className="bg-gradient-to-b from-emerald-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-emerald-500/20 hover:border-emerald-500/50 cursor-pointer flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-semibold text-slate-400">Pelanggan Aktif</p>
-            <p className="text-lg font-black text-emerald-400 mt-0.5">{statsSummary.aktif}</p>
+            <p className="text-xs font-semibold text-slate-400">Pelanggan Aktif</p>
+            <p className="text-xl font-extrabold text-emerald-400 mt-1">{statsSummary.aktif}</p>
           </div>
-          <span className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm">✅</span>
+          <span className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-base shadow-inner">
+            ✅
+          </span>
         </div>
-        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-3.5 shadow-lg flex items-center justify-between">
+
+        {/* Status Isolir */}
+        <div className="bg-gradient-to-b from-rose-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-rose-500/20 hover:border-rose-500/50 cursor-pointer flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-semibold text-slate-400">Status Isolir</p>
-            <p className="text-lg font-black text-rose-400 mt-0.5">{statsSummary.isolir}</p>
+            <p className="text-xs font-semibold text-slate-400">Status Isolir</p>
+            <p className="text-xl font-extrabold text-rose-400 mt-1">{statsSummary.isolir}</p>
           </div>
-          <span className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm">🔴</span>
+          <span className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-base shadow-inner">
+            🔴
+          </span>
         </div>
-        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-3.5 shadow-lg flex items-center justify-between">
+
+        {/* Wilayah RT */}
+        <div className="bg-gradient-to-b from-amber-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-amber-500/20 hover:border-amber-500/50 cursor-pointer flex items-center justify-between">
           <div>
-            <p className="text-[11px] font-semibold text-slate-400">Wilayah RT</p>
-            <p className="text-lg font-black text-amber-400 mt-0.5">{rtOptions.length} RT</p>
+            <p className="text-xs font-semibold text-slate-400">Wilayah RT</p>
+            <p className="text-xl font-extrabold text-amber-400 mt-1">{rtOptions.length} RT</p>
           </div>
-          <span className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm">📍</span>
+          <span className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-base shadow-inner">
+            📍
+          </span>
         </div>
       </div>
 
