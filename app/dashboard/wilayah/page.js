@@ -277,34 +277,34 @@ export default function WilayahPage() {
                             ) : (
                                 filteredWilayah.map((w) => (
                                     <tr key={w.id} className="hover:bg-slate-800/40 transition-colors duration-150">
-                                        <td className="px-5 py-3.5">
-                                            <span className="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-mono font-bold text-[11px]">
+                                        <td className="px-5 py-4">
+                                            <span className="px-3 py-1 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-mono font-bold text-xs">
                                                 RT {w.rt || '-'} / RW {w.rw || '-'}
                                             </span>
                                         </td>
-                                        <td className="px-5 py-3.5">
-                                            <div className="font-bold text-white text-xs">{w.nama_wilayah || `Wilayah RT ${w.rt}`}</div>
-                                            {w.keterangan && <div className="text-[11px] text-slate-500 mt-0.5">{w.keterangan}</div>}
+                                        <td className="px-5 py-4">
+                                            <div className="font-bold text-white text-sm">{w.nama_wilayah || w.nama || `Wilayah RT ${w.rt}`}</div>
+                                            {w.keterangan && <div className="text-xs text-slate-400 mt-0.5">{w.keterangan}</div>}
                                         </td>
-                                        <td className="px-5 py-3.5 font-semibold text-emerald-400">
+                                        <td className="px-5 py-4 font-bold text-emerald-400 text-xs">
                                             {w.pelangganAktif} Warga
                                         </td>
-                                        <td className="px-5 py-3.5 font-medium text-slate-300">
+                                        <td className="px-5 py-4 font-semibold text-slate-300 text-xs">
                                             {w.totalPelanggan} Warga
                                         </td>
-                                        <td className="px-5 py-3.5 font-bold text-emerald-400">
+                                        <td className="px-5 py-4 font-extrabold text-emerald-400 text-xs">
                                             {formatRupiah(w.potensiOmset)}
                                         </td>
-                                        <td className="px-5 py-3.5 text-right space-x-1.5">
+                                        <td className="px-5 py-4 text-right whitespace-nowrap space-x-1.5">
                                             <button
                                                 onClick={() => handleOpenModal(w)}
-                                                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[11px] font-medium transition"
+                                                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition"
                                             >
                                                 ✏️ Edit
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(w.id)}
-                                                className="px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg text-[11px] font-medium transition border border-rose-500/20"
+                                                className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20"
                                             >
                                                 🗑️ Hapus
                                             </button>
