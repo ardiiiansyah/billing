@@ -57,14 +57,12 @@ export default function PelangganPage() {
     fetchPelanggan()
     fetchPaketOptions()
 
-    // 1. Auto re-fetch saat tab browser difokuskan kembali
     const handleFocus = () => {
       if (document.visibilityState === 'visible') {
         fetchPelanggan()
       }
     }
 
-    // 2. Polling otomatis setiap 10 detik di latar belakang
     const interval = setInterval(() => {
       fetchPelanggan()
     }, 10000)
@@ -114,6 +112,14 @@ export default function PelangganPage() {
       return matchSearch && matchStatus && matchRt && matchPaket
     })
   }, [pelangganList, search, filterStatus, filterRt, filterPaket])
+
+  // Stats ringkasan cepat untuk header pelanggan
+  const statsSummary = useMemo(() => {
+    const total = pelangganList.length
+    const aktif = pelangganList.filter(p => p.status === 'aktif').length
+    const isolir = pelangganList.filter(p => p.status === 'isolir').length
+    return { total, aktif, isolir }
+  }, [pelangganList])
 
   const handleOpenModal = (pelanggan = null) => {
     if (pelanggan) {
@@ -173,6 +179,12 @@ export default function PelangganPage() {
 
   const formatRupiah = (val) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val)
+  }
+
+  // Helper mendapatkan inisial nama untuk avatar
+  const getInitials = (name) => {
+    if (!name) return '?'
+    return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
   }
 
   // ── Bulk Action Handlers ────────────────────────────────────────────
@@ -269,25 +281,63 @@ export default function PelangganPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header Halaman Glassmorphism */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/60 p-4 sm:p-5 rounded-2xl border border-slate-800/80 shadow-xl shadow-black/20 backdrop-blur-md">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Data Pelanggan WiFi</h1>
-          <p className="text-slate-400 text-sm mt-1">Kelola data warga, paket terpilih, dan status koneksi.</p>
+          <h1 className="text-2xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-400">
+            Data Pelanggan WiFi
+          </h1>
+          <p className="text-slate-400 text-xs sm:text-sm mt-1">
+            Kelola data warga, paket terpilih, dan status koneksi jaringan.
+          </p>
         </div>
+
         <button
           onClick={() => handleOpenModal()}
-          className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-cyan-900/30 flex items-center gap-2 w-fit"
+          className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 shadow-lg shadow-cyan-600/25 active:scale-95 flex items-center gap-2"
         >
-          <span>➕</span> Tambah Pelanggan
+          <span className="text-base leading-none">➕</span> Tambah Pelanggan
         </button>
       </div>
 
-      {/* BARIS FILTER ADVANCED */}
-      <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+      {/* Kartu Ringkasan Cepat (Mini Stat Cards) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-3.5 shadow-lg flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-semibold text-slate-400">Total Pelanggan</p>
+            <p className="text-lg font-black text-white mt-0.5">{statsSummary.total}</p>
+          </div>
+          <span className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm">👥</span>
+        </div>
+        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-3.5 shadow-lg flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-semibold text-slate-400">Pelanggan Aktif</p>
+            <p className="text-lg font-black text-emerald-400 mt-0.5">{statsSummary.aktif}</p>
+          </div>
+          <span className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm">✅</span>
+        </div>
+        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-3.5 shadow-lg flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-semibold text-slate-400">Status Isolir</p>
+            <p className="text-lg font-black text-rose-400 mt-0.5">{statsSummary.isolir}</p>
+          </div>
+          <span className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm">🔴</span>
+        </div>
+        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-3.5 shadow-lg flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-semibold text-slate-400">Wilayah RT</p>
+            <p className="text-lg font-black text-amber-400 mt-0.5">{rtOptions.length} RT</p>
+          </div>
+          <span className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm">📍</span>
+        </div>
+      </div>
+
+      {/* Baris Filter Advanced */}
+      <div className="bg-slate-900/80 border border-slate-800/80 p-4 rounded-2xl space-y-3 shadow-xl shadow-black/20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Search Bar */}
-          <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 px-3.5 py-2 rounded-xl">
-            <span>🔍</span>
+          <div className="flex items-center gap-2.5 bg-slate-950/80 border border-slate-800 px-3.5 py-2 rounded-xl focus-within:border-cyan-500/80 transition duration-200">
+            <span className="text-slate-400 text-xs">🔍</span>
             <input
               type="text"
               placeholder="Cari Nama / Kode / WA..."
@@ -301,7 +351,7 @@ export default function PelangganPage() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3.5 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-cyan-500"
+            className="bg-slate-950/80 border border-slate-800 text-xs text-slate-200 px-3.5 py-2 rounded-xl focus:outline-none focus:border-cyan-500/80 transition duration-200 cursor-pointer"
           >
             <option value="">Semua Status</option>
             <option value="aktif">🟢 Status: Aktif</option>
@@ -312,7 +362,7 @@ export default function PelangganPage() {
           <select
             value={filterRt}
             onChange={(e) => setFilterRt(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3.5 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-cyan-500"
+            className="bg-slate-950/80 border border-slate-800 text-xs text-slate-200 px-3.5 py-2 rounded-xl focus:outline-none focus:border-cyan-500/80 transition duration-200 cursor-pointer"
           >
             <option value="">Semua Wilayah RT</option>
             {rtOptions.map((rt) => (
@@ -326,7 +376,7 @@ export default function PelangganPage() {
           <select
             value={filterPaket}
             onChange={(e) => setFilterPaket(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3.5 py-2 rounded-xl focus:outline-none focus:ring-1 focus:ring-cyan-500"
+            className="bg-slate-950/80 border border-slate-800 text-xs text-slate-200 px-3.5 py-2 rounded-xl focus:outline-none focus:border-cyan-500/80 transition duration-200 cursor-pointer"
           >
             <option value="">Semua Paket</option>
             {paketOptions.map((pkt) => (
@@ -339,116 +389,138 @@ export default function PelangganPage() {
 
         {/* Ringkasan & Reset Filter */}
         {(search || filterStatus || filterRt || filterPaket) && (
-          <div className="flex justify-between items-center text-xs text-slate-400 pt-1 border-t border-slate-800/60">
+          <div className="flex justify-between items-center text-xs text-slate-400 pt-2 border-t border-slate-800/60">
             <span>
-              Ditemukan <b className="text-cyan-400">{filteredPelanggan.length}</b> dari {pelangganList.length} pelanggan
+              Ditemukan <b className="text-cyan-400 font-bold">{filteredPelanggan.length}</b> dari {pelangganList.length} pelanggan
             </span>
-            <button onClick={resetFilter} className="text-rose-400 hover:text-rose-300 font-medium">
+            <button onClick={resetFilter} className="text-rose-400 hover:text-rose-300 font-semibold transition">
               ✕ Reset Filter
             </button>
           </div>
         )}
       </div>
 
-      {/* Tabel Pelanggan */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+      {/* Tabel Pelanggan Modern */}
+      <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl shadow-black/20">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-300">
-            <thead className="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="bg-slate-950/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800/80">
               <tr>
-                <th className="px-4 py-4 w-10">
+                <th className="px-4 py-3.5 w-10 text-center">
                   <input
                     type="checkbox"
                     checked={isAllSelected}
                     onChange={handleToggleAll}
-                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 cursor-pointer accent-cyan-500"
+                    className="w-4 h-4 rounded border-slate-700 bg-slate-900 cursor-pointer accent-cyan-500"
                   />
                 </th>
-                <th className="px-6 py-4">ID Pelanggan</th>
-                <th className="px-6 py-4">Nama Warga</th>
-                <th className="px-6 py-4">No WhatsApp</th>
-                <th className="px-6 py-4">Paket Langganan</th>
-                <th className="px-6 py-4">Jatuh Tempo</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Aksi</th>
+                <th className="px-5 py-3.5 font-bold">ID Pelanggan</th>
+                <th className="px-5 py-3.5 font-bold">Nama Warga</th>
+                <th className="px-5 py-3.5 font-bold">No WhatsApp</th>
+                <th className="px-5 py-3.5 font-bold">Paket Langganan</th>
+                <th className="px-5 py-3.5 font-bold">Jatuh Tempo</th>
+                <th className="px-5 py-3.5 font-bold">Status</th>
+                <th className="px-5 py-3.5 font-bold text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-slate-800/50">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
                     Memuat data pelanggan...
                   </td>
                 </tr>
               ) : filteredPelanggan.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-slate-500">
-                    Tidak ada pelanggan ditemukan.
+                  <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center gap-1.5">
+                      <span className="text-2xl">🔍</span>
+                      <span className="font-medium text-slate-400">Tidak ada pelanggan ditemukan</span>
+                      <span className="text-[11px] text-slate-600">Coba ubah kata kunci pencarian atau reset filter.</span>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 filteredPelanggan.map((p) => (
                   <tr
                     key={p.id}
-                    className={`hover:bg-slate-800/50 transition ${selectedIds.includes(p.id) ? 'bg-cyan-950/20' : ''
+                    className={`hover:bg-slate-800/40 transition-colors duration-150 ${selectedIds.includes(p.id) ? 'bg-cyan-950/25' : ''
                       }`}
                   >
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-3.5 text-center">
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(p.id)}
                         onChange={() => handleToggleOne(p.id)}
-                        className="w-4 h-4 rounded border-slate-600 bg-slate-800 cursor-pointer accent-cyan-500"
+                        className="w-4 h-4 rounded border-slate-700 bg-slate-900 cursor-pointer accent-cyan-500"
                       />
                     </td>
-                    <td className="px-6 py-4 font-mono text-cyan-400 font-semibold">
+                    <td className="px-5 py-3.5 font-mono text-cyan-400 font-bold">
                       <a href={`/dashboard/pelanggan/${p.id}`} className="hover:underline">
                         {p.kode_pelanggan}
                       </a>
                     </td>
-                    <td className="px-6 py-4 font-medium text-white">
-                      <div>
-                        <a href={`/dashboard/pelanggan/${p.id}`} className="hover:underline hover:text-cyan-400 font-semibold">
-                          {p.nama}
-                        </a>
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        {p.alamat} (RT {p.rt || '-'}/RW {p.rw || '-'})
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-cyan-400 text-xs shrink-0">
+                          {getInitials(p.nama)}
+                        </div>
+                        <div>
+                          <a href={`/dashboard/pelanggan/${p.id}`} className="hover:underline text-white font-bold block">
+                            {p.nama}
+                          </a>
+                          <div className="text-[11px] text-slate-500 mt-0.5">
+                            {p.alamat} (RT {p.rt || '-'}/RW {p.rw || '-'})
+                          </div>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">{p.no_wa}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3.5 font-medium">
+                      {p.no_wa ? (
+                        <a
+                          href={`https://wa.me/${p.no_wa.replace(/^0/, '62')}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-emerald-400 hover:underline font-mono"
+                        >
+                          <span>💬</span> {p.no_wa}
+                        </a>
+                      ) : (
+                        <span className="text-slate-500">-</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5">
                       {p.paket ? (
                         <div>
-                          <span className="font-semibold text-slate-200">{p.paket.nama_paket}</span>
-                          <div className="text-xs text-emerald-400">{formatRupiah(p.paket.harga)}</div>
+                          <span className="font-bold text-slate-200">{p.paket.nama_paket}</span>
+                          <div className="text-[11px] text-emerald-400 font-medium">{formatRupiah(p.paket.harga)}</div>
                         </div>
                       ) : (
                         <span className="text-slate-500">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-slate-300">Tgl {p.tanggal_jatuh_tempo}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-5 py-3.5 text-slate-300 font-medium">Tgl {p.tanggal_jatuh_tempo}</td>
+                    <td className="px-5 py-3.5">
                       <button
                         onClick={() => handleToggleStatus(p)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider transition ${p.status === 'aktif'
-                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800 hover:bg-emerald-900'
-                          : 'bg-red-950/80 text-red-400 border border-red-800 hover:bg-red-900'
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide transition-all duration-200 ${p.status === 'aktif'
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
+                          : 'bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20'
                           }`}
                       >
                         {p.status === 'aktif' ? '🟢 Aktif' : '🔴 Isolir'}
                       </button>
                     </td>
-                    <td className="px-6 py-4 text-right space-x-2">
+                    <td className="px-5 py-3.5 text-right space-x-1.5">
                       <button
                         onClick={() => handleOpenModal(p)}
-                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition"
+                        className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[11px] font-medium transition"
                       >
                         ✏️ Edit
                       </button>
                       <button
                         onClick={() => handleDelete(p.id)}
-                        className="px-3 py-1.5 bg-red-950/60 hover:bg-red-900/80 text-red-300 rounded-lg text-xs transition border border-red-900/50"
+                        className="px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg text-[11px] font-medium transition border border-rose-500/20"
                       >
                         🗑️ Hapus
                       </button>
@@ -463,54 +535,55 @@ export default function PelangganPage() {
 
       {/* Modal Form Tambah / Edit */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h3 className="text-xl font-bold text-white mb-4">
-              {editId ? 'Edit Data Pelanggan' : 'Tambah Pelanggan Baru'}
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <span>{editId ? '✏️' : '➕'}</span>
+              <span>{editId ? 'Edit Data Pelanggan' : 'Tambah Pelanggan Baru'}</span>
             </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Kode Pelanggan</label>
+                  <label className="block text-slate-400 font-medium mb-1">Kode Pelanggan</label>
                   <input
                     type="text"
                     required
                     value={formData.kode_pelanggan}
                     onChange={(e) => setFormData({ ...formData, kode_pelanggan: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono"
+                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Nama Warga</label>
+                  <label className="block text-slate-400 font-medium mb-1">Nama Warga</label>
                   <input
                     type="text"
                     required
                     placeholder="Nama Lengkap"
                     value={formData.nama}
                     onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">No WhatsApp</label>
+                  <label className="block text-slate-400 font-medium mb-1">No WhatsApp</label>
                   <input
                     type="text"
                     required
                     placeholder="08123456789"
                     value={formData.no_wa}
                     onChange={(e) => setFormData({ ...formData, no_wa: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Pilihan Paket</label>
+                  <label className="block text-slate-400 font-medium mb-1">Pilihan Paket</label>
                   <select
                     value={formData.paket_id}
                     onChange={(e) => setFormData({ ...formData, paket_id: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 cursor-pointer"
                   >
                     <option value="">-- Pilih Paket --</option>
                     {paketOptions.map((pkt) => (
@@ -523,40 +596,40 @@ export default function PelangganPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Alamat Rumah</label>
+                <label className="block text-slate-400 font-medium mb-1">Alamat Rumah</label>
                 <textarea
                   rows={2}
                   required
                   placeholder="Alamat / Blok No..."
                   value={formData.alamat}
                   onChange={(e) => setFormData({ ...formData, alamat: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">RT</label>
+                  <label className="block text-slate-400 font-medium mb-1">RT</label>
                   <input
                     type="text"
                     placeholder="01"
                     value={formData.rt}
                     onChange={(e) => setFormData({ ...formData, rt: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">RW</label>
+                  <label className="block text-slate-400 font-medium mb-1">RW</label>
                   <input
                     type="text"
                     placeholder="05"
                     value={formData.rw}
                     onChange={(e) => setFormData({ ...formData, rw: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Tgl Jatuh Tempo</label>
+                  <label className="block text-slate-400 font-medium mb-1">Tgl Jatuh Tempo</label>
                   <input
                     type="number"
                     min={1}
@@ -564,22 +637,22 @@ export default function PelangganPage() {
                     required
                     value={formData.tanggal_jatuh_tempo}
                     onChange={(e) => setFormData({ ...formData, tanggal_jatuh_tempo: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-3">
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-800/80">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm rounded-xl transition"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium rounded-xl transition"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded-xl transition"
+                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl transition shadow-lg shadow-cyan-600/25"
                 >
                   Simpan Pelanggan
                 </button>
@@ -627,7 +700,7 @@ export default function PelangganPage() {
 
       {/* Modal Custom Konfirmasi Status */}
       {confirmStatusModal.show && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4">
             <div className="text-center space-y-2">
               <span className="text-4xl block">{confirmStatusModal.status === 'aktif' ? '🟢' : '🔴'}</span>
@@ -662,7 +735,7 @@ export default function PelangganPage() {
 
       {/* Modal Generate Tagihan Terpilih */}
       {showBulkGenModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4">
             <div className="flex justify-between items-center border-b border-slate-800 pb-3">
               <div>
@@ -680,7 +753,7 @@ export default function PelangganPage() {
                 <select
                   value={genBulan}
                   onChange={(e) => setGenBulan(Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-cyan-500 cursor-pointer"
                 >
                   {[...Array(12)].map((_, i) => (
                     <option key={i + 1} value={i + 1}>
@@ -697,7 +770,7 @@ export default function PelangganPage() {
                   onChange={(e) => setGenTahun(Number(e.target.value))}
                   min={2020}
                   max={2099}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-cyan-500"
                 />
               </div>
             </div>
@@ -705,14 +778,14 @@ export default function PelangganPage() {
             <div className="flex justify-end gap-3 pt-1">
               <button
                 onClick={() => setShowBulkGenModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl hover:bg-slate-700"
+                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-medium rounded-xl hover:bg-slate-700"
               >
                 Batal
               </button>
               <button
                 onClick={handleBulkGenerate}
                 disabled={bulkLoading}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition"
               >
                 ⚡ Generate
               </button>
@@ -723,7 +796,7 @@ export default function PelangganPage() {
 
       {/* Modal WA Pengumuman Masal */}
       {showBulkWaModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl space-y-4">
             <div className="flex justify-between items-center border-b border-slate-800 pb-3">
               <div>
@@ -735,10 +808,10 @@ export default function PelangganPage() {
               </button>
             </div>
 
-            <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-3 text-xs text-slate-400">
+            <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-xs text-slate-400">
               <p className="text-slate-300 font-semibold mb-1">💡 Variabel tersedia:</p>
               <p>
-                <code className="text-cyan-400">[nama]</code> — Nama pelanggan
+                <code className="text-cyan-400 font-bold">[nama]</code> — Nama pelanggan
               </p>
             </div>
 
@@ -748,18 +821,18 @@ export default function PelangganPage() {
                 rows={5}
                 value={templateWaBulk}
                 onChange={(e) => setTemplateWaBulk(e.target.value)}
-                className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono leading-relaxed"
+                className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-cyan-500 font-mono leading-relaxed"
               />
             </div>
 
             <div className="flex justify-end gap-3 pt-1">
-              <button onClick={() => setShowBulkWaModal(false)} className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl hover:bg-slate-700">
+              <button onClick={() => setShowBulkWaModal(false)} className="px-4 py-2 bg-slate-800 text-slate-300 text-xs font-medium rounded-xl hover:bg-slate-700">
                 Batal
               </button>
               <button
                 onClick={handleBulkWaSend}
                 disabled={!templateWaBulk.trim()}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition"
               >
                 🚀 Kirim Sekarang
               </button>
@@ -770,7 +843,7 @@ export default function PelangganPage() {
 
       {/* Modal Progress WA */}
       {showWaProgress && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl space-y-4">
             <h3 className="text-lg font-bold text-white border-b border-slate-800 pb-3">📲 Progres Pengiriman WA</h3>
             <div className="space-y-2">
@@ -779,15 +852,15 @@ export default function PelangganPage() {
                   Terkirim: <b className="text-emerald-400">{waProgress.terkirim}</b>
                 </span>
                 <span>
-                  Gagal: <b className="text-red-400">{waProgress.gagal}</b>
+                  Gagal: <b className="text-rose-400">{waProgress.gagal}</b>
                 </span>
                 <span>
                   Total: <b className="text-white">{waProgress.total}</b>
                 </span>
               </div>
-              <div className="w-full bg-slate-800 rounded-full h-2.5">
+              <div className="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden p-0.5 border border-slate-800">
                 <div
-                  className="bg-emerald-500 h-2.5 rounded-full transition-all duration-500"
+                  className="bg-emerald-500 h-full rounded-full transition-all duration-500"
                   style={{
                     width: waProgress.total > 0 ? `${((waProgress.terkirim + waProgress.gagal) / waProgress.total) * 100}%` : '0%',
                   }}
@@ -795,11 +868,11 @@ export default function PelangganPage() {
               </div>
             </div>
             {waProgress.logs.length > 0 && (
-              <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-800 divide-y divide-slate-800">
+              <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-800 divide-y divide-slate-800/60 bg-slate-950/40">
                 {waProgress.logs.map((log, i) => (
                   <div key={i} className="px-3 py-2 flex justify-between items-center text-xs">
-                    <span className="text-slate-300">{log.nama}</span>
-                    <span className={`font-semibold ${log.status === 'terkirim' ? 'text-emerald-400' : 'text-red-400'}`}>
+                    <span className="text-slate-300 font-medium">{log.nama}</span>
+                    <span className={`font-semibold text-[11px] ${log.status === 'terkirim' ? 'text-emerald-400' : 'text-rose-400'}`}>
                       {log.status === 'terkirim' ? '✓ Terkirim' : '✗ Gagal'}
                     </span>
                   </div>
