@@ -111,7 +111,7 @@ export default function DashboardPage() {
     return map[status] || 'bg-slate-700 text-slate-300'
   }
 
-  // Pengaturan Kotak Ringkasan (Stat Cards Baru)
+  // Pengaturan Kotak Timbul 3D (Floating & Glow)
   const statCards = [
     {
       label: 'Total Pelanggan',
@@ -119,7 +119,8 @@ export default function DashboardPage() {
       icon: '👥',
       valueColor: 'text-white',
       bgIcon: 'bg-blue-500/10 text-blue-400',
-      borderColor: 'hover:border-blue-500/40'
+      glow: 'hover:shadow-blue-500/20 hover:border-blue-500/50',
+      gradient: 'from-blue-950/30 to-slate-900'
     },
     {
       label: 'Pelanggan Aktif',
@@ -127,7 +128,8 @@ export default function DashboardPage() {
       icon: '✅',
       valueColor: 'text-emerald-400',
       bgIcon: 'bg-emerald-500/10 text-emerald-400',
-      borderColor: 'hover:border-emerald-500/40'
+      glow: 'hover:shadow-emerald-500/20 hover:border-emerald-500/50',
+      gradient: 'from-emerald-950/30 to-slate-900'
     },
     {
       label: 'Tagihan Belum Bayar',
@@ -135,7 +137,8 @@ export default function DashboardPage() {
       icon: '⚠️',
       valueColor: 'text-amber-400',
       bgIcon: 'bg-amber-500/10 text-amber-400',
-      borderColor: 'hover:border-amber-500/40'
+      glow: 'hover:shadow-amber-500/20 hover:border-amber-500/50',
+      gradient: 'from-amber-950/30 to-slate-900'
     },
     {
       label: 'Pendapatan Bulan Ini',
@@ -143,7 +146,8 @@ export default function DashboardPage() {
       icon: '💰',
       valueColor: 'text-cyan-400',
       bgIcon: 'bg-cyan-500/10 text-cyan-400',
-      borderColor: 'hover:border-cyan-500/40'
+      glow: 'hover:shadow-cyan-500/20 hover:border-cyan-500/50',
+      gradient: 'from-cyan-950/30 to-slate-900'
     },
     {
       label: 'Isolir',
@@ -151,7 +155,8 @@ export default function DashboardPage() {
       icon: '🔴',
       valueColor: 'text-rose-400',
       bgIcon: 'bg-rose-500/10 text-rose-400',
-      borderColor: 'hover:border-rose-500/40'
+      glow: 'hover:shadow-rose-500/20 hover:border-rose-500/50',
+      gradient: 'from-rose-950/30 to-slate-900'
     },
   ]
 
@@ -167,16 +172,24 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* Stat Cards - Tampilan Baru */}
+      {/* Stat Cards dengan Efek Timbul 3D & Elevation */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {statCards.map((s) => (
           <div
             key={s.label}
-            className={`bg-slate-900/90 border border-slate-800 rounded-2xl p-4 transition-all duration-200 shadow-sm ${s.borderColor}`}
+            className={`
+              bg-gradient-to-b ${s.gradient} 
+              border border-slate-800 
+              rounded-2xl p-4 
+              shadow-lg shadow-black/40 
+              transition-all duration-300 ease-out 
+              hover:-translate-y-1 hover:shadow-2xl ${s.glow}
+              cursor-pointer
+            `}
           >
             <div className="flex justify-between items-start mb-3">
               <span className="text-xs font-medium text-slate-400">{s.label}</span>
-              <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-semibold ${s.bgIcon}`}>
+              <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-semibold shadow-inner ${s.bgIcon}`}>
                 {s.icon}
               </span>
             </div>
@@ -189,7 +202,7 @@ export default function DashboardPage() {
 
       {/* Grafik & Distribusi */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg shadow-black/30">
           <h3 className="text-sm font-semibold text-slate-300 mb-4">📈 Pendapatan 6 Bulan Terakhir</h3>
           {loading ? (
             <div className="h-48 flex items-center justify-center text-slate-500">Memuat...</div>
@@ -205,7 +218,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg shadow-black/30">
           <h3 className="text-sm font-semibold text-slate-300 mb-4">🥧 Distribusi Paket</h3>
           {loading ? (
             <div className="h-48 flex items-center justify-center text-slate-500">Memuat...</div>
@@ -227,7 +240,7 @@ export default function DashboardPage() {
 
       {/* Tabel Tagihan & Pelanggan Baru */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg shadow-black/30">
           <div className="flex justify-between items-center px-5 py-4 border-b border-slate-800">
             <h3 className="text-sm font-semibold text-slate-300">🧾 Tagihan Terbaru</h3>
             <Link href="/dashboard/tagihan" className="text-xs text-cyan-400 hover:underline">Lihat Semua</Link>
@@ -247,7 +260,7 @@ export default function DashboardPage() {
               ) : tagihanTerbaru.length === 0 ? (
                 <tr><td colSpan={4} className="text-center py-6 text-slate-500">Belum ada tagihan</td></tr>
               ) : tagihanTerbaru.map(t => (
-                <tr key={t.id} className="hover:bg-slate-800/50">
+                <tr key={t.id} className="hover:bg-slate-800/50 transition">
                   <td className="px-5 py-3">{t.pelanggan?.nama || '-'}</td>
                   <td className="px-5 py-3 text-emerald-400 font-medium">{formatRupiah(t.jumlah_tagihan)}</td>
                   <td className="px-5 py-3"><span className={`px-2 py-0.5 rounded-full text-xs ${statusBadge(t.status_pembayaran)}`}>{t.status_pembayaran}</span></td>
@@ -258,7 +271,7 @@ export default function DashboardPage() {
           </table>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg shadow-black/30">
           <div className="flex justify-between items-center px-5 py-4 border-b border-slate-800">
             <h3 className="text-sm font-semibold text-slate-300">👥 Pelanggan Baru</h3>
             <Link href="/dashboard/pelanggan" className="text-xs text-cyan-400 hover:underline">Lihat Semua</Link>
@@ -277,7 +290,7 @@ export default function DashboardPage() {
               ) : pelangganBaru.length === 0 ? (
                 <tr><td colSpan={3} className="text-center py-6 text-slate-500">Belum ada pelanggan</td></tr>
               ) : pelangganBaru.map(p => (
-                <tr key={p.id} className="hover:bg-slate-800/50">
+                <tr key={p.id} className="hover:bg-slate-800/50 transition">
                   <td className="px-5 py-3">
                     <div className="font-medium text-white">{p.nama}</div>
                     <div className="text-slate-500">{p.kode_pelanggan}</div>
