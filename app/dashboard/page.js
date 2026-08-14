@@ -111,12 +111,48 @@ export default function DashboardPage() {
     return map[status] || 'bg-slate-700 text-slate-300'
   }
 
+  // Pengaturan Kotak Ringkasan (Stat Cards Baru)
   const statCards = [
-    { label: 'Total Pelanggan', value: stats.totalPelanggan, icon: '👥', color: 'text-white', bg: 'bg-blue-950/60 text-blue-400' },
-    { label: 'Pelanggan Aktif', value: stats.pelangganAktif, icon: '✅', color: 'text-emerald-400', bg: 'bg-emerald-950/60 text-emerald-400' },
-    { label: 'Tagihan Belum Bayar', value: formatRupiah(stats.tagihanBelumBayar), icon: '⚠️', color: 'text-amber-400', bg: 'bg-amber-950/60 text-amber-400' },
-    { label: 'Pendapatan Bulan Ini', value: formatRupiah(stats.pendapatanBulanIni), icon: '💰', color: 'text-emerald-400', bg: 'bg-emerald-950/60 text-emerald-400' },
-    { label: 'Isolir', value: stats.isolir, icon: '🔴', color: 'text-red-400', bg: 'bg-red-950/60 text-red-400' },
+    {
+      label: 'Total Pelanggan',
+      value: stats.totalPelanggan,
+      icon: '👥',
+      valueColor: 'text-white',
+      bgIcon: 'bg-blue-500/10 text-blue-400',
+      borderColor: 'hover:border-blue-500/40'
+    },
+    {
+      label: 'Pelanggan Aktif',
+      value: stats.pelangganAktif,
+      icon: '✅',
+      valueColor: 'text-emerald-400',
+      bgIcon: 'bg-emerald-500/10 text-emerald-400',
+      borderColor: 'hover:border-emerald-500/40'
+    },
+    {
+      label: 'Tagihan Belum Bayar',
+      value: formatRupiah(stats.tagihanBelumBayar),
+      icon: '⚠️',
+      valueColor: 'text-amber-400',
+      bgIcon: 'bg-amber-500/10 text-amber-400',
+      borderColor: 'hover:border-amber-500/40'
+    },
+    {
+      label: 'Pendapatan Bulan Ini',
+      value: formatRupiah(stats.pendapatanBulanIni),
+      icon: '💰',
+      valueColor: 'text-cyan-400',
+      bgIcon: 'bg-cyan-500/10 text-cyan-400',
+      borderColor: 'hover:border-cyan-500/40'
+    },
+    {
+      label: 'Isolir',
+      value: stats.isolir,
+      icon: '🔴',
+      valueColor: 'text-rose-400',
+      bgIcon: 'bg-rose-500/10 text-rose-400',
+      borderColor: 'hover:border-rose-500/40'
+    },
   ]
 
   return (
@@ -126,20 +162,27 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-extrabold text-white">Dashboard</h1>
           <p className="text-slate-400 text-sm mt-0.5">Selamat datang! Berikut ringkasan sistem hari ini.</p>
         </div>
-        <Link href="/dashboard/tagihan" className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded-xl transition">
+        <Link href="/dashboard/tagihan" className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-cyan-600/20">
           + Tagihan Baru
         </Link>
       </div>
 
-      {/* Stat Cards */}
+      {/* Stat Cards - Tampilan Baru */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {statCards.map((s) => (
-          <div key={s.label} className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <div
+            key={s.label}
+            className={`bg-slate-900/90 border border-slate-800 rounded-2xl p-4 transition-all duration-200 shadow-sm ${s.borderColor}`}
+          >
             <div className="flex justify-between items-start mb-3">
-              <span className="text-xs text-slate-400">{s.label}</span>
-              <span className={`p-1.5 rounded-lg text-sm ${s.bg}`}>{s.icon}</span>
+              <span className="text-xs font-medium text-slate-400">{s.label}</span>
+              <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-semibold ${s.bgIcon}`}>
+                {s.icon}
+              </span>
             </div>
-            <p className={`text-xl font-bold ${s.color}`}>{loading ? '...' : s.value}</p>
+            <p className={`text-xl font-extrabold tracking-tight ${s.valueColor}`}>
+              {loading ? '...' : s.value}
+            </p>
           </div>
         ))}
       </div>
@@ -206,7 +249,7 @@ export default function DashboardPage() {
               ) : tagihanTerbaru.map(t => (
                 <tr key={t.id} className="hover:bg-slate-800/50">
                   <td className="px-5 py-3">{t.pelanggan?.nama || '-'}</td>
-                  <td className="px-5 py-3 text-emerald-400">{formatRupiah(t.jumlah_tagihan)}</td>
+                  <td className="px-5 py-3 text-emerald-400 font-medium">{formatRupiah(t.jumlah_tagihan)}</td>
                   <td className="px-5 py-3"><span className={`px-2 py-0.5 rounded-full text-xs ${statusBadge(t.status_pembayaran)}`}>{t.status_pembayaran}</span></td>
                   <td className="px-5 py-3">{new Date(t.tanggal_jatuh_tempo).toLocaleDateString('id-ID')}</td>
                 </tr>
