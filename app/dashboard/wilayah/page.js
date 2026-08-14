@@ -1,32 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function WilayahPage() {
     const [wilayahList, setWilayahList] = useState([])
-    const [statistikMap, setStatistikMap] = useState({})
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
     const [showModal, setShowModal] = useState(false)
     const [editId, setEditId] = useState(null)
 
-    // State Modal Detail Pelanggan
-    const [showPelangganModal, setShowPelangganModal] = useState(false)
-    const [selectedWilayah, setSelectedWilayah] = useState(null)
-    const [pelangganList, setPelangganList] = useState([])
-    const [loadingPelanggan, setLoadingPelanggan] = useState(false)
-
-    // State Modal WA Blast
-    const [showWABlastModal, setShowWABlastModal] = useState(false)
-    const [selectedWilayahWA, setSelectedWilayahWA] = useState(null)
-    const [pesanWA, setPesanWA] = useState('')
-    const [sendingWA, setSendingWA] = useState(false)
-
     const [formData, setFormData] = useState({
+        nama_wilayah: '',
         rt: '',
         rw: '',
-        nama: '',
+        keterangan: '',
     })
 
     useEffect(() => {
@@ -35,114 +23,90 @@ export default function WilayahPage() {
 
     async function fetchWilayah() {
         setLoading(true)
-        const { data, error } = await supabase
-            .from('wilayah')
-            .select('*')
-            .order('rw', { ascending: true })
-            .order('rt', { ascending: true })
-
-        if (error) console.error('Error fetching wilayah:', error)
-        else setWilayahList(data || [])
-
-        await fetchStatistik()
-        setLoading(false)
-    }
-
-    async function fetchStatistik() {
-        const { data, error } = await supabase.from('vw_statistik_wilayah').select('*')
-        if (error) {
-            console.error('Error fetching statistik wilayah:', error)
-            return
-        }
-        const map = {}
-            ; (data || []).forEach((row) => {
-                map[row.wilayah_id] = row
-            })
-        setStatistikMap(map)
-    }
-
-    // Template WA Otomatis
-    const handleSelectTemplate = (jenisTemplate, wilayah) => {
-        const namaWilayah = wilayah.nama || `RT ${wilayah.rt} / RW ${wilayah.rw}`
-
-        if (jenisTemplate === 'maintenance') {
-            setPesanWA(
-                `*PENGUMUMAN PEMELIHARAAN JARINGAN*\n\nHalo Bapak/Ibu pelanggan Sultan WiFi wilayah *${namaWilayah}*.\n\nAkan dilakukan pemeliharaan jaringan pada jam 13:00 - 15:00 WIB. Koneksi internet mungkin akan mengalami gangguan sementara.\n\nMohon maaf atas ketidaknyamanannya. Terima kasih! 🙏`
-            )
-        } else if (jenisTemplate === 'reminder_tagihan') {
-            setPesanWA(
-                `*INFO PEMBAYARAN TAGIHAN WIFI*\n\nHalo Bapak/Ibu pelanggan Sultan WiFi wilayah *${namaWilayah}*.\n\nDiingatkan kembali bagi yang belum melakukan pembayaran tagihan bulan ini untuk segera melakukan pembayaran agar koneksi internet tetap lancar dan tidak terisolir.\n\nTerima kasih atas perhatiannya! 🙏`
-            )
-        } else if (jenisTemplate === 'gangguan') {
-            setPesanWA(
-                `*INFORMASI GANGGUAN JARINGAN*\n\nHalo Bapak/Ibu pelanggan Sultan WiFi wilayah *${namaWilayah}*.\n\nSaat ini sedang terjadi gangguan jaringan utama di area Anda. Tim teknisi kami sedang melakukan perbaikan di lapangan.\n\nEstimasi penanganan 1-2 jam. Terima kasih atas kesabarannya. 🙏`
-            )
-        }
-    }
-
-    // Modal Detail Pelanggan
-    const handleOpenPelangganModal = async (wilayah) => {
-        setSelectedWilayah(wilayah)
-        setShowPelangganModal(true)
-        setLoadingPelanggan(true)
-
-        const { data, error } = await supabase
-            .from('vw_detail_wilayah')
-            .select('list_pelanggan')
-            .eq('id', wilayah.id)
-            .single()
-
-        if (error) {
-            console.error('Error fetching pelanggan wilayah:', error)
-            setPelangganList([])
-        } else {
-            setPelangganList(data?.list_pelanggan || [])
-        }
-        setLoadingPelanggan(false)
-    }
-
-    // Kirim WA Blast
-    const handleSendWABlast = async (e) => {
-        e.preventDefault()
-        setSendingWA(true)
-
         try {
-            const res = await fetch('/api/wa/blast-wilayah', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    wilayah_id: selectedWilayahWA.id,
-                    pesan: pesanWA
-                })
-            })
-            if (res.ok) {
-                alert('Pesan WA Blast berhasil dikirim!')
-                setShowWABlastModal(false)
-                setPesanWA('')
+            // Mengambil data wilayah beserta relasi pelanggan untuk menghitung total & omset
+            const { data, error } = await supabase
+                .from('wilayah')
+                .select(`
+          *,
+          pelanggan (
+            id,
+            status,
+            paket ( harga )
+          )
+        `)
+                .order('rt', { ascending: true })
+
+            if (error) {
+                // Fallback jika tabel wilayah sederhana tanpa relasi langsung
+                const { data: rawWilayah } = await supabase.from('wilayah').select('*')
+                setWilayahList(rawWilayah || [])
             } else {
-                alert('Gagal mengirim pesan WA Blast.')
+                setWilayahList(data || [])
             }
         } catch (err) {
-            console.error(err)
+            console.error('Error fetching wilayah:', err)
         } finally {
-            setSendingWA(false)
+            setLoading(false)
         }
     }
+
+    // Kalkulasi data statistik untuk setiap wilayah
+    const processedWilayah = useMemo(() => {
+        return wilayahList.map((w) => {
+            const pelanggans = w.pelanggan || []
+            const pelangganAktif = pelanggans.filter((p) => p.status === 'aktif').length
+            const totalPelanggan = pelanggans.length
+            const potensiOmset = pelanggans
+                .filter((p) => p.status === 'aktif')
+                .reduce((sum, p) => sum + Number(p.paket?.harga || 0), 0)
+
+            return {
+                ...w,
+                pelangganAktif,
+                totalPelanggan,
+                potensiOmset,
+            }
+        })
+    }, [wilayahList])
+
+    // Filterberdasarkan keyword
+    const filteredWilayah = useMemo(() => {
+        return processedWilayah.filter((w) => {
+            const q = search.toLowerCase()
+            return (
+                w.nama_wilayah?.toLowerCase().includes(q) ||
+                String(w.rt)?.includes(q) ||
+                String(w.rw)?.includes(q) ||
+                w.keterangan?.toLowerCase().includes(q)
+            )
+        })
+    }, [processedWilayah, search])
+
+    // Stat summary global untuk Wilayah
+    const statsSummary = useMemo(() => {
+        const totalWilayah = processedWilayah.length
+        const totalPelanggan = processedWilayah.reduce((a, b) => a + b.totalPelanggan, 0)
+        const totalOmset = processedWilayah.reduce((a, b) => a + b.potensiOmset, 0)
+        return { totalWilayah, totalPelanggan, totalOmset }
+    }, [processedWilayah])
 
     const handleOpenModal = (wilayah = null) => {
         if (wilayah) {
             setEditId(wilayah.id)
             setFormData({
+                nama_wilayah: wilayah.nama_wilayah || '',
                 rt: wilayah.rt || '',
                 rw: wilayah.rw || '',
-                nama: wilayah.nama || '',
+                keterangan: wilayah.keterangan || '',
             })
         } else {
             setEditId(null)
             setFormData({
+                nama_wilayah: '',
                 rt: '',
                 rw: '',
-                nama: '',
+                keterangan: '',
             })
         }
         setShowModal(true)
@@ -150,318 +114,248 @@ export default function WilayahPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        const payload = {
-            ...formData,
-            rt: formData.rt ? String(formData.rt).padStart(2, '0') : null,
-            rw: formData.rw ? String(formData.rw).padStart(2, '0') : null,
-        }
-
         if (editId) {
-            await supabase.from('wilayah').update(payload).eq('id', editId)
+            await supabase.from('wilayah').update(formData).eq('id', editId)
         } else {
-            await supabase.from('wilayah').insert([payload])
+            await supabase.from('wilayah').insert([formData])
         }
         setShowModal(false)
         fetchWilayah()
     }
 
     const handleDelete = async (id) => {
-        if (confirm('Yakin hapus wilayah ini? Pastikan tidak ada pelanggan yang masih terhubung ke wilayah ini.')) {
+        if (confirm('Yakin ingin menghapus data wilayah ini?')) {
             await supabase.from('wilayah').delete().eq('id', id)
             fetchWilayah()
         }
     }
 
-    const filteredWilayah = wilayahList.filter(
-        (w) =>
-            (w.rt || '').includes(search) ||
-            (w.rw || '').includes(search) ||
-            (w.nama || '').toLowerCase().includes(search.toLowerCase())
-    )
+    const formatRupiah = (val) => {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val)
+    }
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Header Glassmorphism */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/60 p-4 sm:p-5 rounded-2xl border border-slate-800/80 shadow-xl shadow-black/20 backdrop-blur-md">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-white tracking-tight">Data Wilayah</h1>
-                    <p className="text-slate-400 text-sm mt-1">Kelola data RT/RW, lihat pelanggan, dan potensi omset wilayah.</p>
+                    <h1 className="text-2xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-400">
+                        Data Wilayah
+                    </h1>
+                    <p className="text-slate-400 text-xs sm:text-sm mt-1">
+                        Kelola data RT/RW, pantau sebaran pelanggan, dan analisa potensi omset per wilayah.
+                    </p>
                 </div>
+
                 <button
                     onClick={() => handleOpenModal()}
-                    className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-cyan-900/30 flex items-center gap-2 w-fit"
+                    className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 shadow-lg shadow-cyan-600/25 active:scale-95 flex items-center gap-2"
                 >
-                    <span>➕</span> Tambah Wilayah
+                    <span className="text-base leading-none">➕</span> Tambah Wilayah
                 </button>
             </div>
 
-            {/* Search */}
-            <div className="flex items-center gap-4 bg-slate-900 border border-slate-800 p-4 rounded-2xl">
-                <span className="text-lg">🔍</span>
-                <input
-                    type="text"
-                    placeholder="Cari berdasarkan RT, RW, atau nama wilayah..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
-                />
+            {/* Stat Cards 3D (Floating & Glowing) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Total Wilayah */}
+                <div className="bg-gradient-to-b from-blue-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-500/50 cursor-pointer flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-semibold text-slate-400">Total Wilayah Coverage</p>
+                        <p className="text-xl font-extrabold text-white mt-1">{statsSummary.totalWilayah} Area RT/RW</p>
+                    </div>
+                    <span className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-lg shadow-inner">
+                        📍
+                    </span>
+                </div>
+
+                {/* Total Pelanggan */}
+                <div className="bg-gradient-to-b from-cyan-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-500/20 hover:border-cyan-500/50 cursor-pointer flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-semibold text-slate-400">Total Seluruh Pelanggan</p>
+                        <p className="text-xl font-extrabold text-cyan-400 mt-1">{statsSummary.totalPelanggan} Warga</p>
+                    </div>
+                    <span className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-lg shadow-inner">
+                        👥
+                    </span>
+                </div>
+
+                {/* Total Potensi Omset */}
+                <div className="bg-gradient-to-b from-emerald-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-emerald-500/20 hover:border-emerald-500/50 cursor-pointer flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-semibold text-slate-400">Total Potensi Omset</p>
+                        <p className="text-xl font-extrabold text-emerald-400 mt-1">{formatRupiah(statsSummary.totalOmset)}</p>
+                    </div>
+                    <span className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg shadow-inner">
+                        💰
+                    </span>
+                </div>
             </div>
 
-            {/* Tabel Wilayah */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+            {/* Bar Pencarian */}
+            <div className="bg-slate-900/80 border border-slate-800/80 p-4 rounded-2xl shadow-xl shadow-black/20">
+                <div className="flex items-center gap-2.5 bg-slate-950/80 border border-slate-800 px-3.5 py-2.5 rounded-xl focus-within:border-cyan-500/80 transition duration-200">
+                    <span className="text-slate-400 text-xs">🔍</span>
+                    <input
+                        type="text"
+                        placeholder="Cari berdasarkan RT, RW, atau nama wilayah..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full bg-transparent text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+                    />
+                    {search && (
+                        <button onClick={() => setSearch('')} className="text-xs text-slate-500 hover:text-slate-300">
+                            ✕
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Tabel Wilayah Modern */}
+            <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl shadow-black/20">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-slate-300">
-                        <thead className="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
+                    <table className="w-full text-left text-xs text-slate-300">
+                        <thead className="bg-slate-950/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800/80">
                             <tr>
-                                <th className="px-6 py-4">RT / RW</th>
-                                <th className="px-6 py-4">Nama Wilayah</th>
-                                <th className="px-6 py-4">Pelanggan Aktif</th>
-                                <th className="px-6 py-4">Total Pelanggan</th>
-                                <th className="px-6 py-4">Potensi Omset</th>
-                                <th className="px-6 py-4 text-right">Aksi</th>
+                                <th className="px-5 py-3.5 font-bold">RT / RW</th>
+                                <th className="px-5 py-3.5 font-bold">Nama Wilayah</th>
+                                <th className="px-5 py-3.5 font-bold">Pelanggan Aktif</th>
+                                <th className="px-5 py-3.5 font-bold">Total Pelanggan</th>
+                                <th className="px-5 py-3.5 font-bold">Potensi Omset</th>
+                                <th className="px-5 py-3.5 font-bold text-right">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800">
+                        <tbody className="divide-y divide-slate-800/50">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-8 text-center text-slate-500">Memuat data wilayah...</td>
+                                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                                        Memuat data wilayah...
+                                    </td>
                                 </tr>
                             ) : filteredWilayah.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-8 text-center text-slate-500">Tidak ada wilayah ditemukan.</td>
+                                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                                        <div className="flex flex-col items-center justify-center gap-1.5">
+                                            <span className="text-2xl">🗺️</span>
+                                            <span className="font-medium text-slate-400">Tidak ada wilayah ditemukan</span>
+                                            <span className="text-[11px] text-slate-600">Klik "Tambah Wilayah" untuk menambahkan area RT/RW baru.</span>
+                                        </div>
+                                    </td>
                                 </tr>
                             ) : (
-                                filteredWilayah.map((w) => {
-                                    const stat = statistikMap[w.id]
-                                    const totalPelanggan = stat?.total_pelanggan ?? 0
-                                    return (
-                                        <tr key={w.id} className="hover:bg-slate-800/50 transition">
-                                            <td className="px-6 py-4 font-mono text-cyan-400 font-semibold">
+                                filteredWilayah.map((w) => (
+                                    <tr key={w.id} className="hover:bg-slate-800/40 transition-colors duration-150">
+                                        <td className="px-5 py-3.5">
+                                            <span className="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-mono font-bold text-[11px]">
                                                 RT {w.rt || '-'} / RW {w.rw || '-'}
-                                            </td>
-                                            <td className="px-6 py-4 font-medium text-white">{w.nama || '-'}</td>
-                                            <td className="px-6 py-4">
-                                                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800">
-                                                    {stat?.total_pelanggan_aktif ?? 0} aktif
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <button
-                                                    onClick={() => handleOpenPelangganModal(w)}
-                                                    className="hover:text-cyan-400 hover:underline font-medium transition cursor-pointer flex items-center gap-2 group"
-                                                >
-                                                    <span>{totalPelanggan} pelanggan</span>
-                                                    <span className="text-[10px] bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded-md group-hover:bg-cyan-900 transition">
-                                                        👁️ Lihat
-                                                    </span>
-                                                </button>
-                                            </td>
-                                            <td className="px-6 py-4 font-mono text-emerald-400 font-bold">
-                                                Rp {(stat?.potensi_pendapatan ?? 0).toLocaleString('id-ID')}
-                                            </td>
-                                            <td className="px-6 py-4 text-right space-x-2">
-                                                <button
-                                                    onClick={() => {
-                                                        setSelectedWilayahWA(w)
-                                                        setPesanWA('')
-                                                        setShowWABlastModal(true)
-                                                    }}
-                                                    className="px-3 py-1.5 bg-emerald-950/80 hover:bg-emerald-900/80 text-emerald-300 rounded-lg text-xs transition border border-emerald-800"
-                                                >
-                                                    📢 WA Blast
-                                                </button>
-                                                <button
-                                                    onClick={() => handleOpenModal(w)}
-                                                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition"
-                                                >
-                                                    ✏️ Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(w.id)}
-                                                    className="px-3 py-1.5 bg-red-950/60 hover:bg-red-900/80 text-red-300 rounded-lg text-xs transition border border-red-900/50"
-                                                >
-                                                    🗑️ Hapus
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    )
-                                })
+                                            </span>
+                                        </td>
+                                        <td className="px-5 py-3.5">
+                                            <div className="font-bold text-white text-xs">{w.nama_wilayah || `Wilayah RT ${w.rt}`}</div>
+                                            {w.keterangan && <div className="text-[11px] text-slate-500 mt-0.5">{w.keterangan}</div>}
+                                        </td>
+                                        <td className="px-5 py-3.5 font-semibold text-emerald-400">
+                                            {w.pelangganAktif} Warga
+                                        </td>
+                                        <td className="px-5 py-3.5 font-medium text-slate-300">
+                                            {w.totalPelanggan} Warga
+                                        </td>
+                                        <td className="px-5 py-3.5 font-bold text-emerald-400">
+                                            {formatRupiah(w.potensiOmset)}
+                                        </td>
+                                        <td className="px-5 py-3.5 text-right space-x-1.5">
+                                            <button
+                                                onClick={() => handleOpenModal(w)}
+                                                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-[11px] font-medium transition"
+                                            >
+                                                ✏️ Edit
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(w.id)}
+                                                className="px-2.5 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg text-[11px] font-medium transition border border-rose-500/20"
+                                            >
+                                                🗑️ Hapus
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
                             )}
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            {/* MODAL WA BLAST TEMPLATE OTOMATIS */}
-            {showWABlastModal && selectedWilayahWA && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md space-y-4 shadow-2xl">
-                        <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-                            <div>
-                                <h3 className="text-lg font-bold text-white">WA Blast Otomatis</h3>
-                                <p className="text-xs text-slate-400">Wilayah: RT {selectedWilayahWA.rt} / RW {selectedWilayahWA.rw}</p>
-                            </div>
-                            <button onClick={() => setShowWABlastModal(false)} className="text-slate-400 hover:text-white">✕</button>
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-medium text-slate-400 mb-2">⚡ Pilih Template Cepat:</label>
-                            <div className="flex flex-wrap gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => handleSelectTemplate('maintenance', selectedWilayahWA)}
-                                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-cyan-950 hover:text-cyan-400 border border-slate-700 hover:border-cyan-800 text-slate-300 rounded-lg text-xs transition"
-                                >
-                                    🛠️ Pemeliharaan
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleSelectTemplate('reminder_tagihan', selectedWilayahWA)}
-                                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-amber-950 hover:text-amber-400 border border-slate-700 hover:border-amber-800 text-slate-300 rounded-lg text-xs transition"
-                                >
-                                    🔔 Reminder Tagihan
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleSelectTemplate('gangguan', selectedWilayahWA)}
-                                    className="px-2.5 py-1.5 bg-slate-800 hover:bg-red-950 hover:text-red-400 border border-slate-700 hover:border-red-800 text-slate-300 rounded-lg text-xs transition"
-                                >
-                                    🚨 Info Gangguan
-                                </button>
-                            </div>
-                        </div>
-
-                        <form onSubmit={handleSendWABlast} className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-medium text-slate-400 mb-1">Isi Pesan (Bisa Diisi Otomatis / Edit):</label>
-                                <textarea
-                                    rows={6}
-                                    required
-                                    placeholder="Klik salah satu template di atas atau ketik manual di sini..."
-                                    value={pesanWA}
-                                    onChange={(e) => setPesanWA(e.target.value)}
-                                    className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono leading-relaxed"
-                                />
-                            </div>
-                            <div className="flex justify-end gap-3 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowWABlastModal(false)}
-                                    className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl hover:bg-slate-700"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={sendingWA || !pesanWA}
-                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white text-xs font-semibold rounded-xl transition"
-                                >
-                                    {sendingWA ? 'Mengirim...' : '🚀 Langsung Kirim WA'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal Detail Pelanggan */}
-            {showPelangganModal && selectedWilayah && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-xl shadow-2xl space-y-4">
-                        <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-                            <div>
-                                <h3 className="text-xl font-bold text-white">Daftar Pelanggan</h3>
-                                <p className="text-xs text-slate-400 mt-0.5">
-                                    Wilayah: <span className="text-cyan-400 font-semibold">{selectedWilayah.nama || `RT ${selectedWilayah.rt} / RW ${selectedWilayah.rw}`}</span>
-                                </p>
-                            </div>
-                            <button onClick={() => setShowPelangganModal(false)} className="text-slate-400 hover:text-white p-1 text-lg">✕</button>
-                        </div>
-                        <div className="max-h-80 overflow-y-auto rounded-xl border border-slate-800">
-                            <table className="w-full text-left text-sm text-slate-300">
-                                <thead className="bg-slate-950 text-slate-400 uppercase text-xs sticky top-0 border-b border-slate-800">
-                                    <tr>
-                                        <th className="px-4 py-3">Nama Pelanggan</th>
-                                        <th className="px-4 py-3">No. WhatsApp</th>
-                                        <th className="px-4 py-3 text-right">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-800">
-                                    {loadingPelanggan ? (
-                                        <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">Memuat data...</td></tr>
-                                    ) : pelangganList.length === 0 ? (
-                                        <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">Belum ada pelanggan terdaftar.</td></tr>
-                                    ) : (
-                                        pelangganList.map((p) => (
-                                            <tr key={p.id} className="hover:bg-slate-800/40">
-                                                <td className="px-4 py-3 font-semibold text-white">{p.nama}</td>
-                                                <td className="px-4 py-3 font-mono text-slate-400">{p.no_hp || '-'}</td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${p.status === 'aktif'
-                                                            ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
-                                                            : 'bg-red-950/80 text-red-400 border border-red-800'
-                                                        }`}>
-                                                        {p.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                        <div className="flex justify-between items-center pt-2 text-xs text-slate-400 border-t border-slate-800">
-                            <span>Total: <b className="text-white">{pelangganList.length}</b> pelanggan</span>
-                            <button onClick={() => setShowPelangganModal(false)} className="px-4 py-2 bg-slate-800 text-slate-200 rounded-xl text-xs">Tutup</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Modal Form Tambah / Edit Wilayah */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl">
-                        <h3 className="text-xl font-bold text-white mb-4">
-                            {editId ? 'Edit Data Wilayah' : 'Tambah Wilayah Baru'}
+                <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl space-y-4">
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+                            <span>{editId ? '✏️' : '➕'}</span>
+                            <span>{editId ? 'Edit Data Wilayah' : 'Tambah Wilayah Baru'}</span>
                         </h3>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+
+                        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+                            <div>
+                                <label className="block text-slate-400 font-medium mb-1">Nama Wilayah / Blok</label>
+                                <input
+                                    type="text"
+                                    required
+                                    placeholder="Misal: Perum Graha Blok A"
+                                    value={formData.nama_wilayah}
+                                    onChange={(e) => setFormData({ ...formData, nama_wilayah: e.target.value })}
+                                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-400 mb-1">RT</label>
+                                    <label className="block text-slate-400 font-medium mb-1">Nomor RT</label>
                                     <input
                                         type="text"
                                         required
                                         placeholder="01"
                                         value={formData.rt}
                                         onChange={(e) => setFormData({ ...formData, rt: e.target.value })}
-                                        className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono"
+                                        className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 font-mono"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-400 mb-1">RW</label>
+                                    <label className="block text-slate-400 font-medium mb-1">Nomor RW</label>
                                     <input
                                         type="text"
                                         required
                                         placeholder="05"
                                         value={formData.rw}
                                         onChange={(e) => setFormData({ ...formData, rw: e.target.value })}
-                                        className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono"
+                                        className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 font-mono"
                                     />
                                 </div>
                             </div>
+
                             <div>
-                                <label className="block text-xs font-medium text-slate-400 mb-1">Nama Wilayah</label>
-                                <input
-                                    type="text"
-                                    placeholder="misal: Blok C"
-                                    value={formData.nama}
-                                    onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
-                                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                <label className="block text-slate-400 font-medium mb-1">KeteranganTambahan (Opsional)</label>
+                                <textarea
+                                    rows={2}
+                                    placeholder="Catatan acuan lokasi, penanggung jawab RT, dll..."
+                                    value={formData.keterangan}
+                                    onChange={(e) => setFormData({ ...formData, keterangan: e.target.value })}
+                                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
                                 />
                             </div>
-                            <div className="flex justify-end gap-3 pt-3">
-                                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 bg-slate-800 text-slate-300 text-sm rounded-xl">Batal</button>
-                                <button type="submit" className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded-xl">Simpan Wilayah</button>
+
+                            <div className="flex justify-end gap-3 pt-3 border-t border-slate-800/80">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowModal(false)}
+                                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium rounded-xl transition"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl transition shadow-lg shadow-cyan-600/25"
+                                >
+                                    Simpan Wilayah
+                                </button>
                             </div>
                         </form>
                     </div>
