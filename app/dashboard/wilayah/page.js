@@ -132,13 +132,11 @@ export default function WilayahPage() {
     const handleSubmit = async (e) => {
         e.preventDefault()
 
-        // Payload ganda untuk mengantisipasi perbedaan nama kolom di database (nama / nama_wilayah)
+        // Hanya mengirimkan kolom yang pasti ada di database Supabase kamu
         const payload = {
-            nama_wilayah: formData.nama_wilayah,
             nama: formData.nama_wilayah,
             rt: formData.rt,
             rw: formData.rw,
-            keterangan: formData.keterangan,
         }
 
         try {
