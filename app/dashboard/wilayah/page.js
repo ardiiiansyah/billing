@@ -112,7 +112,7 @@ export default function WilayahPage() {
         if (wilayah) {
             setEditId(wilayah.id)
             setFormData({
-                nama_wilayah: wilayah.nama_wilayah || '',
+                nama_wilayah: wilayah.nama_wilayah || wilayah.nama || '',
                 rt: wilayah.rt || '',
                 rw: wilayah.rw || '',
                 keterangan: wilayah.keterangan || '',
@@ -131,13 +131,31 @@ export default function WilayahPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        if (editId) {
-            await supabase.from('wilayah').update(formData).eq('id', editId)
-        } else {
-            await supabase.from('wilayah').insert([formData])
+
+        // Payload ganda untuk mengantisipasi perbedaan nama kolom di database (nama / nama_wilayah)
+        const payload = {
+            nama_wilayah: formData.nama_wilayah,
+            nama: formData.nama_wilayah,
+            rt: formData.rt,
+            rw: formData.rw,
+            keterangan: formData.keterangan,
         }
-        setShowModal(false)
-        fetchWilayah()
+
+        try {
+            if (editId) {
+                const { error } = await supabase.from('wilayah').update(payload).eq('id', editId)
+                if (error) throw error
+            } else {
+                const { error } = await supabase.from('wilayah').insert([payload])
+                if (error) throw error
+            }
+
+            setShowModal(false)
+            await fetchWilayah()
+        } catch (err) {
+            console.error('Error simpan wilayah:', err)
+            alert('Gagal menyimpan wilayah: ' + (err.message || 'Cek console browser'))
+        }
     }
 
     const handleDelete = async (id) => {
