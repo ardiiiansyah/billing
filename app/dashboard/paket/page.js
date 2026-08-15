@@ -131,8 +131,6 @@ export default function PaketPage() {
               <th className="px-6 py-4 text-right">Aksi</th>
             </tr>
           </thead>
-          // ... (bagian atas kode tetap sama)
-
           <tbody className="divide-y divide-slate-800">
             {loading ? (
               <tr>
@@ -184,8 +182,6 @@ export default function PaketPage() {
               ))
             )}
           </tbody>
-
-// ... (bagian bawah kode tetap sama)
         </table>
       </div>
 
