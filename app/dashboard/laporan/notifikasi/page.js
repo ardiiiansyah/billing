@@ -14,23 +14,40 @@ export default function LogNotifikasiPage() {
 
     const fetchLogs = async () => {
         setLoading(true)
-        const { data, error } = await supabase
-            .from('log_notifikasi')
-            .select(`
-        id,
-        no_wa,
-        jenis_pesan,
-        pesan,
-        status,
-        created_at,
-        pelanggan ( nama )
-      `)
-            .order('created_at', { ascending: false })
 
-        if (!error && data) {
-            setLogs(data)
+        try {
+            // 1. Hapus log yang berumur lebih dari 30 hari secara otomatis
+            const thirtyDaysAgo = new Date()
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+            await supabase
+                .from('log_notifikasi')
+                .delete()
+                .lt('created_at', thirtyDaysAgo.toISOString())
+
+            // 2. Ambil data log terbaru setelah pembersihan
+            const { data, error } = await supabase
+                .from('log_notifikasi')
+                .select(`
+                    id,
+                    no_wa,
+                    jenis_pesan,
+                    pesan,
+                    status,
+                    created_at,
+                    pelanggan ( nama )
+                `)
+                .order('created_at', { ascending: false })
+
+            if (error) throw error
+            if (data) {
+                setLogs(data)
+            }
+        } catch (err) {
+            console.error('Error fetching/cleaning logs:', err.message)
+        } finally {
+            setLoading(false)
         }
-        setLoading(false)
     }
 
     const filteredLogs = logs.filter((item) => {
@@ -46,7 +63,7 @@ export default function LogNotifikasiPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Riwayat Notifikasi WA</h1>
-                    <p className="text-slate-400 text-sm">Log seluruh pesan WhatsApp yang dikirimkan oleh sistem.</p>
+                    <p className="text-slate-400 text-sm">Log seluruh pesan WhatsApp yang dikirimkan oleh sistem (otomatis dibersihkan jika &gt; 30 hari).</p>
                 </div>
                 <button
                     onClick={fetchLogs}
@@ -117,11 +134,11 @@ export default function LogNotifikasiPage() {
                                         </td>
                                         <td className="py-3.5 px-4 whitespace-nowrap">
                                             {log.status === 'terkirim' ? (
-                                                <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                                <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-xs font-semibold">
                                                     ✓ Terkirim
                                                 </span>
                                             ) : (
-                                                <span className="bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                                <span className="bg-rose-500/15 text-rose-400 border border-rose-500/30 px-2.5 py-1 rounded-lg text-xs font-semibold">
                                                     ✕ Gagal
                                                 </span>
                                             )}
