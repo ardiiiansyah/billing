@@ -96,6 +96,7 @@ export default function TagihanPage() {
     setSendingWa(tagihan.id)
 
     try {
+      // 1. Buat link pembayaran Midtrans
       const res = await fetch('/api/payment/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -116,10 +117,35 @@ export default function TagihanPage() {
         return
       }
 
+      // 2. Kirim pesan WhatsApp otomatis via API /api/wa/kirim
+      const linkBayar = `${window.location.origin}/bayar/${tagihan.id}`
+      const pesanWA =
+        `Halo Bapak/Ibu *${tagihan.pelanggan?.nama}*, ` +
+        `tagihan WiFi Sultan bulan ${tagihan.bulan} ${tagihan.tahun} sebesar *Rp ${Number(tagihan.jumlah_tagihan).toLocaleString('id-ID')}* ` +
+        `sudah siap dibayar.\n\n` +
+        `Klik link berikut untuk bayar:\n` +
+        `${linkBayar}\n\n` +
+        `Terima kasih 🙏`
+
+      const resWa = await fetch('/api/wa/kirim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nomor: tagihan.pelanggan?.no_wa,
+          pesan: pesanWA,
+        }),
+      })
+
+      const dataWa = await resWa.json()
+
+      if (!resWa.ok || !dataWa.sukses) {
+        setResultModal({ show: true, message: 'Link pembayaran berhasil dibuat, namun gagal mengirim WA: ' + (dataWa.error || 'Unknown error') })
+        return
+      }
+
       fetchTagihan()
 
-      // Beri tahu pengguna bahwa pesan berhasil dikirim otomatis
-      setResultModal({ show: true, message: 'Link pembayaran berhasil dibuat dan pesan WA berhasil dikirim otomatis!' })
+      setResultModal({ show: true, message: 'Link pembayaran berhasil dibuat dan pesan WA berhasil dikirim otomatis ke pelanggan!' })
 
     } catch (err) {
       setResultModal({ show: true, message: 'Error koneksi ke server.' })
