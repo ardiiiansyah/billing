@@ -735,4 +735,3 @@ export default function TagihanPage() {
     </div>
   )
 }
-```[cite: 2]
