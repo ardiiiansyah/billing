@@ -342,16 +342,16 @@ export default function PelangganPage() {
           {/* Tombol Toggle Filter khusus Mobile */}
           <button
             onClick={() => setShowMobileFilter(!showMobileFilter)}
-            className="md:hidden flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition border border-slate-700 flex items-center justify-center gap-2"
+            className="md:hidden flex-1 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition border border-slate-700 flex items-center justify-center gap-1.5"
           >
-            <span>🔍</span> {showMobileFilter ? 'Tutup Filter' : 'Filter'}
+            <span>🔍</span> {showMobileFilter ? 'Tutup' : 'Filter'}
           </button>
 
           <button
             onClick={() => handleOpenModal()}
-            className="flex-1 sm:flex-none px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 shadow-lg shadow-cyan-600/25 active:scale-95 flex items-center justify-center gap-2"
+            className="flex-1 sm:flex-none px-3.5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 shadow-md shadow-cyan-600/20 active:scale-95 flex items-center justify-center gap-1.5"
           >
-            <span className="text-base leading-none">➕</span> Tambah Pelanggan
+            <span className="text-sm leading-none">➕</span> Tambah Pelanggan
           </button>
         </div>
       </div>

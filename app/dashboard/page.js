@@ -224,12 +224,12 @@ export default function DashboardPage() {
       {/* Grafik & Distribusi Paket */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Grafik Pendapatan */}
-        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-xl shadow-black/20 hover:border-slate-700/80 transition-all duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-xl shadow-black/20 hover:border-slate-700/80 transition-all duration-300">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 mb-4">
+            <h3 className="text-xs sm:text-sm font-bold text-slate-200 flex items-center gap-2">
               <span>📈</span> Pendapatan 6 Bulan Terakhir
             </h3>
-            <span className="text-[11px] text-slate-500 font-medium">Tren Pembayaran</span>
+            <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Tren Pembayaran</span>
           </div>
 
           {loading ? (
@@ -243,8 +243,8 @@ export default function DashboardPage() {
                     <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="bulan" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}rb`} />
+                <XAxis dataKey="bulan" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}rb`} />
                 <Tooltip
                   formatter={v => [formatRupiah(v), 'Total']}
                   contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 12, color: '#f8fafc', fontSize: '12px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)' }}
