@@ -40,7 +40,7 @@ export async function POST(request) {
       transaction_status === 'settlement'
 
     if (isLunas) {
-      // Insert ke tabel pembayaran
+      // 1. Insert ke tabel pembayaran
       await supabase.from('pembayaran').insert([{
         tagihan_id: tagihan.id,
         jumlah_bayar: Number(gross_amount),
@@ -49,6 +49,15 @@ export async function POST(request) {
         diterima_oleh: 'Midtrans',
         catatan: `Auto-confirmed via webhook. Status: ${transaction_status}`,
       }])
+
+      // 2. UPDATE status tagihan menjadi lunas agar terbaca di laporan keuangan
+      await supabase
+        .from('tagihan')
+        .update({
+          status_pembayaran: 'lunas',
+          status: 'lunas'
+        })
+        .eq('id', tagihan.id)
     }
 
     return Response.json({ sukses: true })
