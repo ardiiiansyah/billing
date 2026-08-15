@@ -74,45 +74,9 @@ export default function TagihanPage() {
 
       if (error) throw error
 
-      const { data: tagihanBaru } = await supabase
-        .from('tagihan')
-        .select('*, pelanggan(nama, no_wa)')
-        .eq('bulan', currentMonth)
-        .eq('tahun', currentYear)
-        .eq('status_pembayaran', 'belum_bayar')
-        .not('pelanggan', 'is', null)
-
-      let waberhasil = 0
-      let wagagal = 0
-
-      if (tagihanBaru) {
-        for (const t of tagihanBaru) {
-          const { nama, no_wa } = t.pelanggan
-          if (!no_wa) { wagagal++; continue }
-
-          const linkBayar = `${window.location.origin}/bayar/${t.id}`
-          const pesan =
-            `Halo Bapak/Ibu *${nama}*, ` +
-            `tagihan WiFi Sultan bulan *${currentMonth}/${currentYear}* ` +
-            `sebesar *Rp ${Number(t.jumlah_tagihan).toLocaleString('id-ID')}* telah diterbitkan.\n\n` +
-            `Jatuh tempo: *${t.tanggal_jatuh_tempo}*\n\n` +
-            `Klik link berikut untuk bayar:\n${linkBayar}\n\n` +
-            `Terima kasih 🙏`
-
-          const res = await fetch('/api/wa/kirim', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nomor: no_wa, pesan, pelanggan_nama: nama }),
-          })
-          const result = await res.json()
-          if (result.sukses) waberhasil++
-          else wagagal++
-        }
-      }
-
       setResultModal({
         show: true,
-        message: `Berhasil generate ${data || 0} tagihan!\nWA terkirim: ${waberhasil}, Gagal: ${wagagal}`
+        message: `Berhasil generate ${data || 0} tagihan bulanan baru!`
       })
       fetchTagihan()
     } catch (err) {
@@ -444,11 +408,11 @@ export default function TagihanPage() {
                     <td className="px-6 py-4 text-slate-400 text-xs align-middle">{t.tanggal_jatuh_tempo}</td>
                     <td className="px-6 py-4 align-middle">
                       <span
-                        className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${t.status_pembayaran === 'lunas'
-                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
-                          : t.status_pembayaran === 'sebagian'
-                            ? 'bg-amber-950/80 text-amber-400 border border-amber-800'
-                            : 'bg-red-950/80 text-red-400 border border-red-800'
+                        className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider whitespace-nowrap ${t.status_pembayaran === 'lunas'
+                            ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
+                            : t.status_pembayaran === 'sebagian'
+                              ? 'bg-amber-950/80 text-amber-400 border border-amber-800'
+                              : 'bg-red-950/80 text-red-400 border border-red-800'
                           }`}
                       >
                         {t.status_pembayaran.replace('_', ' ')}
@@ -456,19 +420,19 @@ export default function TagihanPage() {
                     </td>
                     <td className="px-6 py-4 text-right align-middle">
                       {t.status_pembayaran !== 'lunas' ? (
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                           <button
                             onClick={() => handleKirimMidtrans(t)}
                             disabled={sendingWa === t.id}
-                            title="Generate link bayar Midtrans & kirim ke WhatsApp"
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-md shadow-emerald-900/25 flex items-center gap-1 disabled:opacity-50"
+                            title="Kirim pesan WhatsApp ke pelanggan"
+                            className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-md shadow-emerald-900/25 flex items-center gap-1.5 disabled:opacity-50"
                           >
                             {sendingWa === t.id ? (
                               <span>⏳ Proses...</span>
                             ) : (
                               <>
                                 <span>💬</span>
-                                <span>{t.payment_url ? 'Kirim Ulang' : 'Kirim WA'}</span>
+                                <span>Kirim WA</span>
                               </>
                             )}
                           </button>
@@ -476,9 +440,9 @@ export default function TagihanPage() {
                           <button
                             onClick={() => handleOpenPayModal(t)}
                             title="Catat pembayaran tunai langsung"
-                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition border border-slate-700"
+                            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition border border-slate-700 flex items-center gap-1"
                           >
-                            💵 Tunai
+                            <span>💵</span> Tunai
                           </button>
                         </div>
                       ) : (
