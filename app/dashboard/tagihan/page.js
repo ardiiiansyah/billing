@@ -13,7 +13,7 @@ export default function TagihanPage() {
   const [selectedTagihan, setSelectedTagihan] = useState(null)
   const [sendingWa, setSendingWa] = useState(null)
 
-  // State untuk Custom Modal Konfirmasi Generate Tagihan & Hasil
+  // State Modal
   const [confirmGenerateModal, setConfirmGenerateModal] = useState(false)
   const [resultModal, setResultModal] = useState({ show: false, message: '' })
   const [confirmActionModal, setConfirmActionModal] = useState({ show: false, title: '', message: '', onConfirm: null })
@@ -24,17 +24,13 @@ export default function TagihanPage() {
     catatan: '',
   })
 
-  // ── State Bulk Action ──────────────────────────────────────────────
+  // State Bulk Action
   const [selectedIds, setSelectedIds] = useState([])
   const [bulkLoading, setBulkLoading] = useState(false)
-
-  // Modal WA Masal
   const [showBulkWaModal, setShowBulkWaModal] = useState(false)
   const [templateWaBulk, setTemplateWaBulk] = useState(
     'Halo Bapak/Ibu *[nama]*, tagihan WiFi Sultan bulan ini belum dibayar.\n\nSegera lakukan pembayaran via link berikut:\n[link_bayar]\n\nTerima kasih 🙏'
   )
-
-  // Modal Progress WA
   const [showWaProgress, setShowWaProgress] = useState(false)
   const [waProgress, setWaProgress] = useState({ total: 0, terkirim: 0, gagal: 0, logs: [] })
 
@@ -335,23 +331,23 @@ export default function TagihanPage() {
         <button
           onClick={() => setConfirmGenerateModal(true)}
           disabled={generating}
-          className="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 shadow-lg shadow-emerald-600/25 active:scale-95 flex items-center justify-center gap-2"
+          className="self-end sm:self-auto px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:cursor-not-allowed text-white text-[11px] sm:text-sm font-bold rounded-xl transition-all duration-200 shadow-md shadow-emerald-600/20 active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap"
         >
-          <span className="text-base leading-none">⚡</span> {generating ? 'Memproses...' : 'Generate Tagihan Bulanan'}
+          <span className="text-sm leading-none">⚡</span> {generating ? 'Memproses...' : 'Generate Tagihan Bulanan'}
         </button>
       </div>
 
-      {/* Kartu Metrik / Statistik Ringkas (Grid 2x2 di HP, 4 di PC - Disamakan dengan Pelanggan) */}
+      {/* Kartu Metrik / Statistik Ringkas */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {[
-          { label: 'Total Tagihan', count: counts.semua, color: 'text-white', icon: '📊', bgIcon: 'bg-blue-500/10 text-blue-400', gradient: 'from-blue-950/30 to-slate-900/90' },
-          { label: 'Belum Bayar', count: counts.belum_bayar, color: 'text-rose-400', icon: '⚠️', bgIcon: 'bg-rose-500/10 text-rose-400', gradient: 'from-rose-950/30 to-slate-900/90' },
-          { label: 'Lunas', count: counts.lunas, color: 'text-emerald-400', icon: '✅', bgIcon: 'bg-emerald-500/10 text-emerald-400', gradient: 'from-emerald-950/30 to-slate-900/90' },
-          { label: 'Sebagian', count: counts.sebagian, color: 'text-amber-400', icon: '⏳', bgIcon: 'bg-amber-500/10 text-amber-400', gradient: 'from-amber-950/30 to-slate-900/90' },
+          { label: 'Total Tagihan', count: counts.semua, color: 'text-white', icon: '📊', bgIcon: 'bg-blue-500/10 text-blue-400', gradient: 'from-blue-950/30 to-slate-900/90', hoverShadow: 'hover:shadow-blue-500/10 hover:border-blue-500/50' },
+          { label: 'Belum Bayar', count: counts.belum_bayar, color: 'text-rose-400', icon: '⚠️', bgIcon: 'bg-rose-500/10 text-rose-400', gradient: 'from-rose-950/30 to-slate-900/90', hoverShadow: 'hover:shadow-rose-500/10 hover:border-rose-500/50' },
+          { label: 'Lunas', count: counts.lunas, color: 'text-emerald-400', icon: '✅', bgIcon: 'bg-emerald-500/10 text-emerald-400', gradient: 'from-emerald-950/30 to-slate-900/90', hoverShadow: 'hover:shadow-emerald-500/10 hover:border-emerald-500/50' },
+          { label: 'Sebagian', count: counts.sebagian, color: 'text-amber-400', icon: '⏳', bgIcon: 'bg-amber-500/10 text-amber-400', gradient: 'from-amber-950/30 to-slate-900/90', hoverShadow: 'hover:shadow-amber-500/10 hover:border-amber-500/50' },
         ].map((s) => (
           <div
             key={s.label}
-            className={`bg-gradient-to-b ${s.gradient} border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out flex items-center justify-between`}
+            className={`bg-gradient-to-b ${s.gradient} border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl ${s.hoverShadow} cursor-pointer flex items-center justify-between`}
           >
             <div>
               <p className="text-[10px] sm:text-xs font-semibold text-slate-400">{s.label}</p>
@@ -365,12 +361,12 @@ export default function TagihanPage() {
       </div>
 
       {/* Tab Filter Status */}
-      <div className="flex items-center gap-2 border-b border-slate-800/80 pb-3 overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-slate-800/80 pb-3 overflow-x-auto scrollbar-none">
         {['semua', 'belum_bayar', 'lunas', 'sebagian'].map((st) => (
           <button
             key={st}
             onClick={() => setFilterStatus(st)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition whitespace-nowrap ${filterStatus === st
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition whitespace-nowrap shrink-0 ${filterStatus === st
                 ? 'bg-slate-800 text-white border border-slate-700 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
               }`}
@@ -380,69 +376,44 @@ export default function TagihanPage() {
         ))}
       </div>
 
-      {/* Tabel Tagihan */}
-      <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl shadow-black/20">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm text-slate-300">
-            <thead className="bg-slate-950/70 text-slate-400 uppercase text-[10px] sm:text-xs tracking-wider border-b border-slate-800/80">
-              <tr>
-                <th className="px-4 sm:px-6 py-3.5 w-10 align-middle text-center">
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected}
-                    onChange={handleToggleAll}
-                    className="w-4 h-4 rounded border-slate-700 bg-slate-900 cursor-pointer accent-cyan-500"
-                  />
-                </th>
-                <th className="px-4 sm:px-6 py-3.5 font-bold">Pelanggan</th>
-                <th className="px-4 sm:px-6 py-3.5 font-bold">Periode</th>
-                <th className="px-4 sm:px-6 py-3.5 font-bold">Nominal</th>
-                <th className="px-4 sm:px-6 py-3.5 font-bold">Jatuh Tempo</th>
-                <th className="px-4 sm:px-6 py-3.5 font-bold">Status</th>
-                <th className="px-4 sm:px-6 py-3.5 font-bold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/50">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
-                    Memuat daftar tagihan...
-                  </td>
-                </tr>
-              ) : filteredTagihan.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
-                    <div className="text-slate-500 text-3xl mb-2">🧾</div>
-                    <div className="text-slate-400 font-medium text-xs">Tidak ada tagihan ditemukan.</div>
-                    <div className="text-slate-500 text-[11px] mt-1">Klik tombol "Generate Tagihan Bulanan" di atas untuk membuat tagihan baru.</div>
-                  </td>
-                </tr>
-              ) : (
-                filteredTagihan.map((t) => (
-                  <tr key={t.id} className={`hover:bg-slate-800/40 transition-colors duration-150 ${selectedIds.includes(t.id) ? 'bg-cyan-950/25' : ''}`}>
-                    <td className="px-4 sm:px-6 py-4 align-middle text-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(t.id)}
-                        onChange={() => handleToggleOne(t.id)}
-                        className="w-4 h-4 rounded border-slate-700 bg-slate-900 cursor-pointer accent-cyan-500"
-                      />
-                    </td>
-                    <td className="px-4 sm:px-6 py-4 align-middle">
-                      <div className="font-bold text-white text-xs sm:text-sm">{t.pelanggan?.nama || 'Pelanggan Dihapus'}</div>
-                      <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                        {t.pelanggan?.kode_pelanggan} · 📱 {t.pelanggan?.no_wa || '-'}
+      {/* Daftar Tagihan: Mobile Card View & Desktop Table View */}
+      <div className="space-y-3">
+        {loading ? (
+          <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-12 text-center text-slate-500">
+            Memuat daftar tagihan...
+          </div>
+        ) : filteredTagihan.length === 0 ? (
+          <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-12 text-center text-slate-500">
+            <div className="flex flex-col items-center justify-center gap-1.5">
+              <span className="text-3xl mb-1">🧾</span>
+              <span className="font-medium text-slate-400 text-xs">Tidak ada tagihan ditemukan.</span>
+              <span className="text-[11px] text-slate-600">Klik tombol "Generate Tagihan Bulanan" di atas untuk membuat tagihan baru.</span>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Tampilan Card khusus Mobile (md:hidden) */}
+            <div className="grid grid-cols-1 gap-3 md:hidden">
+              {filteredTagihan.map((t) => {
+                const namaBulan = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                const periodeStr = `${namaBulan[t.bulan] || t.bulan} ${t.tahun}`;
+
+                return (
+                  <div
+                    key={t.id}
+                    className={`bg-slate-900/90 border rounded-2xl p-4 space-y-3 transition-all ${selectedIds.includes(t.id) ? 'border-cyan-500 bg-cyan-950/20' : 'border-slate-800'
+                      }`}
+                  >
+                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(t.id)}
+                          onChange={() => handleToggleOne(t.id)}
+                          className="w-4 h-4 rounded border-slate-700 bg-slate-900 cursor-pointer accent-cyan-500"
+                        />
+                        <span className="font-mono text-cyan-400 font-bold text-xs">{t.pelanggan?.kode_pelanggan || '-'}</span>
                       </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-4 text-slate-200 font-medium align-middle text-xs">
-                      {(() => {
-                        const namaBulan = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-                        return `${namaBulan[t.bulan] || t.bulan} ${t.tahun}`;
-                      })()}
-                    </td>
-                    <td className="px-4 sm:px-6 py-4 font-bold text-emerald-400 align-middle text-xs">{formatRupiah(t.jumlah_tagihan)}</td>
-                    <td className="px-4 sm:px-6 py-4 text-slate-300 font-medium align-middle text-xs">Tgl {t.tanggal_jatuh_tempo}</td>
-                    <td className="px-4 sm:px-6 py-4 align-middle">
                       <span
                         className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${t.status_pembayaran === 'lunas'
                             ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
@@ -453,46 +424,145 @@ export default function TagihanPage() {
                       >
                         {t.status_pembayaran.replace('_', ' ')}
                       </span>
-                    </td>
-                    <td className="px-4 sm:px-6 py-4 text-right align-middle">
+                    </div>
+
+                    <div>
+                      <div className="text-white font-bold text-sm">{t.pelanggan?.nama || 'Pelanggan Dihapus'}</div>
+                      <div className="text-xs text-slate-400 font-mono mt-0.5">
+                        📱 {t.pelanggan?.no_wa || '-'}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/60 text-xs">
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">PERIODE & TEMPO</span>
+                        <span className="font-medium text-slate-200">{periodeStr}</span>
+                        <div className="text-slate-400 text-[11px]">Jatuh Tempo: Tgl {t.tanggal_jatuh_tempo}</div>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">NOMINAL TAGIHAN</span>
+                        <div className="text-emerald-400 font-extrabold text-sm">{formatRupiah(t.jumlah_tagihan)}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-800/80">
                       {t.status_pembayaran !== 'lunas' ? (
-                        <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
+                        <>
                           <button
                             onClick={() => handleKirimMidtrans(t)}
                             disabled={sendingWa === t.id}
-                            title="Kirim pesan WhatsApp ke pelanggan"
-                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold rounded-xl transition shadow-md shadow-emerald-950/25 flex items-center gap-1 disabled:opacity-50"
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1 disabled:opacity-50"
                           >
-                            {sendingWa === t.id ? (
-                              <span>⏳...</span>
-                            ) : (
-                              <>
-                                <span>💬</span>
-                                <span>WA</span>
-                              </>
-                            )}
+                            <span>💬</span> {sendingWa === t.id ? 'Proses...' : 'Kirim WA'}
                           </button>
-
                           <button
                             onClick={() => handleOpenPayModal(t)}
-                            title="Catat pembayaran tunai langsung"
-                            className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold rounded-xl transition border border-slate-700 flex items-center gap-1"
+                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition border border-slate-700 flex items-center gap-1"
                           >
                             <span>💵</span> Tunai
                           </button>
-                        </div>
+                        </>
                       ) : (
-                        <span className="text-xs text-emerald-400 font-semibold flex items-center justify-end gap-1">
+                        <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1 py-1">
                           ✓ Lunas
                         </span>
                       )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Tampilan Tabel khusus Desktop (hidden md:block) */}
+            <div className="hidden md:block bg-slate-900/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl shadow-black/20">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm text-slate-300">
+                  <thead className="bg-slate-950/70 text-slate-400 uppercase text-[10px] sm:text-xs tracking-wider border-b border-slate-800/80">
+                    <tr>
+                      <th className="px-4 sm:px-6 py-3.5 w-10 align-middle text-center">
+                        <input
+                          type="checkbox"
+                          checked={isAllSelected}
+                          onChange={handleToggleAll}
+                          className="w-4 h-4 rounded border-slate-700 bg-slate-900 cursor-pointer accent-cyan-500"
+                        />
+                      </th>
+                      <th className="px-4 sm:px-6 py-3.5 font-bold">Pelanggan</th>
+                      <th className="px-4 sm:px-6 py-3.5 font-bold">Periode</th>
+                      <th className="px-4 sm:px-6 py-3.5 font-bold">Nominal</th>
+                      <th className="px-4 sm:px-6 py-3.5 font-bold">Jatuh Tempo</th>
+                      <th className="px-4 sm:px-6 py-3.5 font-bold">Status</th>
+                      <th className="px-4 sm:px-6 py-3.5 font-bold text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/50">
+                    {filteredTagihan.map((t) => (
+                      <tr key={t.id} className={`hover:bg-slate-800/40 transition-colors duration-150 ${selectedIds.includes(t.id) ? 'bg-cyan-950/25' : ''}`}>
+                        <td className="px-4 sm:px-6 py-4 align-middle text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(t.id)}
+                            onChange={() => handleToggleOne(t.id)}
+                            className="w-4 h-4 rounded border-slate-700 bg-slate-900 cursor-pointer accent-cyan-500"
+                          />
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 align-middle">
+                          <div className="font-bold text-white text-xs sm:text-sm">{t.pelanggan?.nama || 'Pelanggan Dihapus'}</div>
+                          <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                            {t.pelanggan?.kode_pelanggan} · 📱 {t.pelanggan?.no_wa || '-'}
+                          </div>
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 text-slate-200 font-medium align-middle text-xs">
+                          {(() => {
+                            const namaBulan = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                            return `${namaBulan[t.bulan] || t.bulan} ${t.tahun}`;
+                          })()}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 font-bold text-emerald-400 align-middle text-xs">{formatRupiah(t.jumlah_tagihan)}</td>
+                        <td className="px-4 sm:px-6 py-4 text-slate-300 font-medium align-middle text-xs">Tgl {t.tanggal_jatuh_tempo}</td>
+                        <td className="px-4 sm:px-6 py-4 align-middle">
+                          <span
+                            className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${t.status_pembayaran === 'lunas'
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                                : t.status_pembayaran === 'sebagian'
+                                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                                  : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                              }`}
+                          >
+                            {t.status_pembayaran.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 text-right align-middle">
+                          {t.status_pembayaran !== 'lunas' ? (
+                            <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
+                              <button
+                                onClick={() => handleKirimMidtrans(t)}
+                                disabled={sendingWa === t.id}
+                                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold rounded-xl transition shadow-md shadow-emerald-950/25 flex items-center gap-1 disabled:opacity-50"
+                              >
+                                {sendingWa === t.id ? '⏳...' : '💬 WA'}
+                              </button>
+                              <button
+                                onClick={() => handleOpenPayModal(t)}
+                                className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold rounded-xl transition border border-slate-700 flex items-center gap-1"
+                              >
+                                💵 Tunai
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-emerald-400 font-semibold flex items-center justify-end gap-1">
+                              ✓ Lunas
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Kotak Panduan Penggunaan */}
