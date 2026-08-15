@@ -17,10 +17,9 @@ export default function WilayahPage() {
     })
 
     const [formData, setFormData] = useState({
-        nama_wilayah: '',
+        nama: '',
         rt: '',
         rw: '',
-        keterangan: '',
     })
 
     useEffect(() => {
@@ -66,11 +65,9 @@ export default function WilayahPage() {
         return processedWilayah.filter((w) => {
             const q = search.toLowerCase()
             return (
-                w.nama_wilayah?.toLowerCase().includes(q) ||
                 w.nama?.toLowerCase().includes(q) ||
                 String(w.rt)?.includes(q) ||
-                String(w.rw)?.includes(q) ||
-                w.keterangan?.toLowerCase().includes(q)
+                String(w.rw)?.includes(q)
             )
         })
     }, [processedWilayah, search])
@@ -86,18 +83,16 @@ export default function WilayahPage() {
         if (wilayah) {
             setEditId(wilayah.id)
             setFormData({
-                nama_wilayah: wilayah.nama_wilayah || wilayah.nama || '',
+                nama: wilayah.nama || '',
                 rt: wilayah.rt || '',
                 rw: wilayah.rw || '',
-                keterangan: wilayah.keterangan || '',
             })
         } else {
             setEditId(null)
             setFormData({
-                nama_wilayah: '',
+                nama: '',
                 rt: '',
                 rw: '',
-                keterangan: '',
             })
         }
         setShowModal(true)
@@ -108,7 +103,7 @@ export default function WilayahPage() {
         setLoading(true)
 
         const payload = {
-            nama_wilayah: formData.nama_wilayah,
+            nama: formData.nama,
             rt: formData.rt,
             rw: formData.rw,
         }
@@ -267,8 +262,7 @@ export default function WilayahPage() {
                                             </span>
                                         </td>
                                         <td className="px-5 py-4">
-                                            <div className="font-bold text-white text-sm">{w.nama_wilayah || w.nama || `Wilayah RT ${w.rt}`}</div>
-                                            {w.keterangan && <div className="text-xs text-slate-400 mt-0.5">{w.keterangan}</div>}
+                                            <div className="font-bold text-white text-sm">{w.nama || `Wilayah RT ${w.rt}`}</div>
                                         </td>
                                         <td className="px-5 py-4 font-bold text-emerald-400 text-xs">
                                             {w.pelangganAktif} Warga
@@ -319,8 +313,8 @@ export default function WilayahPage() {
                                     type="text"
                                     required
                                     placeholder="Misal: Perum Graha Blok A"
-                                    value={formData.nama_wilayah}
-                                    onChange={(e) => setFormData({ ...formData, nama_wilayah: e.target.value })}
+                                    value={formData.nama}
+                                    onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
                                     className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
                                 />
                             </div>
@@ -348,17 +342,6 @@ export default function WilayahPage() {
                                         className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 font-mono"
                                     />
                                 </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-slate-400 font-medium mb-1">Keterangan Tambahan (Opsional)</label>
-                                <textarea
-                                    rows={2}
-                                    placeholder="Catatan acuan lokasi, penanggung jawab RT, dll..."
-                                    value={formData.keterangan}
-                                    onChange={(e) => setFormData({ ...formData, keterangan: e.target.value })}
-                                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
-                                />
                             </div>
 
                             <div className="flex justify-end gap-3 pt-3 border-t border-slate-800/80">
