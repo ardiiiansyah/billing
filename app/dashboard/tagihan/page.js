@@ -313,7 +313,7 @@ export default function TagihanPage() {
         </button>
       </div>
 
-      {/* Kartu Metrik / Statistik Ringkas dengan Ikon Pojok */}
+      {/* Kartu Metrik / Statistik Ringkas dengan Efek 3D Hover */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: 'Total Tagihan', count: counts.semua, color: 'text-slate-200', icon: '📊' },
@@ -321,7 +321,10 @@ export default function TagihanPage() {
           { label: 'Lunas', count: counts.lunas, color: 'text-emerald-400', icon: '✅' },
           { label: 'Sebagian', count: counts.sebagian, color: 'text-amber-400', icon: '⏳' },
         ].map((s) => (
-          <div key={s.label} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm transition hover:border-slate-700">
+          <div
+            key={s.label}
+            className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-500/10 hover:border-cyan-500/50 cursor-pointer"
+          >
             <div className="flex justify-between items-start mb-2">
               <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">{s.label}</div>
               <span className="text-base">{s.icon}</span>

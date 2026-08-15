@@ -85,16 +85,21 @@ export default function PembayaranPage() {
                 </button>
             </div>
 
-            {/* Metric Cards Ringkasan Kas */}
+            {/* Metric Cards Ringkasan Kas dengan Efek 3D Hover */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm transition hover:border-cyan-500/50">
-                    <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Total Kas Masuk</div>
+                {/* Card 1 */}
+                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-500/10 hover:border-cyan-500/50 cursor-pointer">
+                    <div className="flex justify-between items-start mb-2">
+                        <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Kas Masuk</div>
+                        <span className="text-base">💰</span>
+                    </div>
                     <div className="text-2xl font-bold text-cyan-400">
                         Rp {metrik.totalMasuk.toLocaleString('id-ID')}
                     </div>
                 </div>
 
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm transition hover:border-blue-500/50">
+                {/* Card 2 */}
+                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/10 hover:border-blue-500/50 cursor-pointer">
                     <div className="flex justify-between items-start mb-2">
                         <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Via Midtrans</div>
                         <span className="text-base">🌐</span>
@@ -104,7 +109,8 @@ export default function PembayaranPage() {
                     </div>
                 </div>
 
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm transition hover:border-emerald-500/50">
+                {/* Card 3 */}
+                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-500/10 hover:border-emerald-500/50 cursor-pointer">
                     <div className="flex justify-between items-start mb-2">
                         <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Kas Tunai (Cash)</div>
                         <span className="text-base">💵</span>
@@ -114,7 +120,8 @@ export default function PembayaranPage() {
                     </div>
                 </div>
 
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm transition hover:border-amber-500/50">
+                {/* Card 4 */}
+                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-500/10 hover:border-amber-500/50 cursor-pointer">
                     <div className="flex justify-between items-start mb-2">
                         <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Transaksi Hari Ini</div>
                         <span className="text-base">⚡</span>
