@@ -298,7 +298,7 @@ export default function TagihanPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header Halaman yang diselaraskan dengan Dashboard */}
+      {/* Header Halaman */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Tagihan & Kasir</h1>
@@ -313,17 +313,20 @@ export default function TagihanPage() {
         </button>
       </div>
 
-      {/* Kartu Metrik / Statistik Ringkas */}
+      {/* Kartu Metrik / Statistik Ringkas dengan Ikon Pojok */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Total Tagihan', count: counts.semua, color: 'text-slate-200 border-slate-800' },
-          { label: 'Belum Bayar', count: counts.belum_bayar, color: 'text-red-400 border-red-900/50' },
-          { label: 'Lunas', count: counts.lunas, color: 'text-emerald-400 border-emerald-900/50' },
-          { label: 'Sebagian', count: counts.sebagian, color: 'text-amber-400 border-amber-900/50' },
+          { label: 'Total Tagihan', count: counts.semua, color: 'text-slate-200', icon: '📊' },
+          { label: 'Belum Bayar', count: counts.belum_bayar, color: 'text-red-400', icon: '⚠️' },
+          { label: 'Lunas', count: counts.lunas, color: 'text-emerald-400', icon: '✅' },
+          { label: 'Sebagian', count: counts.sebagian, color: 'text-amber-400', icon: '⏳' },
         ].map((s) => (
-          <div key={s.label} className={`bg-slate-900 border ${s.color.split(' ')[1]} p-5 rounded-2xl shadow-sm transition hover:border-slate-700`}>
-            <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">{s.label}</div>
-            <div className={`text-2xl font-bold ${s.color.split(' ')[0]}`}>{s.count}</div>
+          <div key={s.label} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm transition hover:border-slate-700">
+            <div className="flex justify-between items-start mb-2">
+              <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider">{s.label}</div>
+              <span className="text-base">{s.icon}</span>
+            </div>
+            <div className={`text-2xl font-bold ${s.color}`}>{s.count}</div>
           </div>
         ))}
       </div>
@@ -335,8 +338,8 @@ export default function TagihanPage() {
             key={st}
             onClick={() => setFilterStatus(st)}
             className={`px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition whitespace-nowrap ${filterStatus === st
-                ? 'bg-slate-800 text-white border border-slate-700 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
+              ? 'bg-slate-800 text-white border border-slate-700 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
               }`}
           >
             {st.replace('_', ' ')}
@@ -344,7 +347,7 @@ export default function TagihanPage() {
         ))}
       </div>
 
-      {/* Tabel Tagihan dengan tata letak simetris */}
+      {/* Tabel Tagihan */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-300">
@@ -404,10 +407,10 @@ export default function TagihanPage() {
                     <td className="px-6 py-4 align-middle">
                       <span
                         className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${t.status_pembayaran === 'lunas'
-                            ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
-                            : t.status_pembayaran === 'sebagian'
-                              ? 'bg-amber-950/80 text-amber-400 border border-amber-800'
-                              : 'bg-red-950/80 text-red-400 border border-red-800'
+                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
+                          : t.status_pembayaran === 'sebagian'
+                            ? 'bg-amber-950/80 text-amber-400 border border-amber-800'
+                            : 'bg-red-950/80 text-red-400 border border-red-800'
                           }`}
                       >
                         {t.status_pembayaran.replace('_', ' ')}
@@ -629,7 +632,7 @@ export default function TagihanPage() {
 
             {waProgress.logs.length > 0 && (
               <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-800 divide-y divide-slate-800 bg-slate-950/50">
-                {waProgress.logs.log || waProgress.logs.map((log, i) => (
+                {waProgress.logs.map((log, i) => (
                   <div key={i} className="px-3 py-2 flex justify-between items-center text-xs">
                     <span className="text-slate-300">{log.nama}</span>
                     <span className={`font-semibold ${log.status === 'terkirim' ? 'text-emerald-400' : 'text-red-400'}`}>
