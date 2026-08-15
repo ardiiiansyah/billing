@@ -24,17 +24,15 @@ export default function WilayahPage() {
     async function fetchWilayah() {
         setLoading(true)
         try {
-            const { data: dataWilayah, error } = await supabase
+            // Ambil data wilayah beserta relasi pelanggan untuk kalkulasi statistik
+            const { data, error } = await supabase
                 .from('wilayah')
-                .select('*')
+                .select('*, pelanggan(*, paket(harga))')
                 .order('rt', { ascending: true })
 
-            if (error) throw error // Tangkap error dari supabase
-
-            // ... proses data selanjutnya ...
-            setWilayahList(merged)
+            if (error) throw error
+            setWilayahList(data || [])
         } catch (err) {
-            // Aman: Developer tahu errornya di console, user tidak panik melihat kode teknis
             console.error('DEBUG FETCH ERROR:', err.message)
         } finally {
             setLoading(false)
@@ -60,12 +58,13 @@ export default function WilayahPage() {
         })
     }, [wilayahList])
 
-    // Filterberdasarkan keyword
+    // Filter berdasarkan keyword
     const filteredWilayah = useMemo(() => {
         return processedWilayah.filter((w) => {
             const q = search.toLowerCase()
             return (
                 w.nama_wilayah?.toLowerCase().includes(q) ||
+                w.nama?.toLowerCase().includes(q) ||
                 String(w.rt)?.includes(q) ||
                 String(w.rw)?.includes(q) ||
                 w.keterangan?.toLowerCase().includes(q)
@@ -104,12 +103,14 @@ export default function WilayahPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        setLoading(true) // 1. Kunci tombol agar tidak bisa diklik berulang kali
+        setLoading(true)
 
+        // Payload disesuaikan dengan kolom database (nama_wilayah, rt, rw, keterangan)
         const payload = {
-            nama: formData.nama_wilayah,
+            nama_wilayah: formData.nama_wilayah,
             rt: formData.rt,
             rw: formData.rw,
+            keterangan: formData.keterangan || null,
         }
 
         try {
@@ -124,13 +125,9 @@ export default function WilayahPage() {
             setShowModal(false)
             await fetchWilayah()
         } catch (err) {
-            // 2. Cetak detail error asli hanya di console untuk developer
             console.error('DEBUG ERROR:', err.message)
-
-            // 3. Pesan ramah dan aman untuk user
-            alert('Maaf, gagal menyimpan data wilayah. Silakan coba beberapa saat lagi.')
+            alert('Maaf, gagal menyimpan data wilayah: ' + err.message)
         } finally {
-            // 4. Pastikan loading selalu dimatikan di akhir proses
             setLoading(false)
         }
     }
@@ -138,20 +135,16 @@ export default function WilayahPage() {
     const handleDelete = async (id) => {
         if (!confirm('Yakin ingin menghapus data wilayah ini?')) return
 
-        setLoading(true) // 1. Kunci tombol hapus agar tidak diklik ganda
+        setLoading(true)
         try {
             const { error } = await supabase.from('wilayah').delete().eq('id', id)
             if (error) throw error
 
-            await fetchWilayah() // Muat ulang setelah hapus sukses
+            await fetchWilayah()
         } catch (err) {
-            // 2. Log teknis aman di console
             console.error('DEBUG DELETE ERROR:', err.message)
-
-            // 3. Pesan ramah untuk user
             alert('Maaf, gagal menghapus wilayah. Silakan coba lagi nanti.')
         } finally {
-            // 4. Pastikan loading selalu dimatikan
             setLoading(false)
         }
     }
@@ -360,7 +353,7 @@ export default function WilayahPage() {
                             </div>
 
                             <div>
-                                <label className="block text-slate-400 font-medium mb-1">KeteranganTambahan (Opsional)</label>
+                                <label className="block text-slate-400 font-medium mb-1">Keterangan Tambahan (Opsional)</label>
                                 <textarea
                                     rows={2}
                                     placeholder="Catatan acuan lokasi, penanggung jawab RT, dll..."
@@ -380,9 +373,10 @@ export default function WilayahPage() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl transition shadow-lg shadow-cyan-600/25"
+                                    disabled={loading}
+                                    className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl transition shadow-lg shadow-cyan-600/25 disabled:opacity-50"
                                 >
-                                    Simpan Wilayah
+                                    {loading ? 'Menyimpan...' : 'Simpan Wilayah'}
                                 </button>
                             </div>
                         </form>

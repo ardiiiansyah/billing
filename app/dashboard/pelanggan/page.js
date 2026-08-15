@@ -27,6 +27,12 @@ export default function PelangganPage() {
     status: null,
   })
 
+  // Modal Confirm Custom Hapus Pelanggan
+  const [confirmDeleteModal, setConfirmDeleteModal] = useState({
+    show: false,
+    id: null,
+  })
+
   // Modal WA Pengumuman Masal
   const [showBulkWaModal, setShowBulkWaModal] = useState(false)
   const [templateWaBulk, setTemplateWaBulk] = useState(
@@ -161,10 +167,9 @@ export default function PelangganPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true) // Kunci tombol
+    setLoading(true)
 
     try {
-      // Sesuaikan payload dengan kolom tabel database pelanggan kamu
       const payload = {
         kode_pelanggan: formData.kode_pelanggan,
         nama: formData.nama,
@@ -201,14 +206,15 @@ export default function PelangganPage() {
     fetchPelanggan()
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm('Yakin ingin menghapus data pelanggan ini?')) return
+  const executeDelete = async () => {
+    if (!confirmDeleteModal.id) return
 
     setLoading(true)
     try {
-      const { error } = await supabase.from('pelanggan').delete().eq('id', id)
+      const { error } = await supabase.from('pelanggan').delete().eq('id', confirmDeleteModal.id)
       if (error) throw error
 
+      setConfirmDeleteModal({ show: false, id: null })
       await fetchPelanggan()
     } catch (err) {
       console.error('DEBUG DELETE PELANGGAN ERROR:', err.message)
@@ -222,13 +228,11 @@ export default function PelangganPage() {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val)
   }
 
-  // Helper mendapatkan inisial nama untuk avatar
   const getInitials = (name) => {
     if (!name) return '?'
     return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
   }
 
-  // ── Bulk Action Handlers ────────────────────────────────────────────
   const isAllSelected = filteredPelanggan.length > 0 && filteredPelanggan.every((p) => selectedIds.includes(p.id))
 
   const handleToggleAll = () => {
@@ -341,7 +345,6 @@ export default function PelangganPage() {
         </button>
       </div>
 
-      {/* Kartu Ringkasan Cepat (Mini Stat Cards) */}
       {/* Kartu Ringkasan Cepat (Mini Stat Cards - Efek Timbul 3D) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Pelanggan */}
@@ -571,14 +574,14 @@ export default function PelangganPage() {
                     <td className="px-5 py-4 text-right whitespace-nowrap space-x-1.5">
                       <button
                         onClick={() => handleOpenModal(p)}
-                        disabled={loading} // <--- Tambahkan ini
+                        disabled={loading}
                         className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         ✏️ Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(p.id)}
-                        disabled={loading} // <--- Tambahkan ini
+                        onClick={() => setConfirmDeleteModal({ show: true, id: p.id })}
+                        disabled={loading}
                         className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         🗑️ Hapus
@@ -718,6 +721,37 @@ export default function PelangganPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Custom Konfirmasi Hapus Pelanggan */}
+      {confirmDeleteModal.show && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-center">
+            <span className="text-4xl block">🗑️</span>
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-white">Konfirmasi Hapus Data</h3>
+              <p className="text-xs text-slate-400">
+                Yakin ingin menghapus data pelanggan ini? Data yang dihapus tidak dapat dikembalikan.
+              </p>
+            </div>
+
+            <div className="flex justify-center gap-3 pt-2">
+              <button
+                onClick={() => setConfirmDeleteModal({ show: false, id: null })}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+              >
+                Batal
+              </button>
+              <button
+                onClick={executeDelete}
+                disabled={loading}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-rose-900/30"
+              >
+                {loading ? 'Menghapus...' : 'Ya, Hapus'}
+              </button>
+            </div>
           </div>
         </div>
       )}
