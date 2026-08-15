@@ -50,7 +50,7 @@ export default function TagihanPage() {
     try {
       const { data, error } = await supabase
         .from('tagihan')
-        .select('*, pelanggan(nama, kode_pelanggan, paket(nama_paket, harga))')
+        .select('*, pelanggan(nama, kode_pelanggan, no_wa, paket(nama_paket, harga))') // <-- Tambahkan no_wa di sini
         .order('created_at', { ascending: false })
 
       if (error) throw error
