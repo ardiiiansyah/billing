@@ -23,14 +23,14 @@ export async function POST(request) {
       return Response.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
-    // Cari tagihan berdasarkan order_id
-    const { data: tagihan } = await supabase
+    // Cari tagihan beserta data pelanggan (nama dan nomor WhatsApp) berdasarkan order_id
+    const { data: tagihan, error: errTagihan } = await supabase
       .from('tagihan')
-      .select('id')
+      .select('id, bulan, tahun, pelanggan:pelanggan_id(nama, no_whatsapp)')
       .eq('midtrans_order_id', order_id)
       .single()
 
-    if (!tagihan) {
+    if (errTagihan || !tagihan) {
       return Response.json({ error: 'Tagihan tidak ditemukan' }, { status: 404 })
     }
 
@@ -58,6 +58,22 @@ export async function POST(request) {
           status: 'lunas'
         })
         .eq('id', tagihan.id)
+
+      // 3. Kirim WhatsApp otomatis konfirmasi lunas ke pelanggan via Fonnte
+      if (tagihan.pelanggan?.no_whatsapp) {
+        const pesanWA = `Halo Bapak/Ibu *${tagihan.pelanggan.nama}*, pembayaran untuk tagihan WiFi bulan *${tagihan.bulan} ${tagihan.tahun}* sebesar *Rp ${Number(gross_amount).toLocaleString('id-ID')}* via Midtrans telah *BERHASIL* dan Lunas. Terima kasih sudah berlangganan! 🙏`
+
+        await fetch('https://api.fonnte.com/send', {
+          method: 'POST',
+          headers: {
+            'Authorization': process.env.FONNTE_TOKEN,
+          },
+          body: new URLSearchParams({
+            target: tagihan.pelanggan.no_whatsapp,
+            message: pesanWA,
+          }),
+        })
+      }
     }
 
     return Response.json({ sukses: true })
