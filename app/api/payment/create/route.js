@@ -75,6 +75,16 @@ export async function POST(request) {
 
       await kirimWA(pelanggan_wa, pesan)
 
+      // Catat ke tabel log_notifikasi agar muncul di dashboard menu Log WA
+      await supabase.from('log_notifikasi').insert([
+        {
+          tagihan_id: tagihan_id,
+          pesan: pesan,
+          status: 'terkirim',
+          kategori: 'tagihan',
+        }
+      ])
+
       const nomorFormatted = pelanggan_wa.startsWith('0')
         ? '62' + pelanggan_wa.slice(1)
         : pelanggan_wa
