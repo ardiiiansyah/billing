@@ -111,7 +111,6 @@ export default function WilayahPage() {
             nama_wilayah: formData.nama_wilayah,
             rt: formData.rt,
             rw: formData.rw,
-            keterangan: formData.keterangan || null,
         }
 
         try {
