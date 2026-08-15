@@ -317,7 +317,7 @@ export default function TagihanPage() {
         <button
           onClick={handleGenerateBulanan}
           disabled={generating}
-          className="... disabled:bg-slate-700 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold rounded-xl transition shadow-lg shadow-emerald-600/25 flex items-center gap-2"
         >
           {generating ? 'Memproses & Mengirim WA...' : '⚡ Generate Tagihan Bulanan'}
         </button>
