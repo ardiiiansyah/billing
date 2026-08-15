@@ -28,7 +28,6 @@ export default function TagihanPage() {
   const [templateWaBulk, setTemplateWaBulk] = useState(
     'Halo Bapak/Ibu *[nama]*, tagihan WiFi Sultan bulan ini belum dibayar.\n\nSegera lakukan pembayaran via link berikut:\n[link_bayar]\n\nTerima kasih 🙏'
   )
-  const [bulkWaLog, setBulkWaLog] = useState(null)
 
   // Modal Progress WA
   const [showWaProgress, setShowWaProgress] = useState(false)
@@ -68,9 +67,8 @@ export default function TagihanPage() {
         p_tahun: currentYear,
       })
 
-      if (error) throw error // Lempar error Supabase ke blok catch di bawah agar tertangkap rapi
+      if (error) throw error
 
-      // Ambil tagihan bulan ini dan kirim WA
       const { data: tagihanBaru } = await supabase
         .from('tagihan')
         .select('*, pelanggan(nama, no_wa)')
@@ -110,17 +108,13 @@ export default function TagihanPage() {
       alert(`Berhasil generate ${data || 0} tagihan!\nWA terkirim: ${waberhasil}, Gagal: ${wagagal}`)
       fetchTagihan()
     } catch (err) {
-      // AMAN: Cetak detail error asli hanya di console untuk developer
       console.error('DEBUG GENERATE BULANAN ERROR:', err.message || err)
-
-      // AMAN: Pesan netral untuk user agar tidak membocorkan struktur database
       alert('Maaf, terjadi kendala saat men-generate tagihan. Silakan periksa koneksi atau coba lagi.')
     } finally {
-      setGenerating(false) // Tombol otomatis terbuka kembali setelah proses selesai / gagal
+      setGenerating(false)
     }
   }
 
-  // Kirim tagihan via Midtrans → WhatsApp
   const handleKirimMidtrans = async (tagihan) => {
     if (!tagihan.pelanggan?.no_wa) {
       alert(`Pelanggan ${tagihan.pelanggan?.nama} tidak memiliki nomor WhatsApp!`)
@@ -150,10 +144,8 @@ export default function TagihanPage() {
         return
       }
 
-      // Refresh tagihan (payment_url sudah tersimpan)
       fetchTagihan()
 
-      // Buka WhatsApp di tab baru
       if (data.whatsapp_url) {
         window.open(data.whatsapp_url, '_blank')
       }
@@ -209,7 +201,6 @@ export default function TagihanPage() {
     }).format(val)
   }
 
-  // Summary counts
   const counts = {
     semua: tagihanList.length,
     belum_bayar: tagihanList.filter((t) => t.status_pembayaran === 'belum_bayar').length,
@@ -217,7 +208,6 @@ export default function TagihanPage() {
     sebagian: tagihanList.filter((t) => t.status_pembayaran === 'sebagian').length,
   }
 
-  // ── Bulk Action Handlers ────────────────────────────────────────────
   const isAllSelected = filteredTagihan.length > 0 && filteredTagihan.every(t => selectedIds.includes(t.id))
 
   const handleToggleAll = () => {
@@ -308,7 +298,7 @@ export default function TagihanPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header Halaman yang diselaraskan dengan Dashboard */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Tagihan & Kasir</h1>
@@ -317,36 +307,36 @@ export default function TagihanPage() {
         <button
           onClick={handleGenerateBulanan}
           disabled={generating}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold rounded-xl transition shadow-lg shadow-emerald-600/25 flex items-center gap-2"
+          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-emerald-900/30 flex items-center gap-2 w-fit"
         >
-          {generating ? 'Memproses & Mengirim WA...' : '⚡ Generate Tagihan Bulanan'}
+          <span>⚡</span> {generating ? 'Memproses & Mengirim WA...' : 'Generate Tagihan Bulanan'}
         </button>
       </div>
 
-      {/* Stats mini */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Kartu Metrik / Statistik Ringkas */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Total', count: counts.semua, color: 'border-slate-700 text-slate-300' },
-          { label: 'Belum Bayar', count: counts.belum_bayar, color: 'border-red-800 text-red-400' },
-          { label: 'Lunas', count: counts.lunas, color: 'border-emerald-800 text-emerald-400' },
-          { label: 'Sebagian', count: counts.sebagian, color: 'border-amber-800 text-amber-400' },
+          { label: 'Total Tagihan', count: counts.semua, color: 'text-slate-200 border-slate-800' },
+          { label: 'Belum Bayar', count: counts.belum_bayar, color: 'text-red-400 border-red-900/50' },
+          { label: 'Lunas', count: counts.lunas, color: 'text-emerald-400 border-emerald-900/50' },
+          { label: 'Sebagian', count: counts.sebagian, color: 'text-amber-400 border-amber-900/50' },
         ].map((s) => (
-          <div key={s.label} className={`bg-slate-900 border ${s.color} rounded-xl p-4 text-center`}>
-            <div className={`text-2xl font-bold ${s.color.split(' ')[1]}`}>{s.count}</div>
-            <div className="text-xs text-slate-400 mt-1">{s.label}</div>
+          <div key={s.label} className={`bg-slate-900 border ${s.color.split(' ')[1]} p-5 rounded-2xl shadow-sm transition hover:border-slate-700`}>
+            <div className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">{s.label}</div>
+            <div className={`text-2xl font-bold ${s.color.split(' ')[0]}`}>{s.count}</div>
           </div>
         ))}
       </div>
 
-      {/* Status Filter Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+      {/* Tab Filter Status */}
+      <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto">
         {['semua', 'belum_bayar', 'lunas', 'sebagian'].map((st) => (
           <button
             key={st}
             onClick={() => setFilterStatus(st)}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition ${filterStatus === st
-              ? 'bg-slate-800 text-white border border-slate-700'
-              : 'text-slate-400 hover:text-slate-200'
+            className={`px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition whitespace-nowrap ${filterStatus === st
+                ? 'bg-slate-800 text-white border border-slate-700 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
               }`}
           >
             {st.replace('_', ' ')}
@@ -354,13 +344,13 @@ export default function TagihanPage() {
         ))}
       </div>
 
-      {/* Tabel Tagihan */}
+      {/* Tabel Tagihan dengan tata letak simetris */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-300">
             <thead className="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
               <tr>
-                <th className="px-4 py-4 w-10">
+                <th className="px-6 py-4 w-10 align-middle">
                   <input
                     type="checkbox"
                     checked={isAllSelected}
@@ -368,33 +358,33 @@ export default function TagihanPage() {
                     className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-cyan-500 cursor-pointer accent-cyan-500"
                   />
                 </th>
-                <th className="px-5 py-4">Pelanggan</th>
-                <th className="px-5 py-4">Periode</th>
-                <th className="px-5 py-4">Nominal</th>
-                <th className="px-5 py-4">Jatuh Tempo</th>
-                <th className="px-5 py-4">Status</th>
-                <th className="px-5 py-4 text-right">Aksi</th>
+                <th className="px-6 py-4 align-middle">Pelanggan</th>
+                <th className="px-6 py-4 align-middle">Periode</th>
+                <th className="px-6 py-4 align-middle">Nominal</th>
+                <th className="px-6 py-4 align-middle">Jatuh Tempo</th>
+                <th className="px-6 py-4 align-middle">Status</th>
+                <th className="px-6 py-4 text-right align-middle">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-8 text-center text-slate-500">
+                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
                     Memuat daftar tagihan...
                   </td>
                 </tr>
               ) : filteredTagihan.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center">
+                  <td colSpan={7} className="px-6 py-12 text-center">
                     <div className="text-slate-500 text-4xl mb-3">🧾</div>
-                    <div className="text-slate-400">Tidak ada tagihan ditemukan.</div>
-                    <div className="text-slate-500 text-xs mt-1">Klik "Generate Tagihan" untuk membuat tagihan bulan ini.</div>
+                    <div className="text-slate-400 font-medium">Tidak ada tagihan ditemukan.</div>
+                    <div className="text-slate-500 text-xs mt-1">Klik tombol "Generate Tagihan Bulanan" di atas untuk membuat tagihan baru.</div>
                   </td>
                 </tr>
               ) : (
                 filteredTagihan.map((t) => (
                   <tr key={t.id} className={`hover:bg-slate-800/50 transition ${selectedIds.includes(t.id) ? 'bg-cyan-950/20' : ''}`}>
-                    <td className="px-4 py-4">
+                    <td className="px-6 py-4 align-middle">
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(t.id)}
@@ -402,60 +392,58 @@ export default function TagihanPage() {
                         className="w-4 h-4 rounded border-slate-600 bg-slate-800 cursor-pointer accent-cyan-500"
                       />
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4 align-middle">
                       <div className="font-semibold text-white">{t.pelanggan?.nama || 'Pelanggan Dihapus'}</div>
-                      <div className="text-xs text-slate-500 font-mono">
+                      <div className="text-xs text-slate-500 font-mono mt-0.5">
                         {t.pelanggan?.kode_pelanggan} · 📱 {t.pelanggan?.no_wa || '-'}
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-slate-200 font-medium">Bulan {t.bulan}/{t.tahun}</td>
-                    <td className="px-5 py-4 font-bold text-emerald-400">{formatRupiah(t.jumlah_tagihan)}</td>
-                    <td className="px-5 py-4 text-slate-400 text-xs">{t.tanggal_jatuh_tempo}</td>
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4 text-slate-200 font-medium align-middle">Bulan {t.bulan}/{t.tahun}</td>
+                    <td className="px-6 py-4 font-bold text-emerald-400 align-middle">{formatRupiah(t.jumlah_tagihan)}</td>
+                    <td className="px-6 py-4 text-slate-400 text-xs align-middle">{t.tanggal_jatuh_tempo}</td>
+                    <td className="px-6 py-4 align-middle">
                       <span
-                        className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${t.status_pembayaran === 'lunas'
-                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
-                          : t.status_pembayaran === 'sebagian'
-                            ? 'bg-amber-950/80 text-amber-400 border border-amber-800'
-                            : 'bg-red-950/80 text-red-400 border border-red-800'
+                        className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${t.status_pembayaran === 'lunas'
+                            ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
+                            : t.status_pembayaran === 'sebagian'
+                              ? 'bg-amber-950/80 text-amber-400 border border-amber-800'
+                              : 'bg-red-950/80 text-red-400 border border-red-800'
                           }`}
                       >
                         {t.status_pembayaran.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4 text-right align-middle">
                       {t.status_pembayaran !== 'lunas' ? (
                         <div className="flex items-center justify-end gap-2">
-                          {/* Tombol kirim via Midtrans + WA */}
                           <button
                             onClick={() => handleKirimMidtrans(t)}
                             disabled={sendingWa === t.id}
-                            title="Generate link bayar Midtrans & kirim ke WhatsApp pelanggan"
-                            className="px-3 py-1.5 bg-green-700 hover:bg-green-600 text-white text-xs font-semibold rounded-lg transition shadow-md shadow-green-900/20 flex items-center gap-1 disabled:opacity-50"
+                            title="Generate link bayar Midtrans & kirim ke WhatsApp"
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-md shadow-emerald-900/25 flex items-center gap-1 disabled:opacity-50"
                           >
                             {sendingWa === t.id ? (
                               <span>⏳ Proses...</span>
                             ) : (
                               <>
                                 <span>💬</span>
-                                <span>{t.payment_url ? 'Kirim Ulang WA' : 'Kirim WA'}</span>
+                                <span>{t.payment_url ? 'Kirim Ulang' : 'Kirim WA'}</span>
                               </>
                             )}
                           </button>
 
-                          {/* Tombol kasir manual (cash) */}
                           <button
                             onClick={() => handleOpenPayModal(t)}
-                            title="Catat pembayaran tunai / transfer manual"
-                            className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold rounded-lg transition"
+                            title="Catat pembayaran tunai langsung"
+                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition border border-slate-700"
                           >
                             💵 Tunai
                           </button>
                         </div>
                       ) : (
-                        <div className="text-right">
-                          <span className="text-xs text-emerald-500 font-medium">✓ Lunas</span>
-                        </div>
+                        <span className="text-xs text-emerald-400 font-semibold flex items-center justify-end gap-1">
+                          ✓ Lunas
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -466,24 +454,26 @@ export default function TagihanPage() {
         </div>
       </div>
 
-      {/* Keterangan fitur */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-xs text-slate-400 space-y-1">
-        <div className="font-semibold text-slate-300 mb-2">ℹ️ Panduan Penggunaan</div>
-        <div>• <span className="text-green-400 font-semibold">💬 Kirim WA</span> — Generate link bayar Midtrans (QRIS / Transfer Bank / Alfamart / Indomaret) & otomatis buka WhatsApp pelanggan.</div>
-        <div>• <span className="text-slate-300 font-semibold">💵 Tunai</span> — Catat pembayaran manual (cash/transfer) langsung oleh kasir.</div>
-        <div>• Status tagihan otomatis berubah ke <span className="text-emerald-400 font-semibold">Lunas</span> setelah pembayaran dikonfirmasi Midtrans.</div>
+      {/* Kotak Panduan Penggunaan */}
+      <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 text-xs text-slate-400 space-y-1.5 shadow-sm">
+        <div className="font-semibold text-slate-200 mb-2 flex items-center gap-1.5">
+          <span>ℹ️</span> Panduan Penggunaan Tagihan & Kasir
+        </div>
+        <div>• <span className="text-emerald-400 font-semibold">Kirim WA</span> — Menghasilkan link pembayaran online via Midtrans (QRIS / Transfer Bank / Minimarket) dan otomatis membuka WhatsApp pelanggan.</div>
+        <div>• <span className="text-slate-300 font-semibold">Tunai</span> — Mencatat pembayaran tunai atau transfer manual secara langsung oleh kasir.</div>
+        <div>• Status tagihan akan berubah otomatis menjadi <span className="text-emerald-400 font-semibold">Lunas</span> setelah pembayaran terkonfirmasi.</div>
       </div>
 
       {/* Modal Kasir Manual */}
       {showPayModal && selectedTagihan && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl">
-            <h3 className="text-xl font-bold text-white mb-1">Kasir Pembayaran Tunai</h3>
-            <p className="text-xs text-slate-400 mb-6">
-              Pelanggan: <strong className="text-white">{selectedTagihan.pelanggan?.nama}</strong>{' '}
-              ({selectedTagihan.pelanggan?.kode_pelanggan}) ·{' '}
-              <span className="text-emerald-400 font-bold">{formatRupiah(selectedTagihan.jumlah_tagihan)}</span>
-            </p>
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl space-y-4">
+            <div>
+              <h3 className="text-xl font-bold text-white mb-1">Kasir Pembayaran Tunai</h3>
+              <p className="text-xs text-slate-400">
+                Pelanggan: <strong className="text-white">{selectedTagihan.pelanggan?.nama}</strong> ({selectedTagihan.pelanggan?.kode_pelanggan}) · <span className="text-emerald-400 font-bold">{formatRupiah(selectedTagihan.jumlah_tagihan)}</span>
+              </p>
+            </div>
 
             <form onSubmit={handleProcessPayment} className="space-y-4">
               <div>
@@ -521,7 +511,7 @@ export default function TagihanPage() {
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-3">
+              <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowPayModal(false)}
@@ -531,7 +521,7 @@ export default function TagihanPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-emerald-900/30"
                 >
                   Konfirmasi Pembayaran
                 </button>
@@ -541,7 +531,7 @@ export default function TagihanPage() {
         </div>
       )}
 
-      {/* ── Bulk Action Bar ─────────────────────────────────────────── */}
+      {/* Bulk Action Bar */}
       <BulkActionBar
         selectedCount={selectedIds.length}
         onClear={() => setSelectedIds([])}
@@ -570,7 +560,7 @@ export default function TagihanPage() {
         ]}
       />
 
-      {/* ── Modal WA Masal ──────────────────────────────────────────── */}
+      {/* Modal WA Masal */}
       {showBulkWaModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl space-y-4">
@@ -582,33 +572,33 @@ export default function TagihanPage() {
               <button onClick={() => setShowBulkWaModal(false)} className="text-slate-400 hover:text-white">✕</button>
             </div>
 
-            <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-3 text-xs text-slate-400 space-y-1">
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 space-y-1">
               <p className="text-slate-300 font-semibold mb-1">💡 Variabel yang bisa digunakan:</p>
               <p><code className="text-cyan-400">[nama]</code> — Nama pelanggan</p>
-              <p><code className="text-cyan-400">[link_bayar]</code> — Link pembayaran online (per tagihan)</p>
+              <p><code className="text-cyan-400">[link_bayar]</code> — Link pembayaran online</p>
             </div>
 
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1">Template Pesan WA:</label>
               <textarea
-                rows={6}
+                rows={5}
                 value={templateWaBulk}
                 onChange={e => setTemplateWaBulk(e.target.value)}
-                className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono leading-relaxed"
+                className="w-full p-3.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono leading-relaxed"
               />
             </div>
 
             <div className="flex justify-end gap-3 pt-1">
               <button
                 onClick={() => setShowBulkWaModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl hover:bg-slate-700"
+                className="px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl hover:bg-slate-700 transition"
               >
                 Batal
               </button>
               <button
                 onClick={handleBulkWaSend}
                 disabled={!templateWaBulk.trim()}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-emerald-900/30"
               >
                 🚀 Kirim Sekarang
               </button>
@@ -617,20 +607,19 @@ export default function TagihanPage() {
         </div>
       )}
 
-      {/* ── Modal Progress WA ───────────────────────────────────────── */}
+      {/* Modal Progress WA */}
       {showWaProgress && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl space-y-4">
             <h3 className="text-lg font-bold text-white border-b border-slate-800 pb-3">📲 Progres Pengiriman WA</h3>
 
-            {/* Progress Bar */}
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-slate-400">
                 <span>Terkirim: <b className="text-emerald-400">{waProgress.terkirim}</b></span>
                 <span>Gagal: <b className="text-red-400">{waProgress.gagal}</b></span>
                 <span>Total: <b className="text-white">{waProgress.total}</b></span>
               </div>
-              <div className="w-full bg-slate-800 rounded-full h-2.5">
+              <div className="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
                 <div
                   className="bg-emerald-500 h-2.5 rounded-full transition-all duration-500"
                   style={{ width: waProgress.total > 0 ? `${((waProgress.terkirim + waProgress.gagal) / waProgress.total) * 100}%` : '0%' }}
@@ -638,10 +627,9 @@ export default function TagihanPage() {
               </div>
             </div>
 
-            {/* Log per pelanggan */}
             {waProgress.logs.length > 0 && (
-              <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-800 divide-y divide-slate-800">
-                {waProgress.logs.map((log, i) => (
+              <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-800 divide-y divide-slate-800 bg-slate-950/50">
+                {waProgress.logs.log || waProgress.logs.map((log, i) => (
                   <div key={i} className="px-3 py-2 flex justify-between items-center text-xs">
                     <span className="text-slate-300">{log.nama}</span>
                     <span className={`font-semibold ${log.status === 'terkirim' ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -652,7 +640,6 @@ export default function TagihanPage() {
               </div>
             )}
 
-            {/* Tampilkan loading atau tombol tutup */}
             {(waProgress.terkirim + waProgress.gagal) < waProgress.total ? (
               <p className="text-center text-xs text-slate-400 animate-pulse">⏳ Mengirim pesan, mohon tunggu...</p>
             ) : (
