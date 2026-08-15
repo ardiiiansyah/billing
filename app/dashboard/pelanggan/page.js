@@ -338,8 +338,8 @@ export default function PelangganPage() {
           </p>
         </div>
 
+        {/* Tombol Aksi Header Atas (Dibuat flex-1 agar ukurannya seimbang/sama besar di HP) */}
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          {/* Tombol Toggle Filter khusus Mobile */}
           <button
             onClick={() => setShowMobileFilter(!showMobileFilter)}
             className="md:hidden flex-1 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition border border-slate-700 flex items-center justify-center gap-1.5"
@@ -349,17 +349,17 @@ export default function PelangganPage() {
 
           <button
             onClick={() => handleOpenModal()}
-            className="flex-1 sm:flex-none px-3.5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 shadow-md shadow-cyan-600/20 active:scale-95 flex items-center justify-center gap-1.5"
+            className="flex-1 sm:flex-none px-3.5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl transition-all duration-200 shadow-md shadow-cyan-600/20 active:scale-95 flex items-center justify-center gap-1.5"
           >
             <span className="text-sm leading-none">➕</span> Tambah Pelanggan
           </button>
         </div>
       </div>
 
-      {/* Kartu Ringkasan Cepat (Mini Stat Cards - Grid 2x2 di HP, 4 di PC) */}
+      {/* Kartu Ringkasan Cepat (Dilengkapi efek hover interaktif sama seperti di Dashboard) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Pelanggan */}
-        <div className="bg-gradient-to-b from-blue-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out flex items-center justify-between">
+        <div className="bg-gradient-to-b from-blue-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/10 hover:border-blue-500/50 cursor-pointer flex items-center justify-between">
           <div>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Total Pelanggan</p>
             <p className="text-lg sm:text-xl font-extrabold text-white mt-1">{statsSummary.total}</p>
@@ -370,7 +370,7 @@ export default function PelangganPage() {
         </div>
 
         {/* Pelanggan Aktif */}
-        <div className="bg-gradient-to-b from-emerald-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out flex items-center justify-between">
+        <div className="bg-gradient-to-b from-emerald-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-500/10 hover:border-emerald-500/50 cursor-pointer flex items-center justify-between">
           <div>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Pelanggan Aktif</p>
             <p className="text-lg sm:text-xl font-extrabold text-emerald-400 mt-1">{statsSummary.aktif}</p>
@@ -381,7 +381,7 @@ export default function PelangganPage() {
         </div>
 
         {/* Status Isolir */}
-        <div className="bg-gradient-to-b from-rose-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out flex items-center justify-between">
+        <div className="bg-gradient-to-b from-rose-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-rose-500/10 hover:border-rose-500/50 cursor-pointer flex items-center justify-between">
           <div>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Status Isolir</p>
             <p className="text-lg sm:text-xl font-extrabold text-rose-400 mt-1">{statsSummary.isolir}</p>
@@ -392,7 +392,7 @@ export default function PelangganPage() {
         </div>
 
         {/* Wilayah RT */}
-        <div className="bg-gradient-to-b from-amber-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out flex items-center justify-between">
+        <div className="bg-gradient-to-b from-amber-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-500/10 hover:border-amber-500/50 cursor-pointer flex items-center justify-between">
           <div>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Wilayah RT</p>
             <p className="text-lg sm:text-xl font-extrabold text-amber-400 mt-1">{rtOptions.length} RT</p>
@@ -403,10 +403,9 @@ export default function PelangganPage() {
         </div>
       </div>
 
-      {/* Baris Filter Advanced (Bisa disembunyikan di Mobile lewat tombol Filter) */}
+      {/* Baris Filter Advanced */}
       <div className={`bg-slate-900/80 border border-slate-800/80 p-4 rounded-2xl space-y-3 shadow-xl shadow-black/20 ${showMobileFilter ? 'block' : 'hidden md:block'}`}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Search Bar */}
           <div className="flex items-center gap-2.5 bg-slate-950/80 border border-slate-800 px-3.5 py-2 rounded-xl focus-within:border-cyan-500/80 transition duration-200">
             <span className="text-slate-400 text-xs">🔍</span>
             <input
@@ -418,7 +417,6 @@ export default function PelangganPage() {
             />
           </div>
 
-          {/* Filter Status */}
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
@@ -429,7 +427,6 @@ export default function PelangganPage() {
             <option value="isolir">🔴 Status: Isolir</option>
           </select>
 
-          {/* Filter RT */}
           <select
             value={filterRt}
             onChange={(e) => setFilterRt(e.target.value)}
@@ -443,7 +440,6 @@ export default function PelangganPage() {
             ))}
           </select>
 
-          {/* Filter Paket */}
           <select
             value={filterPaket}
             onChange={(e) => setFilterPaket(e.target.value)}
@@ -458,7 +454,6 @@ export default function PelangganPage() {
           </select>
         </div>
 
-        {/* Ringkasan & Reset Filter */}
         {(search || filterStatus || filterRt || filterPaket) && (
           <div className="flex justify-between items-center text-xs text-slate-400 pt-2 border-t border-slate-800/60">
             <span>
@@ -471,7 +466,7 @@ export default function PelangganPage() {
         )}
       </div>
 
-      {/* Konten Utama Pelanggan: Tampilan Kartu untuk Mobile, Tabel untuk Desktop */}
+      {/* Konten Utama Pelanggan */}
       <div className="space-y-3">
         {loading ? (
           <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-12 text-center text-slate-500">
@@ -487,7 +482,6 @@ export default function PelangganPage() {
           </div>
         ) : (
           <>
-            {/* TAMPILAN MOBILE: Model Kartu (Card View) */}
             <div className="grid grid-cols-1 gap-3 md:hidden">
               {filteredPelanggan.map((p) => (
                 <div
@@ -576,7 +570,6 @@ export default function PelangganPage() {
               ))}
             </div>
 
-            {/* TAMPILAN DESKTOP: Tabel Modern Tradisional */}
             <div className="hidden md:block bg-slate-900/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl shadow-black/20">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-slate-300">
