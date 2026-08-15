@@ -7,7 +7,8 @@ import Sidebar from '@/components/sidebar'
 
 export default function DashboardLayout({ children }) {
   const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true) // Tambahkan state loading
+  const [loading, setLoading] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(true) // State untuk buka/tutup sidebar
   const router = useRouter()
 
   useEffect(() => {
@@ -17,7 +18,7 @@ export default function DashboardLayout({ children }) {
         router.push('/login')
       } else {
         setUser(user)
-        setLoading(false) // Matikan loading jika user ditemukan
+        setLoading(false)
       }
     }
     getUser()
@@ -28,7 +29,6 @@ export default function DashboardLayout({ children }) {
     router.push('/login')
   }
 
-  // Tampilkan loading sebentar alih-alih langsung mental ke login
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-950 text-white">
@@ -39,8 +39,15 @@ export default function DashboardLayout({ children }) {
 
   return (
     <div className="flex min-h-screen bg-slate-950 text-white">
-      <Sidebar userEmail={user?.email} onLogout={handleLogout} />
-      <main className="flex-1 p-6 overflow-y-auto">
+      {/* Kirim state sidebarOpen dan fungsi toggle ke komponen Sidebar */}
+      <Sidebar
+        userEmail={user?.email}
+        onLogout={handleLogout}
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
+      />
+
+      <main className="flex-1 p-6 overflow-y-auto min-w-0">
         {children}
       </main>
     </div>
