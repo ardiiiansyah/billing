@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { formatBulan, formatRupiah } from '@/lib/whatsapp' // Hapus kirimWA dari sini
+import { kirimWA, formatBulan, formatRupiah } from '@/lib/whatsapp'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -19,7 +19,16 @@ export async function POST(request) {
     const serverKey = process.env.MIDTRANS_SERVER_KEY
     const authKey = Buffer.from(serverKey + ':').toString('base64')
 
-    // Buat transaksi via Midtrans Snap API langsung
+    // 1. Ambil pelanggan_id dari tabel tagihan
+    const { data: tagihanData } = await supabase
+      .from('tagihan')
+      .select('pelanggan_id')
+      .eq('id', tagihan_id)
+      .single()
+
+    const pelangganId = tagihanData?.pelanggan_id || null
+
+    // 2. Buat transaksi via Midtrans Snap API
     const midtransRes = await fetch('https://app.sandbox.midtrans.com/snap/v1/transactions', {
       method: 'POST',
       headers: {
@@ -56,13 +65,43 @@ export async function POST(request) {
 
     const paymentUrl = midtransData.redirect_url
 
-    // Simpan ke Supabase
+    // 3. Simpan URL pembayaran ke Supabase
     await supabase
       .from('tagihan')
       .update({ payment_url: paymentUrl, midtrans_order_id: orderId })
       .eq('id', tagihan_id)
 
-    return Response.json({ sukses: true, payment_url: paymentUrl, order_id: orderId })
+    // 4. Kirim pesan WhatsApp secara otomatis via Fonnte
+    let whatsappUrl = null
+    if (pelanggan_wa) {
+      const pesan =
+        `Halo Bapak/Ibu *${pelanggan_nama}*, ` +
+        `tagihan WiFi Sultan bulan ${formatBulan(bulan)} ${tahun} sebesar *${formatRupiah(jumlah)}* ` +
+        `sudah siap dibayar.\n\n` +
+        `Klik link berikut untuk bayar:\n` +
+        `${process.env.NEXT_PUBLIC_APP_URL}/bayar/${tagihan_id}\n\n` +
+        `Terima kasih 🙏`
+
+      await kirimWA(pelanggan_wa, pesan)
+
+      // Simpan log notifikasi ke database
+      await supabase.from('log_notifikasi').insert([
+        {
+          pelanggan_id: pelangganId,
+          no_wa: pelanggan_wa,
+          jenis_pesan: 'Tagihan',
+          pesan: pesan,
+          status: 'terkirim',
+        }
+      ])
+
+      const nomorFormatted = pelanggan_wa.startsWith('0')
+        ? '62' + pelanggan_wa.slice(1)
+        : pelanggan_wa
+      whatsappUrl = `https://wa.me/${nomorFormatted}?text=${encodeURIComponent(pesan)}`
+    }
+
+    return Response.json({ sukses: true, payment_url: paymentUrl, order_id: orderId, whatsapp_url: whatsappUrl })
   } catch (err) {
     console.error('[PAYMENT] Error:', err)
     return Response.json({ error: err.message || 'Gagal membuat transaksi' }, { status: 500 })
