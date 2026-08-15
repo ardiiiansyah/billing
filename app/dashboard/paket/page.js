@@ -131,81 +131,122 @@ export default function PaketPage() {
 
         <button
           onClick={() => handleOpenModal()}
-          className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 shadow-lg shadow-cyan-600/25 active:scale-95 flex items-center gap-2"
+          className="px-3.5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] sm:text-sm font-bold rounded-xl transition-all duration-200 shadow-lg shadow-cyan-600/25 active:scale-95 flex items-center gap-1.5 whitespace-nowrap self-end sm:self-auto"
         >
-          <span className="text-base leading-none">➕</span> Tambah Paket
+          <span className="text-sm leading-none">➕</span> Tambah Paket
         </button>
       </div>
 
       {/* Daftar Paket Cards / Tabel */}
-      <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl shadow-black/20">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800/80">
-              <tr>
-                <th className="px-5 py-3.5 font-bold">Nama Paket</th>
-                <th className="px-5 py-3.5 font-bold">Kecepatan</th>
-                <th className="px-5 py-3.5 font-bold">Harga Bulanan</th>
-                <th className="px-5 py-3.5 font-bold">Deskripsi</th>
-                <th className="px-5 py-3.5 font-bold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/50">
-              {loading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                    Memuat data paket...
-                  </td>
-                </tr>
-              ) : paketList.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                    <div className="flex flex-col items-center justify-center gap-1.5">
-                      <span className="text-2xl">📦</span>
-                      <span className="font-medium text-slate-400">Belum ada paket WiFi tersedia</span>
-                      <span className="text-[11px] text-slate-600">Klik "Tambah Paket" untuk membuat paket baru.</span>
+      <div className="space-y-3">
+        {loading ? (
+          <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-12 text-center text-slate-500">
+            Memuat data paket...
+          </div>
+        ) : paketList.length === 0 ? (
+          <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-12 text-center text-slate-500">
+            <div className="flex flex-col items-center justify-center gap-1.5">
+              <span className="text-3xl mb-1">📦</span>
+              <span className="font-medium text-slate-400 text-xs">Belum ada paket WiFi tersedia</span>
+              <span className="text-[11px] text-slate-600">Klik "Tambah Paket" untuk membuat paket baru.</span>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Tampilan Card khusus Mobile (md:hidden) */}
+            <div className="grid grid-cols-1 gap-3 md:hidden">
+              {paketList.map((pkt) => (
+                <div key={pkt.id} className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                    <span className="font-bold text-white text-sm">{pkt.nama_paket}</span>
+                    <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono font-bold text-xs">
+                      {pkt.kecepatan || '-'}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs">
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">HARGA BULANAN</span>
+                      <span className="font-extrabold text-emerald-400 text-sm">{formatRupiah(pkt.harga)}</span>
                     </div>
-                  </td>
-                </tr>
-              ) : (
-                paketList.map((pkt) => (
-                  <tr key={pkt.id} className="hover:bg-slate-800/40 transition-colors duration-150">
-                    <td className="px-5 py-4 font-bold text-white text-sm">
-                      {pkt.nama_paket}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono font-bold text-xs">
-                        {pkt.kecepatan || '-'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 font-extrabold text-emerald-400 text-xs">
-                      {formatRupiah(pkt.harga)}
-                    </td>
-                    <td className="px-5 py-4 text-slate-400 text-xs">
-                      {pkt.deskripsi || '-'}
-                    </td>
-                    <td className="px-5 py-4 text-right whitespace-nowrap space-x-1.5">
-                      <button
-                        onClick={() => handleOpenModal(pkt)}
-                        disabled={loading}
-                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        ✏️ Edit
-                      </button>
-                      <button
-                        onClick={() => setConfirmDeleteModal({ show: true, id: pkt.id })}
-                        disabled={loading}
-                        className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        🗑️ Hapus
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                    <div className="text-right max-w-[50%]">
+                      <span className="text-slate-500 block text-[10px]">DESKRIPSI</span>
+                      <span className="text-slate-400 truncate block">{pkt.deskripsi || '-'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-800/80">
+                    <button
+                      onClick={() => handleOpenModal(pkt)}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition border border-slate-700"
+                    >
+                      ✏️ Edit
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteModal({ show: true, id: pkt.id })}
+                      className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20"
+                    >
+                      🗑️ Hapus
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Tampilan Tabel khusus Desktop (hidden md:block) */}
+            <div className="hidden md:block bg-slate-900/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl shadow-black/20">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-slate-950/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800/80">
+                    <tr>
+                      <th className="px-5 py-3.5 font-bold">Nama Paket</th>
+                      <th className="px-5 py-3.5 font-bold">Kecepatan</th>
+                      <th className="px-5 py-3.5 font-bold">Harga Bulanan</th>
+                      <th className="px-5 py-3.5 font-bold">Deskripsi</th>
+                      <th className="px-5 py-3.5 font-bold text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/50">
+                    {paketList.map((pkt) => (
+                      <tr key={pkt.id} className="hover:bg-slate-800/40 transition-colors duration-150">
+                        <td className="px-5 py-4 font-bold text-white text-sm">
+                          {pkt.nama_paket}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono font-bold text-xs">
+                            {pkt.kecepatan || '-'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 font-extrabold text-emerald-400 text-xs">
+                          {formatRupiah(pkt.harga)}
+                        </td>
+                        <td className="px-5 py-4 text-slate-400 text-xs">
+                          {pkt.deskripsi || '-'}
+                        </td>
+                        <td className="px-5 py-4 text-right whitespace-nowrap space-x-1.5">
+                          <button
+                            onClick={() => handleOpenModal(pkt)}
+                            disabled={loading}
+                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteModal({ show: true, id: pkt.id })}
+                            disabled={loading}
+                            className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            🗑️ Hapus
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Modal Form Tambah / Edit Paket */}
