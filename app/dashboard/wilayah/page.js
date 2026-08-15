@@ -10,6 +10,12 @@ export default function WilayahPage() {
     const [showModal, setShowModal] = useState(false)
     const [editId, setEditId] = useState(null)
 
+    // State untuk Custom Modal Konfirmasi Hapus
+    const [confirmDeleteModal, setConfirmDeleteModal] = useState({
+        show: false,
+        id: null,
+    })
+
     const [formData, setFormData] = useState({
         nama_wilayah: '',
         rt: '',
@@ -24,7 +30,6 @@ export default function WilayahPage() {
     async function fetchWilayah() {
         setLoading(true)
         try {
-            // Ambil data wilayah beserta relasi pelanggan untuk kalkulasi statistik
             const { data, error } = await supabase
                 .from('wilayah')
                 .select('*, pelanggan(*, paket(harga))')
@@ -39,7 +44,6 @@ export default function WilayahPage() {
         }
     }
 
-    // Kalkulasi data statistik untuk setiap wilayah
     const processedWilayah = useMemo(() => {
         return wilayahList.map((w) => {
             const pelanggans = w.pelanggan || []
@@ -58,7 +62,6 @@ export default function WilayahPage() {
         })
     }, [wilayahList])
 
-    // Filter berdasarkan keyword
     const filteredWilayah = useMemo(() => {
         return processedWilayah.filter((w) => {
             const q = search.toLowerCase()
@@ -72,7 +75,6 @@ export default function WilayahPage() {
         })
     }, [processedWilayah, search])
 
-    // Stat summary global untuk Wilayah
     const statsSummary = useMemo(() => {
         const totalWilayah = processedWilayah.length
         const totalPelanggan = processedWilayah.reduce((a, b) => a + b.totalPelanggan, 0)
@@ -105,7 +107,6 @@ export default function WilayahPage() {
         e.preventDefault()
         setLoading(true)
 
-        // Payload disesuaikan dengan kolom database (nama_wilayah, rt, rw, keterangan)
         const payload = {
             nama_wilayah: formData.nama_wilayah,
             rt: formData.rt,
@@ -132,14 +133,15 @@ export default function WilayahPage() {
         }
     }
 
-    const handleDelete = async (id) => {
-        if (!confirm('Yakin ingin menghapus data wilayah ini?')) return
+    const executeDelete = async () => {
+        if (!confirmDeleteModal.id) return
 
         setLoading(true)
         try {
-            const { error } = await supabase.from('wilayah').delete().eq('id', id)
+            const { error } = await supabase.from('wilayah').delete().eq('id', confirmDeleteModal.id)
             if (error) throw error
 
+            setConfirmDeleteModal({ show: false, id: null })
             await fetchWilayah()
         } catch (err) {
             console.error('DEBUG DELETE ERROR:', err.message)
@@ -176,7 +178,6 @@ export default function WilayahPage() {
 
             {/* Stat Cards 3D (Floating & Glowing) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Total Wilayah */}
                 <div className="bg-gradient-to-b from-blue-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-500/50 cursor-pointer flex items-center justify-between">
                     <div>
                         <p className="text-xs font-semibold text-slate-400">Total Wilayah Coverage</p>
@@ -187,7 +188,6 @@ export default function WilayahPage() {
                     </span>
                 </div>
 
-                {/* Total Pelanggan */}
                 <div className="bg-gradient-to-b from-cyan-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-500/20 hover:border-cyan-500/50 cursor-pointer flex items-center justify-between">
                     <div>
                         <p className="text-xs font-semibold text-slate-400">Total Seluruh Pelanggan</p>
@@ -198,7 +198,6 @@ export default function WilayahPage() {
                     </span>
                 </div>
 
-                {/* Total Potensi Omset */}
                 <div className="bg-gradient-to-b from-emerald-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-emerald-500/20 hover:border-emerald-500/50 cursor-pointer flex items-center justify-between">
                     <div>
                         <p className="text-xs font-semibold text-slate-400">Total Potensi Omset</p>
@@ -290,7 +289,7 @@ export default function WilayahPage() {
                                                 ✏️ Edit
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(w.id)}
+                                                onClick={() => setConfirmDeleteModal({ show: true, id: w.id })}
                                                 disabled={loading}
                                                 className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
@@ -380,6 +379,37 @@ export default function WilayahPage() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Custom Konfirmasi Hapus Wilayah */}
+            {confirmDeleteModal.show && (
+                <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-center">
+                        <span className="text-4xl block">🗑️</span>
+                        <div className="space-y-1">
+                            <h3 className="text-lg font-bold text-white">Konfirmasi Hapus Wilayah</h3>
+                            <p className="text-xs text-slate-400">
+                                Yakin ingin menghapus data wilayah ini? Data yang dihapus tidak dapat dikembalikan.
+                            </p>
+                        </div>
+
+                        <div className="flex justify-center gap-3 pt-2">
+                            <button
+                                onClick={() => setConfirmDeleteModal({ show: false, id: null })}
+                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={executeDelete}
+                                disabled={loading}
+                                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-rose-900/30"
+                            >
+                                {loading ? 'Menghapus...' : 'Ya, Hapus'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
