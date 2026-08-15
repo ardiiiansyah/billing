@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import Sidebar from '@/components/sidebar'
+import BottomNav from '@/components/bottomNav'
 
 export default function DashboardLayout({ children }) {
   const [user, setUser] = useState(null)
@@ -38,7 +39,7 @@ export default function DashboardLayout({ children }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-white">
+    <div className="flex min-h-screen bg-slate-950 text-white pb-16 md:pb-0">
       {/* Kirim state sidebarOpen dan fungsi toggle ke komponen Sidebar */}
       <Sidebar
         userEmail={user?.email}
@@ -50,6 +51,9 @@ export default function DashboardLayout({ children }) {
       <main className="flex-1 p-6 overflow-y-auto min-w-0">
         {children}
       </main>
+
+      {/* Menu Navigasi Bawah khusus Mobile */}
+      <BottomNav />
     </div>
   )
 }
