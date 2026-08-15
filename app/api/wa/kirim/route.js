@@ -3,16 +3,27 @@ import { supabase } from '@/lib/supabaseClient'
 
 export async function POST(request) {
     try {
-        const { nomor, pesan, pelanggan_nama } = await request.json()
+        const body = await request.json()
+        const { nomor, pesan } = body
+
         if (!nomor || !pesan) {
             return Response.json({ error: 'Data tidak lengkap' }, { status: 400 })
         }
 
-        const { sukses, data } = await kirimWA(nomor, pesan)
+        // Cari pelanggan_id berdasarkan nomor WA
+        const { data: pelangganData } = await supabase
+            .from('pelanggan')
+            .select('id')
+            .eq('no_wa', nomor)
+            .single()
 
-        // Simpan log notifikasi sesuai kolom tabel Supabase Anda
-        await supabase.from('log_notifikasi').insert([
+        const responseWa = await kirimWA(nomor, pesan)
+        const sukses = responseWa?.sukses ?? true
+
+        // Simpan log dengan menyertakan pelanggan_id jika ditemukan
+        const { error: dbError } = await supabase.from('log_notifikasi').insert([
             {
+                pelanggan_id: pelangganData?.id || null,
                 no_wa: nomor,
                 jenis_pesan: 'Tagihan / Pesan WA',
                 pesan: pesan,
@@ -20,8 +31,13 @@ export async function POST(request) {
             },
         ])
 
-        return Response.json({ sukses, data })
+        if (dbError) {
+            console.error('GAGAL INSERT LOG:', dbError.message)
+        }
+
+        return Response.json({ sukses, data: responseWa })
     } catch (err) {
+        console.error('API ERROR:', err.message)
         return Response.json({ error: err.message }, { status: 500 })
     }
 }
