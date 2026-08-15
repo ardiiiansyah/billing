@@ -24,7 +24,7 @@ export default function PembayaranPage() {
         try {
             const { data, error } = await supabase
                 .from('pembayaran')
-                .select('*')
+                .select('*, tagihan(pelanggan(nama))')
                 .order('tanggal_bayar', { ascending: false })
 
             if (error) throw error
@@ -50,7 +50,8 @@ export default function PembayaranPage() {
         const hariIni = new Date().toISOString().split('T')[0]
 
         data.forEach(item => {
-            const nominal = Number(item.jumlah_dibayar)
+            // DIPERBAIKI: Menggunakan jumlah_bayar sesuai kolom database Supabase
+            const nominal = Number(item.jumlah_bayar || 0)
             totalMasuk += nominal
 
             if (item.metode_pembayaran?.toUpperCase() === 'TUNAI' || item.metode_pembayaran?.toUpperCase() === 'CASH') {
@@ -170,7 +171,7 @@ export default function PembayaranPage() {
                                             {item.tagihan?.pelanggan?.nama || 'Pelanggan Umum'}
                                         </td>
                                         <td className="px-6 py-4 font-bold text-cyan-400 align-middle">
-                                            Rp {Number(item.jumlah_dibayar).toLocaleString('id-ID')}
+                                            Rp {Number(item.jumlah_bayar || 0).toLocaleString('id-ID')}
                                         </td>
                                         <td className="px-6 py-4 align-middle">
                                             <span className="inline-block px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">

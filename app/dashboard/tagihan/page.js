@@ -13,6 +13,9 @@ export default function TagihanPage() {
   const [selectedTagihan, setSelectedTagihan] = useState(null)
   const [sendingWa, setSendingWa] = useState(null)
 
+  // State untuk Custom Modal Konfirmasi Generate Tagihan
+  const [confirmGenerateModal, setConfirmGenerateModal] = useState(false)
+
   const [bayarForm, setBayarForm] = useState({
     jumlah_bayar: '',
     metode_pembayaran: 'cash',
@@ -58,7 +61,7 @@ export default function TagihanPage() {
   }
 
   const handleGenerateBulanan = async () => {
-    if (!confirm(`Generate tagihan untuk bulan ${currentMonth}/${currentYear} untuk semua pelanggan aktif?`)) return
+    setConfirmGenerateModal(false)
     setGenerating(true)
 
     try {
@@ -170,7 +173,8 @@ export default function TagihanPage() {
     e.preventDefault()
     if (!selectedTagihan) return
 
-    const { error } = await supabase.from('pembayaran').insert([
+    // 1. Masukkan data ke tabel pembayaran
+    const { error: errBayar } = await supabase.from('pembayaran').insert([
       {
         tagihan_id: selectedTagihan.id,
         jumlah_bayar: bayarForm.jumlah_bayar,
@@ -180,11 +184,23 @@ export default function TagihanPage() {
       },
     ])
 
-    if (error) {
-      alert('Gagal mencatat pembayaran: ' + error.message)
+    if (errBayar) {
+      alert('Gagal mencatat pembayaran: ' + errBayar.message)
+      return
+    }
+
+    // 2. UPDATE status tagihan menjadi 'lunas' agar laporan terbaca lunas
+    const { error: errUpdate } = await supabase
+      .from('tagihan')
+      .update({ status_pembayaran: 'lunas' })
+      .eq('id', selectedTagihan.id)
+
+    if (errUpdate) {
+      alert('Pembayaran tercatat, tapi gagal update status tagihan: ' + errUpdate.message)
     } else {
       setShowPayModal(false)
       fetchTagihan()
+      alert('Pembayaran tunai berhasil dicatat dan status tagihan menjadi Lunas!')
     }
   }
 
@@ -305,7 +321,7 @@ export default function TagihanPage() {
           <p className="text-slate-400 text-sm mt-1">Generate tagihan bulanan & kirim ke WhatsApp pelanggan.</p>
         </div>
         <button
-          onClick={handleGenerateBulanan}
+          onClick={() => setConfirmGenerateModal(true)}
           disabled={generating}
           className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-emerald-900/30 flex items-center gap-2 w-fit"
         >
@@ -533,6 +549,37 @@ export default function TagihanPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Modal Konfirmasi Generate Tagihan Bulanan */}
+      {confirmGenerateModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-center">
+            <span className="text-4xl block">⚡</span>
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-white">Generate Tagihan Bulanan</h3>
+              <p className="text-xs text-slate-400">
+                Generate tagihan untuk bulan {currentMonth}/{currentYear} untuk semua pelanggan aktif?
+              </p>
+            </div>
+
+            <div className="flex justify-center gap-3 pt-2">
+              <button
+                onClick={() => setConfirmGenerateModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleGenerateBulanan}
+                disabled={generating}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-emerald-900/30"
+              >
+                {generating ? 'Memproses...' : 'Ya, Generate'}
+              </button>
+            </div>
           </div>
         </div>
       )}
