@@ -21,16 +21,27 @@ export default function PembayaranPage() {
 
     const fetchPembayaran = async () => {
         setLoading(true)
-        const { data, error } = await supabase
-            .from('pembayaran')
-            .select('id, jumlah_dibayar, metode_pembayaran, tanggal_bayar, tagihan(pelanggan(nama))')
-            .order('tanggal_bayar', { ascending: false })
+        try {
+            const { data, error } = await supabase
+                .from('pembayaran')
+                .select('id, jumlah_dibayar, metode_pembayaran, tanggal_bayar, tagihan(pelanggan(nama))')
+                .order('tanggal_bayar', { ascending: false })
 
-        if (!error && data) {
-            setPembayaran(data)
-            kalkulasiMetrik(data)
+            if (error) throw error
+
+            if (data) {
+                setPembayaran(data)
+                kalkulasiMetrik(data)
+            }
+        } catch (err) {
+            // AMAN: Detail error asli dicetak di console untuk developer
+            console.error('DEBUG FETCH PEMBAYARAN ERROR:', err.message || err)
+
+            // AMAN: Pesan netral untuk user
+            alert('Maaf, gagal memuat data pembayaran. Silakan coba beberapa saat lagi.')
+        } finally {
+            setLoading(false)
         }
-        setLoading(false)
     }
 
     const kalkulasiMetrik = (data) => {
@@ -72,9 +83,10 @@ export default function PembayaranPage() {
                 </div>
                 <button
                     onClick={fetchPembayaran}
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl text-sm transition border border-slate-700 flex items-center gap-2"
+                    disabled={loading}
+                    className="bg-slate-800 hover:bg-slate-700 disabled:bg-slate-900 disabled:cursor-not-allowed text-slate-200 px-4 py-2 rounded-xl text-sm transition border border-slate-700 flex items-center gap-2"
                 >
-                    🔄 Refresh
+                    🔄 {loading ? 'Memuat...' : 'Refresh'}
                 </button>
             </div>
 

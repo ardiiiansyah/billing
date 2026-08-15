@@ -81,14 +81,20 @@ export default function PelangganPage() {
   }
 
   async function fetchPelanggan() {
-    const { data, error } = await supabase
-      .from('pelanggan')
-      .select('*, paket(nama_paket, harga)')
-      .order('created_at', { ascending: false })
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('pelanggan')
+        .select('*, paket(nama_paket, harga), wilayah(nama, rt, rw)')
+        .order('created_at', { ascending: false })
 
-    if (error) console.error('Error fetching pelanggan:', error)
-    else setPelangganList(data || [])
-    setLoading(false)
+      if (error) throw error
+      setPelangganList(data || [])
+    } catch (err) {
+      console.error('DEBUG FETCH PELANGGAN ERROR:', err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   // List opsi RT dinamis dari data pelanggan
@@ -155,13 +161,38 @@ export default function PelangganPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (editId) {
-      await supabase.from('pelanggan').update(formData).eq('id', editId)
-    } else {
-      await supabase.from('pelanggan').insert([formData])
+    setLoading(true) // Kunci tombol
+
+    try {
+      // Sesuaikan payload dengan kolom tabel database pelanggan kamu
+      const payload = {
+        kode_pelanggan: formData.kode_pelanggan,
+        nama: formData.nama,
+        alamat: formData.alamat,
+        no_wa: formData.no_wa,
+        rt: formData.rt,
+        rw: formData.rw,
+        paket_id: formData.paket_id || null,
+        tanggal_jatuh_tempo: formData.tanggal_jatuh_tempo,
+        status: formData.status || 'aktif',
+      }
+
+      if (editId) {
+        const { error } = await supabase.from('pelanggan').update(payload).eq('id', editId)
+        if (error) throw error
+      } else {
+        const { error } = await supabase.from('pelanggan').insert([payload])
+        if (error) throw error
+      }
+
+      setShowModal(false)
+      await fetchPelanggan()
+    } catch (err) {
+      console.error('DEBUG SUBMIT PELANGGAN ERROR:', err.message)
+      alert('Maaf, gagal menyimpan data pelanggan. Silakan periksa kembali isian form.')
+    } finally {
+      setLoading(false)
     }
-    setShowModal(false)
-    fetchPelanggan()
   }
 
   const handleToggleStatus = async (pelanggan) => {
@@ -171,9 +202,19 @@ export default function PelangganPage() {
   }
 
   const handleDelete = async (id) => {
-    if (confirm('Yakin hapus data pelanggan ini? Tagihan terkait juga akan terhapus.')) {
-      await supabase.from('pelanggan').delete().eq('id', id)
-      fetchPelanggan()
+    if (!confirm('Yakin ingin menghapus data pelanggan ini?')) return
+
+    setLoading(true)
+    try {
+      const { error } = await supabase.from('pelanggan').delete().eq('id', id)
+      if (error) throw error
+
+      await fetchPelanggan()
+    } catch (err) {
+      console.error('DEBUG DELETE PELANGGAN ERROR:', err.message)
+      alert('Maaf, gagal menghapus data pelanggan.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -520,8 +561,8 @@ export default function PelangganPage() {
                       <button
                         onClick={() => handleToggleStatus(p)}
                         className={`px-3 py-1 rounded-full text-[11px] font-bold tracking-wide transition-all duration-200 ${p.status === 'aktif'
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
-                            : 'bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20'
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
+                          : 'bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20'
                           }`}
                       >
                         {p.status === 'aktif' ? '🟢 Aktif' : '🔴 Isolir'}
@@ -530,13 +571,15 @@ export default function PelangganPage() {
                     <td className="px-5 py-4 text-right whitespace-nowrap space-x-1.5">
                       <button
                         onClick={() => handleOpenModal(p)}
-                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition"
+                        disabled={loading} // <--- Tambahkan ini
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         ✏️ Edit
                       </button>
                       <button
                         onClick={() => handleDelete(p.id)}
-                        className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20"
+                        disabled={loading} // <--- Tambahkan ini
+                        className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         🗑️ Hapus
                       </button>
@@ -668,9 +711,10 @@ export default function PelangganPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl transition shadow-lg shadow-cyan-600/25"
+                  disabled={loading}
+                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold rounded-xl transition shadow-lg shadow-cyan-600/25"
                 >
-                  Simpan Pelanggan
+                  {loading ? 'Menyimpan...' : 'Simpan Pelanggan'}
                 </button>
               </div>
             </form>

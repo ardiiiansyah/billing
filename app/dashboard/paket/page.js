@@ -22,10 +22,19 @@ export default function PaketPage() {
 
   async function fetchPaket() {
     setLoading(true)
-    const { data, error } = await supabase.from('paket').select('*').order('created_at', { ascending: true })
-    if (error) console.error('Error fetching paket:', error)
-    else setPaketList(data || [])
-    setLoading(false)
+    try {
+      const { data, error } = await supabase
+        .from('paket')
+        .select('*')
+        .order('harga', { ascending: true })
+
+      if (error) throw error
+      setPaketList(data || [])
+    } catch (err) {
+      console.error('DEBUG FETCH PAKET ERROR:', err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleOpenModal = (paket = null) => {
@@ -46,19 +55,48 @@ export default function PaketPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (editId) {
-      await supabase.from('paket').update(formData).eq('id', editId)
-    } else {
-      await supabase.from('paket').insert([formData])
+    setLoading(true)
+
+    const payload = {
+      nama_paket: formData.nama_paket,
+      kecepatan: formData.kecepatan,
+      harga: Number(formData.harga),
+      deskripsi: formData.deskripsi,
     }
-    setShowModal(false)
-    fetchPaket()
+
+    try {
+      if (editId) {
+        const { error } = await supabase.from('paket').update(payload).eq('id', editId)
+        if (error) throw error
+      } else {
+        const { error } = await supabase.from('paket').insert([payload])
+        if (error) throw error
+      }
+
+      setShowModal(false)
+      await fetchPaket()
+    } catch (err) {
+      console.error('DEBUG SUBMIT PAKET ERROR:', err.message)
+      alert('Maaf, gagal menyimpan paket internet. Silakan periksa kembali isian form.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleDelete = async (id) => {
-    if (confirm('Yakin ingin menghapus paket ini?')) {
-      await supabase.from('paket').delete().eq('id', id)
-      fetchPaket()
+    if (!confirm('Yakin ingin menghapus paket ini?')) return
+
+    setLoading(true)
+    try {
+      const { error } = await supabase.from('paket').delete().eq('id', id)
+      if (error) throw error
+
+      await fetchPaket()
+    } catch (err) {
+      console.error('DEBUG DELETE PAKET ERROR:', err.message)
+      alert('Maaf, gagal menghapus paket internet.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -112,17 +150,19 @@ export default function PaketPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 font-bold text-emerald-400">{formatRupiah(p.harga)}</td>
-                  <td className="px-6 py-4 text-slate-400 max-w-xs truncate">{p.deskripsi || '-'}</td>
+                  <td className="px-6 py-4 text-slate-200 font-medium max-w-xs truncate">{p.deskripsi || '-'}</td>
                   <td className="px-6 py-4 text-right space-x-2">
                     <button
                       onClick={() => handleOpenModal(p)}
-                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition"
+                      disabled={loading}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       ✏️ Edit
                     </button>
                     <button
                       onClick={() => handleDelete(p.id)}
-                      className="px-3 py-1.5 bg-red-950/60 hover:bg-red-900/80 text-red-300 rounded-lg text-xs transition border border-red-900/50"
+                      disabled={loading}
+                      className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       🗑️ Hapus
                     </button>
@@ -195,9 +235,10 @@ export default function PaketPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded-xl transition"
+                  disabled={loading}
+                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold rounded-xl transition shadow-lg shadow-cyan-600/25"
                 >
-                  Simpan
+                  {loading ? 'Menyimpan...' : 'Simpan Paket'}
                 </button>
               </div>
             </form>

@@ -43,14 +43,19 @@ export default function TagihanPage() {
 
   async function fetchTagihan() {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('tagihan')
-      .select('*, pelanggan(nama, kode_pelanggan, no_wa)')
-      .order('created_at', { ascending: false })
+    try {
+      const { data, error } = await supabase
+        .from('tagihan')
+        .select('*, pelanggan(nama, kode_pelanggan, paket(nama_paket, harga))')
+        .order('created_at', { ascending: false })
 
-    if (error) console.error('Error fetching tagihan:', error)
-    else setTagihanList(data || [])
-    setLoading(false)
+      if (error) throw error
+      setTagihanList(data || [])
+    } catch (err) {
+      console.error('DEBUG FETCH TAGIHAN ERROR:', err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleGenerateBulanan = async () => {
@@ -63,10 +68,7 @@ export default function TagihanPage() {
         p_tahun: currentYear,
       })
 
-      if (error) {
-        alert('Gagal generate tagihan: ' + error.message)
-        return
-      }
+      if (error) throw error // Lempar error Supabase ke blok catch di bawah agar tertangkap rapi
 
       // Ambil tagihan bulan ini dan kirim WA
       const { data: tagihanBaru } = await supabase
@@ -108,9 +110,13 @@ export default function TagihanPage() {
       alert(`Berhasil generate ${data || 0} tagihan!\nWA terkirim: ${waberhasil}, Gagal: ${wagagal}`)
       fetchTagihan()
     } catch (err) {
-      alert('Error koneksi.')
+      // AMAN: Cetak detail error asli hanya di console untuk developer
+      console.error('DEBUG GENERATE BULANAN ERROR:', err.message || err)
+
+      // AMAN: Pesan netral untuk user agar tidak membocorkan struktur database
+      alert('Maaf, terjadi kendala saat men-generate tagihan. Silakan periksa koneksi atau coba lagi.')
     } finally {
-      setGenerating(false)
+      setGenerating(false) // Tombol otomatis terbuka kembali setelah proses selesai / gagal
     }
   }
 
@@ -311,9 +317,9 @@ export default function TagihanPage() {
         <button
           onClick={handleGenerateBulanan}
           disabled={generating}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-emerald-900/30 flex items-center gap-2 w-fit disabled:opacity-50"
+          className="... disabled:bg-slate-700 disabled:cursor-not-allowed"
         >
-          <span>⚡</span> {generating ? 'Memproses...' : `Generate Tagihan (${currentMonth}/${currentYear})`}
+          {generating ? 'Memproses & Mengirim WA...' : '⚡ Generate Tagihan Bulanan'}
         </button>
       </div>
 
@@ -339,8 +345,8 @@ export default function TagihanPage() {
             key={st}
             onClick={() => setFilterStatus(st)}
             className={`px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition ${filterStatus === st
-                ? 'bg-slate-800 text-white border border-slate-700'
-                : 'text-slate-400 hover:text-slate-200'
+              ? 'bg-slate-800 text-white border border-slate-700'
+              : 'text-slate-400 hover:text-slate-200'
               }`}
           >
             {st.replace('_', ' ')}
@@ -408,10 +414,10 @@ export default function TagihanPage() {
                     <td className="px-5 py-4">
                       <span
                         className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${t.status_pembayaran === 'lunas'
-                            ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
-                            : t.status_pembayaran === 'sebagian'
-                              ? 'bg-amber-950/80 text-amber-400 border border-amber-800'
-                              : 'bg-red-950/80 text-red-400 border border-red-800'
+                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
+                          : t.status_pembayaran === 'sebagian'
+                            ? 'bg-amber-950/80 text-amber-400 border border-amber-800'
+                            : 'bg-red-950/80 text-red-400 border border-red-800'
                           }`}
                       >
                         {t.status_pembayaran.replace('_', ' ')}
