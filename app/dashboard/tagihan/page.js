@@ -159,9 +159,15 @@ export default function TagihanPage() {
     }
 
     // 2. UPDATE status tagihan menjadi 'lunas' agar laporan terbaca lunas
+    // 2. UPDATE status tagihan menjadi 'lunas' dan sinkronkan dengan laporan
     const { error: errUpdate } = await supabase
       .from('tagihan')
-      .update({ status_pembayaran: 'lunas' })
+      .update({
+        status_pembayaran: 'lunas',
+        status: 'lunas',
+        metode_pembayaran: bayarForm.metode_pembayaran,
+        tanggal_bayar: new Date().toISOString()
+      })
       .eq('id', selectedTagihan.id)
 
     if (errUpdate) {
