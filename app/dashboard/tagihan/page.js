@@ -118,9 +118,9 @@ export default function TagihanPage() {
 
       fetchTagihan()
 
-      if (data.whatsapp_url) {
-        window.open(data.whatsapp_url, '_blank')
-      }
+      // Beri tahu pengguna bahwa pesan berhasil dikirim otomatis
+      setResultModal({ show: true, message: 'Link pembayaran berhasil dibuat dan pesan WA berhasil dikirim otomatis!' })
+
     } catch (err) {
       setResultModal({ show: true, message: 'Error koneksi ke server.' })
     } finally {
@@ -409,10 +409,10 @@ export default function TagihanPage() {
                     <td className="px-6 py-4 align-middle">
                       <span
                         className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider whitespace-nowrap ${t.status_pembayaran === 'lunas'
-                            ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
-                            : t.status_pembayaran === 'sebagian'
-                              ? 'bg-amber-950/80 text-amber-400 border border-amber-800'
-                              : 'bg-red-950/80 text-red-400 border border-red-800'
+                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
+                          : t.status_pembayaran === 'sebagian'
+                            ? 'bg-amber-950/80 text-amber-400 border border-amber-800'
+                            : 'bg-red-950/80 text-red-400 border border-red-800'
                           }`}
                       >
                         {t.status_pembayaran.replace('_', ' ')}
