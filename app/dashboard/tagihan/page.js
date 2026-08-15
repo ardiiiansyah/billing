@@ -13,8 +13,9 @@ export default function TagihanPage() {
   const [selectedTagihan, setSelectedTagihan] = useState(null)
   const [sendingWa, setSendingWa] = useState(null)
 
-  // State untuk Custom Modal Konfirmasi Generate Tagihan
+  // State untuk Custom Modal Konfirmasi Generate Tagihan & Hasil
   const [confirmGenerateModal, setConfirmGenerateModal] = useState(false)
+  const [resultModal, setResultModal] = useState({ show: false, message: '' })
 
   const [bayarForm, setBayarForm] = useState({
     jumlah_bayar: '',
@@ -100,7 +101,7 @@ export default function TagihanPage() {
           const res = await fetch('/api/wa/kirim', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nomor: no_wa, pesan }),
+            body: JSON.stringify({ nomor: no_wa, pesan, pelanggan_nama: nama }),
           })
           const result = await res.json()
           if (result.sukses) waberhasil++
@@ -108,7 +109,10 @@ export default function TagihanPage() {
         }
       }
 
-      alert(`Berhasil generate ${data || 0} tagihan!\nWA terkirim: ${waberhasil}, Gagal: ${wagagal}`)
+      setResultModal({
+        show: true,
+        message: `Berhasil generate ${data || 0} tagihan!\nWA terkirim: ${waberhasil}, Gagal: ${wagagal}`
+      })
       fetchTagihan()
     } catch (err) {
       console.error('DEBUG GENERATE BULANAN ERROR:', err.message || err)
@@ -584,6 +588,28 @@ export default function TagihanPage() {
         </div>
       )}
 
+      {/* Custom Modal Hasil Generate */}
+      {resultModal.show && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-center">
+            <span className="text-4xl block">✨</span>
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-white">Informasi Generate</h3>
+              <p className="text-xs text-slate-300 whitespace-pre-line leading-relaxed">
+                {resultModal.message}
+              </p>
+            </div>
+
+            <button
+              onClick={() => setResultModal({ show: false, message: '' })}
+              className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-cyan-600/25"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Bulk Action Bar */}
       <BulkActionBar
         selectedCount={selectedIds.length}
@@ -709,3 +735,4 @@ export default function TagihanPage() {
     </div>
   )
 }
+```[cite: 2]
