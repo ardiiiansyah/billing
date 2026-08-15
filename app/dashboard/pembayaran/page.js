@@ -22,9 +22,10 @@ export default function PembayaranPage() {
     const fetchPembayaran = async () => {
         setLoading(true)
         try {
+            // Mengambil data tabel pembayaran secara langsung tanpa join yang belum terhubung
             const { data, error } = await supabase
                 .from('pembayaran')
-                .select('id, jumlah_dibayar, metode_pembayaran, tanggal_bayar, tagihan(pelanggan(nama))')
+                .select('*')
                 .order('tanggal_bayar', { ascending: false })
 
             if (error) throw error
@@ -34,10 +35,7 @@ export default function PembayaranPage() {
                 kalkulasiMetrik(data)
             }
         } catch (err) {
-            // AMAN: Detail error asli dicetak di console untuk developer
             console.error('DEBUG FETCH PEMBAYARAN ERROR:', err.message || err)
-
-            // AMAN: Pesan netral untuk user
             alert('Maaf, gagal memuat data pembayaran. Silakan coba beberapa saat lagi.')
         } finally {
             setLoading(false)
