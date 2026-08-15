@@ -11,11 +11,12 @@ export default function PelangganPage() {
   const [showModal, setShowModal] = useState(false)
   const [editId, setEditId] = useState(null)
 
-  // ── State Filter Advanced ─────────────────────────────────────────
+  // ── State Filter Advanced & Mobile Toggle ─────────────────────────
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterRt, setFilterRt] = useState('')
   const [filterPaket, setFilterPaket] = useState('')
+  const [showMobileFilter, setShowMobileFilter] = useState(false)
 
   // ── State Bulk Action ──────────────────────────────────────────────
   const [selectedIds, setSelectedIds] = useState([])
@@ -337,63 +338,73 @@ export default function PelangganPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => handleOpenModal()}
-          className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 shadow-lg shadow-cyan-600/25 active:scale-95 flex items-center gap-2"
-        >
-          <span className="text-base leading-none">➕</span> Tambah Pelanggan
-        </button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* Tombol Toggle Filter khusus Mobile */}
+          <button
+            onClick={() => setShowMobileFilter(!showMobileFilter)}
+            className="md:hidden flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition border border-slate-700 flex items-center justify-center gap-2"
+          >
+            <span>🔍</span> {showMobileFilter ? 'Tutup Filter' : 'Filter'}
+          </button>
+
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex-1 sm:flex-none px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 shadow-lg shadow-cyan-600/25 active:scale-95 flex items-center justify-center gap-2"
+          >
+            <span className="text-base leading-none">➕</span> Tambah Pelanggan
+          </button>
+        </div>
       </div>
 
-      {/* Kartu Ringkasan Cepat (Mini Stat Cards - Efek Timbul 3D) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Kartu Ringkasan Cepat (Mini Stat Cards - Grid 2x2 di HP, 4 di PC) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Pelanggan */}
-        <div className="bg-gradient-to-b from-blue-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-500/50 cursor-pointer flex items-center justify-between">
+        <div className="bg-gradient-to-b from-blue-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-400">Total Pelanggan</p>
-            <p className="text-xl font-extrabold text-white mt-1">{statsSummary.total}</p>
+            <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Total Pelanggan</p>
+            <p className="text-lg sm:text-xl font-extrabold text-white mt-1">{statsSummary.total}</p>
           </div>
-          <span className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-base shadow-inner">
+          <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm sm:text-base shadow-inner">
             👥
           </span>
         </div>
 
         {/* Pelanggan Aktif */}
-        <div className="bg-gradient-to-b from-emerald-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-emerald-500/20 hover:border-emerald-500/50 cursor-pointer flex items-center justify-between">
+        <div className="bg-gradient-to-b from-emerald-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-400">Pelanggan Aktif</p>
-            <p className="text-xl font-extrabold text-emerald-400 mt-1">{statsSummary.aktif}</p>
+            <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Pelanggan Aktif</p>
+            <p className="text-lg sm:text-xl font-extrabold text-emerald-400 mt-1">{statsSummary.aktif}</p>
           </div>
-          <span className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-base shadow-inner">
+          <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm sm:text-base shadow-inner">
             ✅
           </span>
         </div>
 
         {/* Status Isolir */}
-        <div className="bg-gradient-to-b from-rose-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-rose-500/20 hover:border-rose-500/50 cursor-pointer flex items-center justify-between">
+        <div className="bg-gradient-to-b from-rose-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-400">Status Isolir</p>
-            <p className="text-xl font-extrabold text-rose-400 mt-1">{statsSummary.isolir}</p>
+            <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Status Isolir</p>
+            <p className="text-lg sm:text-xl font-extrabold text-rose-400 mt-1">{statsSummary.isolir}</p>
           </div>
-          <span className="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-base shadow-inner">
+          <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm sm:text-base shadow-inner">
             🔴
           </span>
         </div>
 
         {/* Wilayah RT */}
-        <div className="bg-gradient-to-b from-amber-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-amber-500/20 hover:border-amber-500/50 cursor-pointer flex items-center justify-between">
+        <div className="bg-gradient-to-b from-amber-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-400">Wilayah RT</p>
-            <p className="text-xl font-extrabold text-amber-400 mt-1">{rtOptions.length} RT</p>
+            <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Wilayah RT</p>
+            <p className="text-lg sm:text-xl font-extrabold text-amber-400 mt-1">{rtOptions.length} RT</p>
           </div>
-          <span className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-base shadow-inner">
+          <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm sm:text-base shadow-inner">
             📍
           </span>
         </div>
       </div>
 
-      {/* Baris Filter Advanced */}
-      <div className="bg-slate-900/80 border border-slate-800/80 p-4 rounded-2xl space-y-3 shadow-xl shadow-black/20">
+      {/* Baris Filter Advanced (Bisa disembunyikan di Mobile lewat tombol Filter) */}
+      <div className={`bg-slate-900/80 border border-slate-800/80 p-4 rounded-2xl space-y-3 shadow-xl shadow-black/20 ${showMobileFilter ? 'block' : 'hidden md:block'}`}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Search Bar */}
           <div className="flex items-center gap-2.5 bg-slate-950/80 border border-slate-800 px-3.5 py-2 rounded-xl focus-within:border-cyan-500/80 transition duration-200">
@@ -460,139 +471,229 @@ export default function PelangganPage() {
         )}
       </div>
 
-      {/* Tabel Pelanggan Modern */}
-      <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl shadow-black/20">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800/80">
-              <tr>
-                <th className="px-4 py-3.5 w-10 text-center">
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected}
-                    onChange={handleToggleAll}
-                    className="w-4 h-4 rounded border-slate-700 bg-slate-900 cursor-pointer accent-cyan-500"
-                  />
-                </th>
-                <th className="px-5 py-3.5 font-bold">ID Pelanggan</th>
-                <th className="px-5 py-3.5 font-bold">Nama Warga</th>
-                <th className="px-5 py-3.5 font-bold">No WhatsApp</th>
-                <th className="px-5 py-3.5 font-bold">Paket Langganan</th>
-                <th className="px-5 py-3.5 font-bold">Jatuh Tempo</th>
-                <th className="px-5 py-3.5 font-bold">Status</th>
-                <th className="px-5 py-3.5 font-bold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/50">
-              {loading ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
-                    Memuat data pelanggan...
-                  </td>
-                </tr>
-              ) : filteredPelanggan.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
-                    <div className="flex flex-col items-center justify-center gap-1.5">
-                      <span className="text-2xl">🔍</span>
-                      <span className="font-medium text-slate-400">Tidak ada pelanggan ditemukan</span>
-                      <span className="text-[11px] text-slate-600">Coba ubah kata kunci pencarian atau reset filter.</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredPelanggan.map((p) => (
-                  <tr
-                    key={p.id}
-                    className={`hover:bg-slate-800/40 transition-colors duration-150 ${selectedIds.includes(p.id) ? 'bg-cyan-950/25' : ''
-                      }`}
-                  >
-                    <td className="px-4 py-4 text-center">
+      {/* Konten Utama Pelanggan: Tampilan Kartu untuk Mobile, Tabel untuk Desktop */}
+      <div className="space-y-3">
+        {loading ? (
+          <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-12 text-center text-slate-500">
+            Memuat data pelanggan...
+          </div>
+        ) : filteredPelanggan.length === 0 ? (
+          <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-12 text-center text-slate-500">
+            <div className="flex flex-col items-center justify-center gap-1.5">
+              <span className="text-2xl">🔍</span>
+              <span className="font-medium text-slate-400">Tidak ada pelanggan ditemukan</span>
+              <span className="text-[11px] text-slate-600">Coba ubah kata kunci pencarian atau reset filter.</span>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* TAMPILAN MOBILE: Model Kartu (Card View) */}
+            <div className="grid grid-cols-1 gap-3 md:hidden">
+              {filteredPelanggan.map((p) => (
+                <div
+                  key={p.id}
+                  className={`bg-slate-900/90 border rounded-2xl p-4 space-y-3 transition-all ${selectedIds.includes(p.id) ? 'border-cyan-500 bg-cyan-950/20' : 'border-slate-800'
+                    }`}
+                >
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                    <div className="flex items-center gap-2.5">
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(p.id)}
                         onChange={() => handleToggleOne(p.id)}
                         className="w-4 h-4 rounded border-slate-700 bg-slate-900 cursor-pointer accent-cyan-500"
                       />
-                    </td>
-                    <td className="px-5 py-4 font-mono text-cyan-400 font-bold text-xs">
-                      <a href={`/dashboard/pelanggan/${p.id}`} className="hover:underline">
+                      <a href={`/dashboard/pelanggan/${p.id}`} className="font-mono text-cyan-400 font-bold text-xs hover:underline">
                         {p.kode_pelanggan}
                       </a>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-cyan-400 text-xs shrink-0 shadow-inner">
-                          {getInitials(p.nama)}
-                        </div>
-                        <div>
-                          <a href={`/dashboard/pelanggan/${p.id}`} className="hover:underline text-white font-bold text-sm block">
-                            {p.nama}
+                    </div>
+                    <button
+                      onClick={() => handleToggleStatus(p)}
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide ${p.status === 'aktif'
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                        }`}
+                    >
+                      {p.status === 'aktif' ? '🟢 Aktif' : '🔴 Isolir'}
+                    </button>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-cyan-400 text-xs shrink-0 shadow-inner">
+                      {getInitials(p.nama)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <a href={`/dashboard/pelanggan/${p.id}`} className="hover:underline text-white font-bold text-sm block truncate">
+                        {p.nama}
+                      </a>
+                      <p className="text-slate-400 text-xs truncate mt-0.5">
+                        {p.alamat} <span className="text-slate-500">(RT {p.rt || '-'}/RW {p.rw || '-'})</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/60 text-xs">
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">PAKET & HARGA</span>
+                      <span className="font-bold text-slate-200">{p.paket ? p.paket.nama_paket : '-'}</span>
+                      <div className="text-emerald-400 text-[11px] font-semibold">{p.paket ? formatRupiah(p.paket.harga) : ''}</div>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">JATUH TEMPO & WA</span>
+                      <span className="text-slate-300 font-medium">Tgl {p.tanggal_jatuh_tempo}</span>
+                      <div className="mt-0.5">
+                        {p.no_wa ? (
+                          <a
+                            href={`https://wa.me/${p.no_wa.replace(/^0/, '62')}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-emerald-400 font-mono text-[11px] font-semibold hover:underline"
+                          >
+                            <span>💬</span> {p.no_wa}
                           </a>
-                          <div className="text-xs text-slate-400 mt-0.5">
-                            {p.alamat} <span className="text-slate-500">(RT {p.rt || '-'}/RW {p.rw || '-'})</span>
-                          </div>
-                        </div>
+                        ) : (
+                          <span className="text-slate-500">-</span>
+                        )}
                       </div>
-                    </td>
-                    <td className="px-5 py-4 font-medium">
-                      {p.no_wa ? (
-                        <a
-                          href={`https://wa.me/${p.no_wa.replace(/^0/, '62')}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 text-emerald-400 hover:underline font-mono text-xs font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20"
-                        >
-                          <span>💬</span> {p.no_wa}
-                        </a>
-                      ) : (
-                        <span className="text-slate-500">-</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-4">
-                      {p.paket ? (
-                        <div>
-                          <span className="font-bold text-slate-200 text-xs">{p.paket.nama_paket}</span>
-                          <div className="text-xs text-emerald-400 font-semibold mt-0.5">{formatRupiah(p.paket.harga)}</div>
-                        </div>
-                      ) : (
-                        <span className="text-slate-500">-</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-4 text-slate-300 font-medium text-xs">Tgl {p.tanggal_jatuh_tempo}</td>
-                    <td className="px-5 py-4">
-                      <button
-                        onClick={() => handleToggleStatus(p)}
-                        className={`px-3 py-1 rounded-full text-[11px] font-bold tracking-wide transition-all duration-200 ${p.status === 'aktif'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
-                          : 'bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20'
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-800/80">
+                    <button
+                      onClick={() => handleOpenModal(p)}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition"
+                    >
+                      ✏️ Edit
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteModal({ show: true, id: p.id })}
+                      className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20"
+                    >
+                      🗑️ Hapus
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* TAMPILAN DESKTOP: Tabel Modern Tradisional */}
+            <div className="hidden md:block bg-slate-900/80 border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl shadow-black/20">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-slate-950/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800/80">
+                    <tr>
+                      <th className="px-4 py-3.5 w-10 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isAllSelected}
+                          onChange={handleToggleAll}
+                          className="w-4 h-4 rounded border-slate-700 bg-slate-900 cursor-pointer accent-cyan-500"
+                        />
+                      </th>
+                      <th className="px-5 py-3.5 font-bold">ID Pelanggan</th>
+                      <th className="px-5 py-3.5 font-bold">Nama Warga</th>
+                      <th className="px-5 py-3.5 font-bold">No WhatsApp</th>
+                      <th className="px-5 py-3.5 font-bold">Paket Langganan</th>
+                      <th className="px-5 py-3.5 font-bold">Jatuh Tempo</th>
+                      <th className="px-5 py-3.5 font-bold">Status</th>
+                      <th className="px-5 py-3.5 font-bold text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/50">
+                    {filteredPelanggan.map((p) => (
+                      <tr
+                        key={p.id}
+                        className={`hover:bg-slate-800/40 transition-colors duration-150 ${selectedIds.includes(p.id) ? 'bg-cyan-950/25' : ''
                           }`}
                       >
-                        {p.status === 'aktif' ? '🟢 Aktif' : '🔴 Isolir'}
-                      </button>
-                    </td>
-                    <td className="px-5 py-4 text-right whitespace-nowrap space-x-1.5">
-                      <button
-                        onClick={() => handleOpenModal(p)}
-                        disabled={loading}
-                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        ✏️ Edit
-                      </button>
-                      <button
-                        onClick={() => setConfirmDeleteModal({ show: true, id: p.id })}
-                        disabled={loading}
-                        className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        🗑️ Hapus
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                        <td className="px-4 py-4 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(p.id)}
+                            onChange={() => handleToggleOne(p.id)}
+                            className="w-4 h-4 rounded border-slate-700 bg-slate-900 cursor-pointer accent-cyan-500"
+                          />
+                        </td>
+                        <td className="px-5 py-4 font-mono text-cyan-400 font-bold text-xs">
+                          <a href={`/dashboard/pelanggan/${p.id}`} className="hover:underline">
+                            {p.kode_pelanggan}
+                          </a>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-cyan-400 text-xs shrink-0 shadow-inner">
+                              {getInitials(p.nama)}
+                            </div>
+                            <div>
+                              <a href={`/dashboard/pelanggan/${p.id}`} className="hover:underline text-white font-bold text-sm block">
+                                {p.nama}
+                              </a>
+                              <div className="text-xs text-slate-400 mt-0.5">
+                                {p.alamat} <span className="text-slate-500">(RT {p.rt || '-'}/RW {p.rw || '-'})</span>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 font-medium">
+                          {p.no_wa ? (
+                            <a
+                              href={`https://wa.me/${p.no_wa.replace(/^0/, '62')}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 text-emerald-400 hover:underline font-mono text-xs font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20"
+                            >
+                              <span>💬</span> {p.no_wa}
+                            </a>
+                          ) : (
+                            <span className="text-slate-500">-</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4">
+                          {p.paket ? (
+                            <div>
+                              <span className="font-bold text-slate-200 text-xs">{p.paket.nama_paket}</span>
+                              <div className="text-xs text-emerald-400 font-semibold mt-0.5">{formatRupiah(p.paket.harga)}</div>
+                            </div>
+                          ) : (
+                            <span className="text-slate-500">-</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4 text-slate-300 font-medium text-xs">Tgl {p.tanggal_jatuh_tempo}</td>
+                        <td className="px-5 py-4">
+                          <button
+                            onClick={() => handleToggleStatus(p)}
+                            className={`px-3 py-1 rounded-full text-[11px] font-bold tracking-wide transition-all duration-200 ${p.status === 'aktif'
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
+                                : 'bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20'
+                              }`}
+                          >
+                            {p.status === 'aktif' ? '🟢 Aktif' : '🔴 Isolir'}
+                          </button>
+                        </td>
+                        <td className="px-5 py-4 text-right whitespace-nowrap space-x-1.5">
+                          <button
+                            onClick={() => handleOpenModal(p)}
+                            disabled={loading}
+                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteModal({ show: true, id: p.id })}
+                            disabled={loading}
+                            className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            🗑️ Hapus
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Modal Form Tambah / Edit */}

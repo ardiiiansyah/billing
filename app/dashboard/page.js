@@ -192,28 +192,29 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Stat Cards 3D */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        {statCards.map((s) => (
+      {/* Stat Cards 3D (Grid 2 Kolom di HP, 5 Kolom di PC) */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+        {statCards.map((s, index) => (
           <div
             key={s.label}
             className={`
               bg-gradient-to-b ${s.gradient} 
               border border-slate-800/80 
-              rounded-2xl p-4 
+              rounded-2xl p-3.5 sm:p-4 
               shadow-lg shadow-black/40 
               transition-all duration-300 ease-out 
               hover:-translate-y-1 hover:shadow-2xl ${s.glow}
               cursor-pointer
+              ${index === 4 ? 'col-span-2 lg:col-span-1' : ''}
             `}
           >
-            <div className="flex justify-between items-start mb-3">
-              <span className="text-xs font-semibold text-slate-400">{s.label}</span>
-              <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-semibold shadow-inner ${s.bgIcon}`}>
+            <div className="flex justify-between items-start mb-2 sm:mb-3">
+              <span className="text-[11px] sm:text-xs font-semibold text-slate-400">{s.label}</span>
+              <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center text-xs sm:text-sm font-semibold shadow-inner ${s.bgIcon}`}>
                 {s.icon}
               </span>
             </div>
-            <p className={`text-xl font-extrabold tracking-tight ${s.valueColor}`}>
+            <p className={`text-base sm:text-xl font-extrabold tracking-tight truncate ${s.valueColor}`}>
               {loading ? '...' : s.value}
             </p>
           </div>
@@ -385,8 +386,8 @@ export default function DashboardPage() {
                     <td className="px-5 py-3 text-slate-300 font-medium">{p.paket?.nama_paket || '-'}</td>
                     <td className="px-5 py-3">
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide ${p.status === 'aktif'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                        : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
                         }`}>
                         {p.status}
                       </span>
