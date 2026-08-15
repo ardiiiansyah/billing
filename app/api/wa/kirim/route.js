@@ -10,20 +10,12 @@ export async function POST(request) {
             return Response.json({ error: 'Data tidak lengkap' }, { status: 400 })
         }
 
-        // Cari pelanggan_id berdasarkan nomor WA
-        const { data: pelangganData } = await supabase
-            .from('pelanggan')
-            .select('id')
-            .eq('no_wa', nomor)
-            .single()
-
         const responseWa = await kirimWA(nomor, pesan)
         const sukses = responseWa?.sukses ?? true
 
-        // Simpan log dengan menyertakan pelanggan_id jika ditemukan
+        // Simpan log secara langsung karena kolom pelanggan_id sudah diatur nullable di Supabase
         const { error: dbError } = await supabase.from('log_notifikasi').insert([
             {
-                pelanggan_id: pelangganData?.id || null,
                 no_wa: nomor,
                 jenis_pesan: 'Tagihan / Pesan WA',
                 pesan: pesan,
