@@ -142,7 +142,7 @@ export default function TagihanPage() {
     e.preventDefault()
     if (!selectedTagihan) return
 
-    // 1. Masukkan data ke tabel pembayaran
+    // 1. Masukkan data ke tabel pembayaran (di sini metode_pembayaran tetap disimpan dengan aman)
     const { error: errBayar } = await supabase.from('pembayaran').insert([
       {
         tagihan_id: selectedTagihan.id,
@@ -158,15 +158,12 @@ export default function TagihanPage() {
       return
     }
 
-    // 2. UPDATE status tagihan menjadi 'lunas' agar laporan terbaca lunas
-    // 2. UPDATE status tagihan menjadi 'lunas' dan sinkronkan dengan laporan
+    // 2. UPDATE status tagihan menggunakan kolom yang sudah ada di tabel tagihan
     const { error: errUpdate } = await supabase
       .from('tagihan')
       .update({
         status_pembayaran: 'lunas',
-        status: 'lunas',
-        metode_pembayaran: bayarForm.metode_pembayaran,
-        tanggal_bayar: new Date().toISOString()
+        status: 'lunas'
       })
       .eq('id', selectedTagihan.id)
 
