@@ -19,6 +19,15 @@ export async function POST(request) {
     const serverKey = process.env.MIDTRANS_SERVER_KEY
     const authKey = Buffer.from(serverKey + ':').toString('base64')
 
+    // Ambil detail tagihan dan pelanggan_id dari database
+    const { data: tagihanData } = await supabase
+      .from('tagihan')
+      .select('pelanggan_id')
+      .eq('id', tagihan_id)
+      .single()
+
+    const pelangganId = tagihanData?.pelanggan_id || null
+
     // Buat transaksi via Midtrans Snap API langsung
     const midtransRes = await fetch('https://app.sandbox.midtrans.com/snap/v1/transactions', {
       method: 'POST',
@@ -75,13 +84,15 @@ export async function POST(request) {
 
       await kirimWA(pelanggan_wa, pesan)
 
-      // Catat ke tabel log_notifikasi agar muncul di dashboard menu Log WA
+      // Simpan log lengkap yang sesuai dengan struktur halaman log notifikasi
       await supabase.from('log_notifikasi').insert([
         {
           tagihan_id: tagihan_id,
+          pelanggan_id: pelangganId,
+          no_wa: pelanggan_wa,
+          jenis_pesan: 'Tagihan',
           pesan: pesan,
           status: 'terkirim',
-          kategori: 'tagihan',
         }
       ])
 
