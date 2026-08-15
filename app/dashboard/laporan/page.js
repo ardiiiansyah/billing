@@ -198,26 +198,35 @@ export default function LaporanKeuanganPage() {
                 </button>
             </div>
 
-            {/* Cards Summary */}
+            {/* Cards Summary dengan Efek 3D Hover */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Pemasukan (Lunas)</p>
+                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-500/10 hover:border-emerald-500/50 cursor-pointer">
+                    <div className="flex justify-between items-start mb-2">
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Pemasukan (Lunas)</p>
+                        <span className="text-base">📈</span>
+                    </div>
                     <p className="text-2xl font-extrabold text-emerald-400 mt-2 font-mono">
                         Rp {summary.totalPemasukan.toLocaleString('id-ID')}
                     </p>
                     <p className="text-xs text-slate-500 mt-1">{summary.jumlahLunas} transaksi lunas</p>
                 </div>
 
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Menunggak</p>
+                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-rose-500/10 hover:border-rose-500/50 cursor-pointer">
+                    <div className="flex justify-between items-start mb-2">
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Menunggak</p>
+                        <span className="text-base">⚠️</span>
+                    </div>
                     <p className="text-2xl font-extrabold text-rose-400 mt-2 font-mono">
                         Rp {summary.totalMenunggak.toLocaleString('id-ID')}
                     </p>
                     <p className="text-xs text-slate-500 mt-1">{summary.jumlahMenunggak} tagihan belum dibayar</p>
                 </div>
 
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Potensi Tagihan</p>
+                <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-500/10 hover:border-cyan-500/50 cursor-pointer">
+                    <div className="flex justify-between items-start mb-2">
+                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Potensi Tagihan</p>
+                        <span className="text-base">💰</span>
+                    </div>
                     <p className="text-2xl font-extrabold text-cyan-400 mt-2 font-mono">
                         Rp {summary.totalTagihan.toLocaleString('id-ID')}
                     </p>
@@ -333,8 +342,8 @@ export default function LaporanKeuanganPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${item.status === 'lunas'
-                                                    ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
-                                                    : 'bg-rose-950/80 text-rose-400 border border-rose-800'
+                                                ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
+                                                : 'bg-rose-950/80 text-rose-400 border border-rose-800'
                                                 }`}>
                                                 {item.status === 'lunas' ? 'LUNAS' : 'BELUM BAYAR'}
                                             </span>
