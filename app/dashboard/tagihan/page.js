@@ -360,18 +360,23 @@ export default function TagihanPage() {
         ))}
       </div>
 
-      {/* Tab Filter Status */}
-      <div className="flex items-center gap-2 border-b border-slate-800/80 pb-3 overflow-x-auto scrollbar-none">
-        {['semua', 'belum_bayar', 'lunas', 'sebagian'].map((st) => (
+      {/* Tab Filter Status (Diubah menjadi Grid 2 kolom di HP agar tidak terpotong) */}
+      <div className="grid grid-cols-2 sm:flex items-center gap-2">
+        {[
+          { id: 'semua', label: 'Semua' },
+          { id: 'belum_bayar', label: 'Belum Bayar' },
+          { id: 'lunas', label: 'Lunas' },
+          { id: 'sebagian', label: 'Sebagian' },
+        ].map((st) => (
           <button
-            key={st}
-            onClick={() => setFilterStatus(st)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition whitespace-nowrap shrink-0 ${filterStatus === st
-                ? 'bg-slate-800 text-white border border-slate-700 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
+            key={st.id}
+            onClick={() => setFilterStatus(st.id)}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 text-center ${filterStatus === st.id
+                ? 'bg-slate-800 text-white border border-slate-700 shadow-md'
+                : 'bg-slate-900/60 text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-slate-800/80'
               }`}
           >
-            {st.replace('_', ' ')}
+            {st.label}
           </button>
         ))}
       </div>
@@ -416,10 +421,10 @@ export default function TagihanPage() {
                       </div>
                       <span
                         className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${t.status_pembayaran === 'lunas'
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                            : t.status_pembayaran === 'sebagian'
-                              ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                              : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                          : t.status_pembayaran === 'sebagian'
+                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                            : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
                           }`}
                       >
                         {t.status_pembayaran.replace('_', ' ')}
@@ -523,10 +528,10 @@ export default function TagihanPage() {
                         <td className="px-4 sm:px-6 py-4 align-middle">
                           <span
                             className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${t.status_pembayaran === 'lunas'
-                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                                : t.status_pembayaran === 'sebagian'
-                                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                                  : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                              : t.status_pembayaran === 'sebagian'
+                                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                                : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
                               }`}
                           >
                             {t.status_pembayaran.replace('_', ' ')}
