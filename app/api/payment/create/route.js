@@ -84,10 +84,9 @@ export async function POST(request) {
 
       await kirimWA(pelanggan_wa, pesan)
 
-      // Simpan log lengkap yang sesuai dengan struktur halaman log notifikasi
-      await supabase.from('log_notifikasi').insert([
+      // Simpan log dengan struktur kolom yang sesuai dengan tabel log_notifikasi
+      const { error: logError } = await supabase.from('log_notifikasi').insert([
         {
-          tagihan_id: tagihan_id,
           pelanggan_id: pelangganId,
           no_wa: pelanggan_wa,
           jenis_pesan: 'Tagihan',
@@ -95,6 +94,10 @@ export async function POST(request) {
           status: 'terkirim',
         }
       ])
+
+      if (logError) {
+        console.error('[GAGAL MENYIMPAN LOG KE SUPABASE]:', logError)
+      }
 
       const nomorFormatted = pelanggan_wa.startsWith('0')
         ? '62' + pelanggan_wa.slice(1)
