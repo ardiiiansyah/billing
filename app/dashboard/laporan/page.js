@@ -58,6 +58,9 @@ export default function LaporanKeuanganPage() {
                     paket_id,
                     wilayah (*),
                     paket (*)
+                ),
+                pembayaran (
+                    created_at
                 )
             `)
             .eq('tahun', Number(selectedTahun))
@@ -352,7 +355,14 @@ export default function LaporanKeuanganPage() {
                                             {item.metode_pembayaran || '-'}
                                         </td>
                                         <td className="px-6 py-4 text-xs text-slate-400 font-mono">
-                                            {item.tanggal_bayar ? new Date(item.tanggal_bayar).toLocaleDateString('id-ID') : '-'}
+                                            {item.pembayaran && item.pembayaran.length > 0
+                                                ? new Date(item.pembayaran[0].created_at).toLocaleDateString('id-ID', {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                    year: 'numeric'
+                                                })
+                                                : '-'
+                                            }
                                         </td>
                                     </tr>
                                 ))

@@ -432,7 +432,12 @@ export default function TagihanPage() {
                         {t.pelanggan?.kode_pelanggan} · 📱 {t.pelanggan?.no_wa || '-'}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-slate-200 font-medium align-middle">Bulan {t.bulan}/{t.tahun}</td>
+                    <td className="px-6 py-4 text-slate-200 font-medium align-middle">
+                      {(() => {
+                        const namaBulan = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                        return `${namaBulan[t.bulan] || t.bulan} ${t.tahun}`;
+                      })()}
+                    </td>
                     <td className="px-6 py-4 font-bold text-emerald-400 align-middle">{formatRupiah(t.jumlah_tagihan)}</td>
                     <td className="px-6 py-4 text-slate-400 text-xs align-middle">{t.tanggal_jatuh_tempo}</td>
                     <td className="px-6 py-4 align-middle">
