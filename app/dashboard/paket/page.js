@@ -131,6 +131,8 @@ export default function PaketPage() {
               <th className="px-6 py-4 text-right">Aksi</th>
             </tr>
           </thead>
+          // ... (bagian atas kode tetap sama)
+
           <tbody className="divide-y divide-slate-800">
             {loading ? (
               <tr>
@@ -143,15 +145,26 @@ export default function PaketPage() {
             ) : (
               paketList.map((p) => (
                 <tr key={p.id} className="hover:bg-slate-800/50 transition">
-                  <td className="px-6 py-4 font-semibold text-white">{p.nama_paket}</td>
-                  <td className="px-6 py-4">
-                    <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-cyan-950/80 text-cyan-400 border border-cyan-800">
-                      ⚡ {p.kecepatan}
-                    </span>
+                  {/* Nama Paket */}
+                  <td className="px-6 py-4 font-semibold text-white align-middle">{p.nama_paket}</td>
+
+                  {/* Kecepatan dengan flex agar Badge rata tengah vertikal */}
+                  <td className="px-6 py-4 align-middle">
+                    <div className="flex items-center">
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-cyan-950/80 text-cyan-400 border border-cyan-800">
+                        ⚡ {p.kecepatan}
+                      </span>
+                    </div>
                   </td>
-                  <td className="px-6 py-4 font-bold text-emerald-400">{formatRupiah(p.harga)}</td>
-                  <td className="px-6 py-4 text-slate-200 font-medium max-w-xs truncate">{p.deskripsi || '-'}</td>
-                  <td className="px-6 py-4 text-right space-x-2">
+
+                  {/* Harga */}
+                  <td className="px-6 py-4 font-bold text-emerald-400 align-middle">{formatRupiah(p.harga)}</td>
+
+                  {/* Deskripsi */}
+                  <td className="px-6 py-4 text-slate-200 font-medium max-w-xs truncate align-middle">{p.deskripsi || '-'}</td>
+
+                  {/* Aksi (Tombol rata kanan vertikal) */}
+                  <td className="px-6 py-4 text-right space-x-2 align-middle">
                     <button
                       onClick={() => handleOpenModal(p)}
                       disabled={loading}
@@ -171,6 +184,8 @@ export default function PaketPage() {
               ))
             )}
           </tbody>
+
+// ... (bagian bawah kode tetap sama)
         </table>
       </div>
 
