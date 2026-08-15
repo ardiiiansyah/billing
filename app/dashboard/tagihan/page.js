@@ -16,6 +16,7 @@ export default function TagihanPage() {
   // State untuk Custom Modal Konfirmasi Generate Tagihan & Hasil
   const [confirmGenerateModal, setConfirmGenerateModal] = useState(false)
   const [resultModal, setResultModal] = useState({ show: false, message: '' })
+  const [confirmActionModal, setConfirmActionModal] = useState({ show: false, title: '', message: '', onConfirm: null })
 
   const [bayarForm, setBayarForm] = useState({
     jumlah_bayar: '',
@@ -116,7 +117,7 @@ export default function TagihanPage() {
       fetchTagihan()
     } catch (err) {
       console.error('DEBUG GENERATE BULANAN ERROR:', err.message || err)
-      alert('Maaf, terjadi kendala saat men-generate tagihan. Silakan periksa koneksi atau coba lagi.')
+      setResultModal({ show: true, message: 'Maaf, terjadi kendala saat men-generate tagihan. Silakan periksa koneksi atau coba lagi.' })
     } finally {
       setGenerating(false)
     }
@@ -124,7 +125,7 @@ export default function TagihanPage() {
 
   const handleKirimMidtrans = async (tagihan) => {
     if (!tagihan.pelanggan?.no_wa) {
-      alert(`Pelanggan ${tagihan.pelanggan?.nama} tidak memiliki nomor WhatsApp!`)
+      setResultModal({ show: true, message: `Pelanggan ${tagihan.pelanggan?.nama} tidak memiliki nomor WhatsApp!` })
       return
     }
 
@@ -147,7 +148,7 @@ export default function TagihanPage() {
       const data = await res.json()
 
       if (!res.ok || data.error) {
-        alert('Gagal membuat link pembayaran: ' + (data.error || 'Unknown error'))
+        setResultModal({ show: true, message: 'Gagal membuat link pembayaran: ' + (data.error || 'Unknown error') })
         return
       }
 
@@ -157,7 +158,7 @@ export default function TagihanPage() {
         window.open(data.whatsapp_url, '_blank')
       }
     } catch (err) {
-      alert('Error koneksi ke server.')
+      setResultModal({ show: true, message: 'Error koneksi ke server.' })
     } finally {
       setSendingWa(null)
     }
@@ -189,7 +190,7 @@ export default function TagihanPage() {
     ])
 
     if (errBayar) {
-      alert('Gagal mencatat pembayaran: ' + errBayar.message)
+      setResultModal({ show: true, message: 'Gagal mencatat pembayaran: ' + errBayar.message })
       return
     }
 
@@ -200,11 +201,11 @@ export default function TagihanPage() {
       .eq('id', selectedTagihan.id)
 
     if (errUpdate) {
-      alert('Pembayaran tercatat, tapi gagal update status tagihan: ' + errUpdate.message)
+      setResultModal({ show: true, message: 'Pembayaran tercatat, tapi gagal update status tagihan: ' + errUpdate.message })
     } else {
       setShowPayModal(false)
       fetchTagihan()
-      alert('Pembayaran tunai berhasil dicatat dan status tagihan menjadi Lunas!')
+      setResultModal({ show: true, message: 'Pembayaran tunai berhasil dicatat dan status tagihan menjadi Lunas!' })
     }
   }
 
@@ -242,52 +243,66 @@ export default function TagihanPage() {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
   }
 
-  const handleBulkPayCash = async () => {
-    if (!confirm(`Tandai ${selectedIds.length} tagihan sebagai LUNAS (cash)?`)) return
-    setBulkLoading(true)
-    try {
-      const res = await fetch('/api/bulk/tagihan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'pay_cash', ids: selectedIds })
-      })
-      const data = await res.json()
-      if (data.sukses) {
-        alert(data.message)
-        setSelectedIds([])
-        fetchTagihan()
-      } else {
-        alert('Gagal: ' + (data.error || 'Unknown error'))
+  const handleBulkPayCash = () => {
+    setConfirmActionModal({
+      show: true,
+      title: 'Tandai Lunas Cash',
+      message: `Tandai ${selectedIds.length} tagihan sebagai LUNAS (cash)?`,
+      onConfirm: async () => {
+        setConfirmActionModal({ show: false, title: '', message: '', onConfirm: null })
+        setBulkLoading(true)
+        try {
+          const res = await fetch('/api/bulk/tagihan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'pay_cash', ids: selectedIds })
+          })
+          const data = await res.json()
+          if (data.sukses) {
+            setResultModal({ show: true, message: data.message })
+            setSelectedIds([])
+            fetchTagihan()
+          } else {
+            setResultModal({ show: true, message: 'Gagal: ' + (data.error || 'Unknown error') })
+          }
+        } catch (err) {
+          setResultModal({ show: true, message: 'Error koneksi ke server.' })
+        } finally {
+          setBulkLoading(false)
+        }
       }
-    } catch (err) {
-      alert('Error koneksi ke server.')
-    } finally {
-      setBulkLoading(false)
-    }
+    })
   }
 
-  const handleBulkDelete = async () => {
-    if (!confirm(`Hapus ${selectedIds.length} tagihan terpilih? Aksi ini tidak bisa dibatalkan!`)) return
-    setBulkLoading(true)
-    try {
-      const res = await fetch('/api/bulk/tagihan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete', ids: selectedIds })
-      })
-      const data = await res.json()
-      if (data.sukses) {
-        alert(data.message)
-        setSelectedIds([])
-        fetchTagihan()
-      } else {
-        alert('Gagal: ' + (data.error || 'Unknown error'))
+  const handleBulkDelete = () => {
+    setConfirmActionModal({
+      show: true,
+      title: 'Hapus Tagihan Terpilih',
+      message: `Hapus ${selectedIds.length} tagihan terpilih? Aksi ini tidak bisa dibatalkan!`,
+      onConfirm: async () => {
+        setConfirmActionModal({ show: false, title: '', message: '', onConfirm: null })
+        setBulkLoading(true)
+        try {
+          const res = await fetch('/api/bulk/tagihan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', ids: selectedIds })
+          })
+          const data = await res.json()
+          if (data.sukses) {
+            setResultModal({ show: true, message: data.message })
+            setSelectedIds([])
+            fetchTagihan()
+          } else {
+            setResultModal({ show: true, message: 'Gagal: ' + (data.error || 'Unknown error') })
+          }
+        } catch (err) {
+          setResultModal({ show: true, message: 'Error koneksi ke server.' })
+        } finally {
+          setBulkLoading(false)
+        }
       }
-    } catch (err) {
-      alert('Error koneksi ke server.')
-    } finally {
-      setBulkLoading(false)
-    }
+    })
   }
 
   const handleBulkWaSend = async () => {
@@ -307,11 +322,11 @@ export default function TagihanPage() {
         setWaProgress({ total: data.total, terkirim: data.terkirim, gagal: data.gagal, logs: data.logs })
         setSelectedIds([])
       } else {
-        alert('Gagal: ' + (data.error || 'Unknown error'))
+        setResultModal({ show: true, message: 'Gagal: ' + (data.error || 'Unknown error') })
         setShowWaProgress(false)
       }
     } catch (err) {
-      alert('Error koneksi ke server.')
+      setResultModal({ show: true, message: 'Error koneksi ke server.' })
       setShowWaProgress(false)
     }
   }
@@ -588,13 +603,43 @@ export default function TagihanPage() {
         </div>
       )}
 
-      {/* Custom Modal Hasil Generate */}
+      {/* Custom Modal Konfirmasi Aksi Massal */}
+      {confirmActionModal.show && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-center">
+            <span className="text-4xl block">⚠️</span>
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-white">{confirmActionModal.title}</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {confirmActionModal.message}
+              </p>
+            </div>
+
+            <div className="flex justify-center gap-3 pt-2">
+              <button
+                onClick={() => setConfirmActionModal({ show: false, title: '', message: '', onConfirm: null })}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmActionModal.onConfirm}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-red-900/30"
+              >
+                Ya, Lanjutkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Modal Hasil Generate / Informasi */}
       {resultModal.show && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-center">
             <span className="text-4xl block">✨</span>
             <div className="space-y-1">
-              <h3 className="text-lg font-bold text-white">Informasi Generate</h3>
+              <h3 className="text-lg font-bold text-white">Informasi</h3>
               <p className="text-xs text-slate-300 whitespace-pre-line leading-relaxed">
                 {resultModal.message}
               </p>

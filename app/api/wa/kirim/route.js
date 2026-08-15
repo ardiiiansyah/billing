@@ -10,13 +10,12 @@ export async function POST(request) {
 
         const { sukses, data } = await kirimWA(nomor, pesan)
 
-        // Simpan log notifikasi ke database Supabase
+        // Simpan log notifikasi sesuai kolom tabel Supabase Anda
         await supabase.from('log_notifikasi').insert([
             {
-                pelanggan_nama: pelanggan_nama || 'Pelanggan',
-                nomor_wa: nomor,
-                kategori: 'Tagihan / Pesan WA',
-                isi_pesan: pesan,
+                no_wa: nomor,
+                jenis_pesan: 'Tagihan / Pesan WA',
+                pesan: pesan,
                 status: sukses ? 'terkirim' : 'gagal',
             },
         ])
