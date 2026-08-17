@@ -1,3 +1,4 @@
+// app/dashboard/laporan/page.js
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -50,7 +51,7 @@ export default function LaporanKeuanganPage() {
             .from('tagihan')
             .select(`
                 *,
-                pelanggan (
+                pelanggan!inner (
                     id,
                     nama,
                     no_wa,
@@ -71,8 +72,14 @@ export default function LaporanKeuanganPage() {
             query = query.eq('bulan', Number(selectedBulan))
         }
 
+        // Filter status tagihan
         if (selectedStatus) {
             query = query.eq('status', selectedStatus)
+        }
+
+        // OPTIMALISASI: Filter wilayah dipindahkan langsung ke Query Supabase (Server-side)
+        if (selectedWilayah) {
+            query = query.eq('pelanggan.wilayah_id', selectedWilayah)
         }
 
         const { data, error } = await query
@@ -83,15 +90,7 @@ export default function LaporanKeuanganPage() {
             return
         }
 
-        let filteredData = data || []
-
-        // Filter manual berdasarkan wilayah jika dipilih
-        if (selectedWilayah) {
-            filteredData = filteredData.filter(
-                (item) => String(item.pelanggan?.wilayah_id) === String(selectedWilayah) || String(item.pelanggan?.wilayah?.id) === String(selectedWilayah)
-            )
-        }
-
+        const filteredData = data || []
         setTagihanList(filteredData)
 
         // Hitung Ringkasan (Summary)
@@ -135,7 +134,7 @@ export default function LaporanKeuanganPage() {
             'No. WhatsApp': item.pelanggan?.no_wa || '-',
             Wilayah: item.pelanggan?.wilayah ? `RT ${item.pelanggan.wilayah.rt}/RW ${item.pelanggan.wilayah.rw}` : '-',
             Paket: item.pelanggan?.paket?.nama_paket || '-',
-            Bulan: item.bulan ? (namaBulanList[Number(item.bulan) - 1] || item.bulan) : '-', // Konversi Angka ke Nama Bulan
+            Bulan: item.bulan ? (namaBulanList[Number(item.bulan) - 1] || item.bulan) : '-',
             Tahun: item.tahun || '-',
             Nominal: Number(item.jumlah_tagihan) || Number(item.nominal) || 0,
             Status: item.status?.toUpperCase() || '-',
@@ -149,18 +148,9 @@ export default function LaporanKeuanganPage() {
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Keuangan')
 
         worksheet['!cols'] = [
-            { wch: 5 },
-            { wch: 25 },
-            { wch: 15 },
-            { wch: 15 },
-            { wch: 20 },
-            { wch: 14 },
-            { wch: 8 },
-            { wch: 15 },
-            { wch: 12 },
-            { wch: 15 },
-            { wch: 15 },
-            { wch: 15 }
+            { wch: 5 }, { wch: 25 }, { wch: 15 }, { wch: 15 },
+            { wch: 20 }, { wch: 14 }, { wch: 8 }, { wch: 15 },
+            { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
         ]
 
         const namaFileBulan = Number(selectedBulan) === 0
@@ -201,7 +191,7 @@ export default function LaporanKeuanganPage() {
                 </button>
             </div>
 
-            {/* Cards Summary dengan Efek 3D Hover */}
+            {/* Cards Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-500/10 hover:border-emerald-500/50 cursor-pointer">
                     <div className="flex justify-between items-start mb-2">

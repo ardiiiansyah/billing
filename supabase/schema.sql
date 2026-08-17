@@ -185,3 +185,13 @@ FROM public.wilayah w
 LEFT JOIN public.pelanggan p ON p.wilayah_id = w.id
 GROUP BY w.id;
 
+-- Tabel Log Notifikasi WhatsApp
+CREATE TABLE IF NOT EXISTS log_notifikasi (
+    id SERIAL PRIMARY KEY,
+    pelanggan_id INT REFERENCES pelanggan(id) ON DELETE SET NULL,
+    no_wa VARCHAR(50) NOT NULL,
+    jenis_pesan VARCHAR(50) NOT NULL,
+    pesan TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'sent',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);

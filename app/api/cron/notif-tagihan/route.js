@@ -135,7 +135,9 @@ export async function GET(request) {
         delayMs: 2500,
     });
 
-    // 3. Rekapitulasi hasil per kategori
+    // 3. Rekapitulasi hasil per kategori & Insert Log ke Database
+    const logData = [];
+
     for (const item of batchResult.detail) {
         const kat = item.kategori;
         if (kat && hasil[kat]) {
@@ -144,6 +146,24 @@ export async function GET(request) {
             } else {
                 hasil[kat].gagal++;
             }
+        }
+
+        logData.push({
+            pelanggan_id: item.pelanggan_id,
+            no_wa: item.nomor,
+            jenis_pesan: item.kategori,
+            pesan: item.pesan,
+            status: item.sukses ? 'sent' : 'failed'
+        });
+    }
+
+    // Insert log secara batch ke tabel log_notifikasi
+    if (logData.length > 0) {
+        const { error: logError } = await supabase.from("log_notifikasi").insert(logData);
+        if (logError) {
+            console.error("[CRON NOTIF] Gagal simpan log notifikasi:", logError.message);
+        } else {
+            console.log(`[CRON NOTIF] Berhasil mencatat ${logData.length} log notifikasi.`);
         }
     }
 
@@ -154,4 +174,4 @@ export async function GET(request) {
         total_gagal: batchResult.gagal,
         hasil,
     });
-}
+}

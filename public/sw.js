@@ -34,3 +34,33 @@ self.addEventListener('fetch', (event) => {
         );
     }
 });
+
+// --- Tambahan Push Notification ---
+
+self.addEventListener('push', function (event) {
+    if (!(self.Notification && self.Notification.permission === 'granted')) {
+        return;
+    }
+
+    const data = event.data ? event.data.json() : {};
+    const title = data.title || 'Sultan WiFi Notification';
+    const options = {
+        body: data.body || 'Ada aktivitas baru pada sistem.',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        data: {
+            url: data.url || '/dashboard'
+        }
+    };
+
+    event.waitUntil(
+        self.registration.showNotification(title, options)
+    );
+});
+
+self.addEventListener('notificationclick', function (event) {
+    event.notification.close();
+    event.waitUntil(
+        clients.openWindow(event.notification.data.url)
+    );
+});

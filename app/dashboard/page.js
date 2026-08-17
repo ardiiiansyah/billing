@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import Link from 'next/link'
+import PushNotificationManager from '@/components/PushNotificationManager'
 
 const COLORS = ['#06b6d4', '#10b981', '#f59e0b', '#6366f1', '#ec4899']
 const BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
@@ -174,9 +175,12 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 self-end sm:self-auto w-full sm:w-auto justify-between sm:justify-end">
+        <div className="flex items-center gap-3 self-end sm:self-auto w-full sm:w-auto justify-between sm:justify-end flex-wrap">
+          {/* Tombol Aktivasi Push Notifikasi */}
+          <PushNotificationManager />
+
           {/* Badge Tanggal Hari Ini */}
-          <div className="flex flex-col items-start sm:items-end text-xs text-slate-400 font-medium px-3.5 py-1.5 bg-slate-950/60 rounded-xl border border-slate-800/80">
+          <div className="hidden md:flex flex-col items-end text-xs text-slate-400 font-medium px-3.5 py-1.5 bg-slate-950/60 rounded-xl border border-slate-800/80">
             <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Hari Ini</span>
             <span className="text-slate-200 font-bold text-xs">
               {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}
