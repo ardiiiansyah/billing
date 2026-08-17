@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import webpush from 'web-push';
 import { supabase } from '@/lib/supabaseClient';
 
-// Konfigurasi VAPID menggunakan Public dan Private Key dari .env
+// Tambahkan baris ini agar rute tidak di-prerender saat build di Vercel
+export const dynamic = 'force-dynamic';
+
 webpush.setVapidDetails(
     'mailto:admin@sultanwifi.com',
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
@@ -13,7 +15,6 @@ export async function POST(request) {
     try {
         const { title, body } = await request.json();
 
-        // 1. Ambil semua data perangkat yang sudah subscribe dari database Supabase
         const { data: subscriptions, error } = await supabase
             .from('push_subscriptions')
             .select('*');
@@ -26,11 +27,9 @@ export async function POST(request) {
 
         const payload = JSON.stringify({ title, body });
 
-        // 2. Kirim notifikasi ke semua perangkat admin yang terdaftar secara bersamaan
         const promises = subscriptions.map((sub) =>
             webpush.sendNotification(sub, payload).catch((err) => {
                 console.error('Gagal mengirim ke salah satu perangkat:', err);
-                // Opsional: Jika subscription sudah kedaluwarsa/tidak valid, bisa dihapus dari DB di sini
             })
         );
 
