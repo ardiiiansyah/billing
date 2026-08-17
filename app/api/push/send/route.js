@@ -2,17 +2,17 @@ import { NextResponse } from 'next/server';
 import webpush from 'web-push';
 import { supabase } from '@/lib/supabaseClient';
 
-// Tambahkan baris ini agar rute tidak di-prerender saat build di Vercel
 export const dynamic = 'force-dynamic';
-
-webpush.setVapidDetails(
-    'mailto:admin@sultanwifi.com',
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-);
 
 export async function POST(request) {
     try {
+        // Inisialisasi VAPID di dalam fungsi POST agar dijalankan saat runtime
+        webpush.setVapidDetails(
+            'mailto:admin@sultanwifi.com',
+            process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+            process.env.VAPID_PRIVATE_KEY
+        );
+
         const { title, body } = await request.json();
 
         const { data: subscriptions, error } = await supabase
