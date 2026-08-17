@@ -5,8 +5,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
     LayoutDashboard, Users, Receipt, CreditCard,
-    MoreHorizontal, Package, MapPin, MessageSquare, X
+    MoreHorizontal, Package, MapPin, MessageSquare, X, Download
 } from 'lucide-react'
+import InstallPWAButton from '@/components/InstallPWAButton'
 
 const mainNav = [
     { name: 'Home', href: '/dashboard', icon: LayoutDashboard },
@@ -30,8 +31,8 @@ export default function BottomNav() {
             {/* Overlay Menu Lainnya */}
             {showMore && (
                 <div className="md:hidden fixed inset-0 bg-slate-950/80 z-50 flex items-end">
-                    <div className="w-full bg-slate-900 rounded-t-3xl p-6 border-t border-slate-800 animate-in slide-in-from-bottom">
-                        <div className="flex justify-between items-center mb-6">
+                    <div className="w-full bg-slate-900 rounded-t-3xl p-6 border-t border-slate-800 animate-in slide-in-from-bottom space-y-4">
+                        <div className="flex justify-between items-center mb-2">
                             <h3 className="font-bold text-white">Menu Lainnya</h3>
                             <button onClick={() => setShowMore(false)} className="p-2 bg-slate-800 rounded-full text-slate-400">
                                 <X size={20} />
@@ -44,6 +45,11 @@ export default function BottomNav() {
                                     <span className="text-[10px]">{item.name}</span>
                                 </Link>
                             ))}
+                        </div>
+
+                        {/* Tombol Install PWA di dalam menu Lainnya */}
+                        <div className="pt-2 border-t border-slate-800">
+                            <InstallPWAButton />
                         </div>
                     </div>
                 </div>

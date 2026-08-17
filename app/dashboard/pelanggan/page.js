@@ -17,6 +17,7 @@ export default function PelangganPage() {
   const [filterStatus, setFilterStatus] = useState('')
   const [filterRt, setFilterRt] = useState('')
   const [filterPaket, setFilterPaket] = useState('')
+  const [filterOdp, setFilterOdp] = useState('') // <--- Filter ODP Baru
   const [showMobileFilter, setShowMobileFilter] = useState(false)
 
   // ── State Bulk Action ──────────────────────────────────────────────
@@ -53,6 +54,7 @@ export default function PelangganPage() {
     nama: '',
     no_wa: '',
     alamat: '',
+    odp: '', // <--- Field ODP Baru
     wilayah_id: '',
     paket_id: '',
     tanggal_jatuh_tempo: 10,
@@ -116,7 +118,7 @@ export default function PelangganPage() {
     return [...new Set(rts)].sort()
   }, [pelangganList])
 
-  // Logika Filter Multi-Kriteria
+  // Logika Filter Multi-Kriteria (Termasuk ODP)
   const filteredPelanggan = useMemo(() => {
     return pelangganList.filter((p) => {
       const matchSearch =
@@ -127,10 +129,11 @@ export default function PelangganPage() {
       const matchStatus = filterStatus ? p.status === filterStatus : true
       const matchRt = filterRt ? String(p.wilayah?.rt) === String(filterRt) : true
       const matchPaket = filterPaket ? p.paket_id === filterPaket : true
+      const matchOdp = filterOdp ? p.odp?.toLowerCase().includes(filterOdp.toLowerCase()) : true // <--- Filter ODP
 
-      return matchSearch && matchStatus && matchRt && matchPaket
+      return matchSearch && matchStatus && matchRt && matchPaket && matchOdp
     })
-  }, [pelangganList, search, filterStatus, filterRt, filterPaket])
+  }, [pelangganList, search, filterStatus, filterRt, filterPaket, filterOdp])
 
   // Stats ringkasan cepat untuk header pelanggan
   const statsSummary = useMemo(() => {
@@ -148,6 +151,7 @@ export default function PelangganPage() {
         nama: pelanggan.nama,
         no_wa: pelanggan.no_wa,
         alamat: pelanggan.alamat,
+        odp: pelanggan.odp || '', // <--- Set ODP
         wilayah_id: pelanggan.wilayah_id || '',
         paket_id: pelanggan.paket_id || '',
         tanggal_jatuh_tempo: pelanggan.tanggal_jatuh_tempo || 10,
@@ -161,6 +165,7 @@ export default function PelangganPage() {
         nama: '',
         no_wa: '',
         alamat: '',
+        odp: '', // <--- Reset ODP
         wilayah_id: '',
         paket_id: paketOptions[0]?.id || '',
         tanggal_jatuh_tempo: 10,
@@ -180,6 +185,7 @@ export default function PelangganPage() {
         nama: formData.nama,
         alamat: formData.alamat,
         no_wa: formData.no_wa,
+        odp: formData.odp || null, // <--- Payload ODP
         wilayah_id: formData.wilayah_id || null,
         paket_id: formData.paket_id || null,
         tanggal_jatuh_tempo: formData.tanggal_jatuh_tempo,
@@ -326,6 +332,7 @@ export default function PelangganPage() {
     setFilterStatus('')
     setFilterRt('')
     setFilterPaket('')
+    setFilterOdp('') // <--- Reset ODP Filter
   }
 
   return (
@@ -394,9 +401,9 @@ export default function PelangganPage() {
         </div>
       </div>
 
-      {/* Baris Filter Advanced */}
+      {/* Baris Filter Advanced dengan Filter ODP */}
       <div className={`bg-slate-900/80 border border-slate-800/80 p-4 rounded-2xl space-y-3 shadow-xl shadow-black/20 ${showMobileFilter ? 'block' : 'hidden md:block'}`}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <div className="flex items-center gap-2.5 bg-slate-950/80 border border-slate-800 px-3.5 py-2 rounded-xl">
             <span className="text-slate-400 text-xs">🔍</span>
             <input
@@ -404,6 +411,18 @@ export default function PelangganPage() {
               placeholder="Cari Nama / Kode / WA..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-transparent text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+            />
+          </div>
+
+          {/* Input Filter ODP */}
+          <div className="flex items-center gap-2.5 bg-slate-950/80 border border-slate-800 px-3.5 py-2 rounded-xl">
+            <span className="text-slate-400 text-xs">🛜</span>
+            <input
+              type="text"
+              placeholder="Filter ODP..."
+              value={filterOdp}
+              onChange={(e) => setFilterOdp(e.target.value)}
               className="w-full bg-transparent text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
             />
           </div>
@@ -445,7 +464,7 @@ export default function PelangganPage() {
           </select>
         </div>
 
-        {(search || filterStatus || filterRt || filterPaket) && (
+        {(search || filterStatus || filterRt || filterPaket || filterOdp) && (
           <div className="flex justify-between items-center text-xs text-slate-400 pt-2 border-t border-slate-800/60">
             <span>
               Ditemukan <b className="text-cyan-400 font-bold">{filteredPelanggan.length}</b> dari {pelangganList.length} pelanggan
@@ -513,6 +532,11 @@ export default function PelangganPage() {
                       <p className="text-slate-400 text-xs truncate mt-0.5">
                         {p.alamat} <span className="text-slate-500">({p.wilayah?.nama || 'Tanpa Wilayah'} - RT {p.wilayah?.rt || '-'}/RW {p.wilayah?.rw || '-'})</span>
                       </p>
+                      {p.odp && (
+                        <p className="text-amber-400 font-semibold text-xs mt-1">
+                          🛜 ODP: {p.odp}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -575,6 +599,7 @@ export default function PelangganPage() {
                       </th>
                       <th className="px-5 py-3.5 font-bold">ID Pelanggan</th>
                       <th className="px-5 py-3.5 font-bold">Nama Warga</th>
+                      <th className="px-5 py-3.5 font-bold">ODP</th>
                       <th className="px-5 py-3.5 font-bold">No WhatsApp</th>
                       <th className="px-5 py-3.5 font-bold">Paket Langganan</th>
                       <th className="px-5 py-3.5 font-bold">Jatuh Tempo</th>
@@ -616,6 +641,15 @@ export default function PelangganPage() {
                               </div>
                             </div>
                           </div>
+                        </td>
+                        <td className="px-5 py-4 font-bold text-amber-400">
+                          {p.odp ? (
+                            <span className="bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-lg">
+                              {p.odp}
+                            </span>
+                          ) : (
+                            <span className="text-slate-500 font-normal">-</span>
+                          )}
                         </td>
                         <td className="px-5 py-4 font-medium">
                           {p.no_wa ? (
@@ -741,19 +775,17 @@ export default function PelangganPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-slate-400 font-medium mb-1">Alamat Rumah</label>
-                <textarea
-                  rows={2}
-                  required
-                  placeholder="Alamat / Blok No..."
-                  value={formData.alamat}
-                  onChange={(e) => setFormData({ ...formData, alamat: e.target.value })}
-                  className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
-                />
-              </div>
-
               <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">ODP (Optical Distribution Point)</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: ODP-BKS-01"
+                    value={formData.odp}
+                    onChange={(e) => setFormData({ ...formData, odp: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
                 <div>
                   <label className="block text-slate-400 font-medium mb-1">Pilihan Paket</label>
                   <select
@@ -769,6 +801,21 @@ export default function PelangganPage() {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-medium mb-1">Alamat Rumah</label>
+                <textarea
+                  rows={2}
+                  required
+                  placeholder="Alamat / Blok No..."
+                  value={formData.alamat}
+                  onChange={(e) => setFormData({ ...formData, alamat: e.target.value })}
+                  className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-slate-400 font-medium mb-1">Tgl Jatuh Tempo</label>
                   <input
@@ -780,6 +827,17 @@ export default function PelangganPage() {
                     onChange={(e) => setFormData({ ...formData, tanggal_jatuh_tempo: Number(e.target.value) })}
                     className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
                   />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">Status Koneksi</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 cursor-pointer"
+                  >
+                    <option value="aktif">Aktif</option>
+                    <option value="isolir">Isolir</option>
+                  </select>
                 </div>
               </div>
 
