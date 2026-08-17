@@ -19,7 +19,15 @@ export async function POST(request) {
     const serverKey = process.env.MIDTRANS_SERVER_KEY
     const authKey = Buffer.from(serverKey + ':').toString('base64')
 
-    const midtransRes = await fetch('https://app.sandbox.midtrans.com/snap/v1/transactions', {
+    const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true'
+    const midtransUrl = isProduction
+      ? 'https://app.midtrans.com/snap/v1/transactions'
+      : 'https://app.sandbox.midtrans.com/snap/v1/transactions'
+
+    // Domain tujuan redirect setelah popup ditutup/selesai
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://sandbox-wifi.vercel.app'
+
+    const midtransRes = await fetch(midtransUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -29,6 +37,10 @@ export async function POST(request) {
         transaction_details: {
           order_id: orderId,
           gross_amount: Math.round(Number(jumlah)),
+        },
+        // === TAMBAHAN UNTUK MENCEGAH LARI KE EXAMPLE.COM ===
+        callbacks: {
+          finish: `${baseUrl}/bayar/${tagihan_id}`
         },
         customer_details: {
           first_name: pelanggan_nama || 'Pelanggan',

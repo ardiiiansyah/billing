@@ -13,6 +13,19 @@ export default function TagihanPage() {
   const [selectedTagihan, setSelectedTagihan] = useState(null)
   const [sendingWa, setSendingWa] = useState(null)
 
+  // State Tagihan Manual
+  const [showManualModal, setShowManualModal] = useState(false)
+  const [pelangganOptions, setPelangganOptions] = useState([])
+  const [loadingPelanggan, setLoadingPelanggan] = useState(false)
+  const [savingManual, setSavingManual] = useState(false)
+  const [manualForm, setManualForm] = useState({
+    pelanggan_id: '',
+    bulan: new Date().getMonth() + 1,
+    tahun: new Date().getFullYear(),
+    jumlah_tagihan: '',
+    tanggal_jatuh_tempo: '',
+  })
+
   // State Modal
   const [confirmGenerateModal, setConfirmGenerateModal] = useState(false)
   const [resultModal, setResultModal] = useState({ show: false, message: '' })
@@ -37,9 +50,47 @@ export default function TagihanPage() {
   const currentMonth = new Date().getMonth() + 1
   const currentYear = new Date().getFullYear()
 
+  const bulanOptions = [
+    { val: 1, label: 'Januari' },
+    { val: 2, label: 'Februari' },
+    { val: 3, label: 'Maret' },
+    { val: 4, label: 'April' },
+    { val: 5, label: 'Mei' },
+    { val: 6, label: 'Juni' },
+    { val: 7, label: 'Juli' },
+    { val: 8, label: 'Agustus' },
+    { val: 9, label: 'September' },
+    { val: 10, label: 'Oktober' },
+    { val: 11, label: 'November' },
+    { val: 12, label: 'Desember' },
+  ]
+
+  const tahunOptions = [currentYear - 1, currentYear, currentYear + 1, currentYear + 2]
+
   useEffect(() => {
     fetchTagihan()
+    fetchPelangganOptions()
   }, [])
+
+  async function fetchPelangganOptions() {
+    setLoadingPelanggan(true)
+    try {
+      const { data, error } = await supabase
+        .from('pelanggan')
+        .select('id, nama, kode_pelanggan, no_wa, tanggal_jatuh_tempo, status, paket(id, nama_paket, harga)')
+        .eq('status', 'aktif')
+        .order('nama', { ascending: true })
+
+      if (error) throw error
+      setPelangganOptions(data || [])
+      return data || []
+    } catch (err) {
+      console.error('DEBUG FETCH PELANGGAN ERROR:', err.message)
+      return []
+    } finally {
+      setLoadingPelanggan(false)
+    }
+  }
 
   async function fetchTagihan() {
     setLoading(true)
@@ -55,6 +106,132 @@ export default function TagihanPage() {
       console.error('DEBUG FETCH TAGIHAN ERROR:', err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleOpenManualModal = async () => {
+    let options = pelangganOptions
+    if (!options || options.length === 0) {
+      options = await fetchPelangganOptions()
+    }
+
+    const defaultDay = 10
+    const defaultDateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(defaultDay).padStart(2, '0')}`
+
+    setManualForm({
+      pelanggan_id: '',
+      bulan: currentMonth,
+      tahun: currentYear,
+      jumlah_tagihan: '',
+      tanggal_jatuh_tempo: defaultDateStr,
+    })
+    setShowManualModal(true)
+  }
+
+  const handleSelectPelanggan = (pelangganId) => {
+    const selected = pelangganOptions.find((p) => p.id === pelangganId)
+    if (selected) {
+      const dueDay = Math.min(selected.tanggal_jatuh_tempo || 10, 28)
+      const dueMonth = manualForm.bulan || currentMonth
+      const dueYear = manualForm.tahun || currentYear
+      const dateStr = `${dueYear}-${String(dueMonth).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`
+
+      setManualForm((prev) => ({
+        ...prev,
+        pelanggan_id: pelangganId,
+        jumlah_tagihan: selected.paket?.harga !== undefined && selected.paket?.harga !== null ? String(selected.paket.harga) : prev.jumlah_tagihan,
+        tanggal_jatuh_tempo: dateStr,
+      }))
+    } else {
+      setManualForm((prev) => ({
+        ...prev,
+        pelanggan_id: pelangganId,
+      }))
+    }
+  }
+
+  const handlePeriodeChange = (bulan, tahun) => {
+    const b = Number(bulan)
+    const y = Number(tahun)
+    setManualForm((prev) => {
+      const selected = pelangganOptions.find((p) => p.id === prev.pelanggan_id)
+      const dueDay = selected ? Math.min(selected.tanggal_jatuh_tempo || 10, 28) : 10
+      const dateStr = `${y}-${String(b).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`
+      return {
+        ...prev,
+        bulan: b,
+        tahun: y,
+        tanggal_jatuh_tempo: dateStr,
+      }
+    })
+  }
+
+  const handleSaveManualTagihan = async (e) => {
+    e.preventDefault()
+
+    if (!manualForm.pelanggan_id) {
+      setResultModal({ show: true, message: 'Silakan pilih pelanggan terlebih dahulu!' })
+      return
+    }
+
+    const nominal = Number(manualForm.jumlah_tagihan)
+    if (isNaN(nominal) || nominal <= 0) {
+      setResultModal({ show: true, message: 'Nominal tagihan harus berupa angka valid lebih dari 0!' })
+      return
+    }
+
+    if (!manualForm.tanggal_jatuh_tempo) {
+      setResultModal({ show: true, message: 'Tanggal jatuh tempo wajib diisi!' })
+      return
+    }
+
+    setSavingManual(true)
+
+    try {
+      const { data, error } = await supabase
+        .from('tagihan')
+        .insert([
+          {
+            pelanggan_id: manualForm.pelanggan_id,
+            bulan: Number(manualForm.bulan),
+            tahun: Number(manualForm.tahun),
+            jumlah_tagihan: nominal,
+            tanggal_jatuh_tempo: manualForm.tanggal_jatuh_tempo,
+            status_pembayaran: 'belum_bayar',
+          },
+        ])
+        .select('*, pelanggan(nama, kode_pelanggan)')
+
+      if (error) {
+        if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
+          setResultModal({
+            show: true,
+            message: `⚠️ Tagihan untuk pelanggan ini pada periode bulan ${manualForm.bulan}/${manualForm.tahun} sudah ada di database!`
+          })
+        } else {
+          setResultModal({
+            show: true,
+            message: 'Gagal menyimpan tagihan manual: ' + error.message
+          })
+        }
+        return
+      }
+
+      const pelangganNama = data?.[0]?.pelanggan?.nama || 'Pelanggan'
+      setShowManualModal(false)
+      fetchTagihan()
+      setResultModal({
+        show: true,
+        message: `✨ Berhasil menambahkan tagihan manual untuk ${pelangganNama} (Periode ${manualForm.bulan}/${manualForm.tahun}) sebesar ${formatRupiah(nominal)}.`
+      })
+    } catch (err) {
+      console.error('DEBUG SAVE MANUAL TAGIHAN ERROR:', err)
+      setResultModal({
+        show: true,
+        message: 'Terjadi kesalahan sistem saat menyimpan tagihan.'
+      })
+    } finally {
+      setSavingManual(false)
     }
   }
 
@@ -161,6 +338,7 @@ export default function TagihanPage() {
     e.preventDefault()
     if (!selectedTagihan) return
 
+    // 1. Catat ke tabel pembayaran
     const { error: errBayar } = await supabase.from('pembayaran').insert([
       {
         tagihan_id: selectedTagihan.id,
@@ -176,6 +354,7 @@ export default function TagihanPage() {
       return
     }
 
+    // 2. Update status tagihan
     const { error: errUpdate } = await supabase
       .from('tagihan')
       .update({
@@ -187,9 +366,29 @@ export default function TagihanPage() {
     if (errUpdate) {
       setResultModal({ show: true, message: 'Pembayaran tercatat, tapi gagal update status tagihan: ' + errUpdate.message })
     } else {
+      // 3. TAMBAHKAN LOGIKA KIRIM WA OTOMATIS DI SINI
+      try {
+        const pesanWA =
+          `Halo Bapak/Ibu *${selectedTagihan.pelanggan?.nama}*,\n\n` +
+          `Pembayaran tunai sebesar *${formatRupiah(bayarForm.jumlah_bayar)}* telah kami terima. ` +
+          `Status tagihan Anda kini *LUNAS*.\n\n` +
+          `Terima kasih telah menggunakan layanan Sultan WiFi 🙏`
+
+        await fetch('/api/wa/kirim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nomor: selectedTagihan.pelanggan?.no_wa,
+            pesan: pesanWA,
+          }),
+        })
+      } catch (waErr) {
+        console.error('Gagal kirim WA otomatis:', waErr)
+      }
+
       setShowPayModal(false)
       fetchTagihan()
-      setResultModal({ show: true, message: 'Pembayaran tunai berhasil dicatat dan status tagihan menjadi Lunas!' })
+      setResultModal({ show: true, message: 'Pembayaran tunai berhasil dicatat, status Lunas, dan notifikasi WA terkirim!' })
     }
   }
 
@@ -324,17 +523,25 @@ export default function TagihanPage() {
             Tagihan & Kasir
           </h1>
           <p className="text-slate-400 text-xs sm:text-sm mt-1">
-            Generate tagihan bulanan & kirim ke WhatsApp pelanggan.
+            Generate tagihan bulanan, kelola tagihan manual, & kirim ke WhatsApp pelanggan.
           </p>
         </div>
 
-        <button
-          onClick={() => setConfirmGenerateModal(true)}
-          disabled={generating}
-          className="self-end sm:self-auto px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:cursor-not-allowed text-white text-[11px] sm:text-sm font-bold rounded-xl transition-all duration-200 shadow-md shadow-emerald-600/20 active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap"
-        >
-          <span className="text-sm leading-none">⚡</span> {generating ? 'Memproses...' : 'Generate Tagihan Bulanan'}
-        </button>
+        <div className="flex items-center gap-2.5 self-end sm:self-auto flex-wrap">
+          <button
+            onClick={handleOpenManualModal}
+            className="px-3.5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-[11px] sm:text-sm font-bold rounded-xl transition-all duration-200 shadow-md shadow-cyan-600/20 active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap"
+          >
+            <span className="text-sm leading-none">➕</span> Tagihan Manual
+          </button>
+          <button
+            onClick={() => setConfirmGenerateModal(true)}
+            disabled={generating}
+            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:cursor-not-allowed text-white text-[11px] sm:text-sm font-bold rounded-xl transition-all duration-200 shadow-md shadow-emerald-600/20 active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap"
+          >
+            <span className="text-sm leading-none">⚡</span> {generating ? 'Memproses...' : 'Generate Tagihan Bulanan'}
+          </button>
+        </div>
       </div>
 
       {/* Kartu Metrik / Statistik Ringkas */}
@@ -372,8 +579,8 @@ export default function TagihanPage() {
             key={st.id}
             onClick={() => setFilterStatus(st.id)}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 text-center ${filterStatus === st.id
-                ? 'bg-slate-800 text-white border border-slate-700 shadow-md'
-                : 'bg-slate-900/60 text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-slate-800/80'
+              ? 'bg-slate-800 text-white border border-slate-700 shadow-md'
+              : 'bg-slate-900/60 text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-slate-800/80'
               }`}
           >
             {st.label}
@@ -575,10 +782,184 @@ export default function TagihanPage() {
         <div className="font-semibold text-slate-200 mb-2 flex items-center gap-1.5">
           <span>ℹ️</span> Panduan Penggunaan Tagihan & Kasir
         </div>
+        <div>• <span className="text-cyan-400 font-semibold">+ Tagihan Manual</span> — Membuat tagihan kustom untuk pelanggan tertentu (pemasangan baru, ganti perangkat, atau susulan).</div>
+        <div>• <span className="text-emerald-400 font-semibold">Generate Bulanan</span> — Menghasilkan tagihan rutin otomatis untuk seluruh pelanggan aktif pada bulan berjalan.</div>
         <div>• <span className="text-emerald-400 font-semibold">Kirim WA</span> — Menghasilkan link pembayaran online via Midtrans (QRIS / Transfer Bank / Minimarket) dan otomatis membuka WhatsApp pelanggan.</div>
         <div>• <span className="text-slate-300 font-semibold">Tunai</span> — Mencatat pembayaran tunai atau transfer manual secara langsung oleh kasir.</div>
         <div>• Status tagihan akan berubah otomatis menjadi <span className="text-emerald-400 font-semibold">Lunas</span> setelah pembayaran terkonfirmasi.</div>
       </div>
+
+      {/* Modal Form Tagihan Manual */}
+      {showManualModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl space-y-4 text-xs">
+            <div className="flex justify-between items-start border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center text-lg">
+                  ➕
+                </span>
+                <div>
+                  <h3 className="text-base font-bold text-white">Tambah Tagihan Manual</h3>
+                  <p className="text-slate-400 text-[11px] mt-0.5">
+                    Buat tagihan khusus, pemasangan baru, atau susulan.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowManualModal(false)}
+                className="text-slate-400 hover:text-white transition p-1 text-base leading-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveManualTagihan} className="space-y-3.5">
+              {/* Dropdown Pelanggan Aktif */}
+              <div>
+                <label className="block text-slate-400 font-medium mb-1">
+                  Pilih Pelanggan Aktif <span className="text-rose-400">*</span>
+                </label>
+                {loadingPelanggan ? (
+                  <div className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-500 text-xs">
+                    Memuat daftar pelanggan aktif...
+                  </div>
+                ) : (
+                  <select
+                    required
+                    value={manualForm.pelanggan_id}
+                    onChange={(e) => handleSelectPelanggan(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 text-xs cursor-pointer"
+                  >
+                    <option value="">-- Pilih Pelanggan Aktif --</option>
+                    {pelangganOptions.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.kode_pelanggan} - {p.nama} {p.paket ? `(${p.paket.nama_paket} - ${formatRupiah(p.paket.harga)})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {manualForm.pelanggan_id && (() => {
+                  const selected = pelangganOptions.find((p) => p.id === manualForm.pelanggan_id)
+                  if (!selected) return null
+                  return (
+                    <div className="mt-1.5 flex items-center justify-between text-[11px] text-cyan-400/90 bg-cyan-950/25 px-2.5 py-1.5 rounded-lg border border-cyan-800/40">
+                      <span>📦 Paket: <strong>{selected.paket?.nama_paket || 'Tanpa Paket'}</strong></span>
+                      <span>📅 Default Tempo: <strong>Tgl {selected.tanggal_jatuh_tempo || 10}</strong></span>
+                    </div>
+                  )
+                })()}
+              </div>
+
+              {/* Periode Bulan & Tahun */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">
+                    Periode Bulan <span className="text-rose-400">*</span>
+                  </label>
+                  <select
+                    value={manualForm.bulan}
+                    onChange={(e) => handlePeriodeChange(e.target.value, manualForm.tahun)}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 text-xs cursor-pointer font-medium"
+                  >
+                    {bulanOptions.map((b) => (
+                      <option key={b.val} value={b.val}>
+                        {b.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">
+                    Periode Tahun <span className="text-rose-400">*</span>
+                  </label>
+                  <select
+                    value={manualForm.tahun}
+                    onChange={(e) => handlePeriodeChange(manualForm.bulan, e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 text-xs cursor-pointer font-medium"
+                  >
+                    {tahunOptions.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Nominal Tagihan */}
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-slate-400 font-medium">
+                    Nominal Tagihan (Rp) <span className="text-rose-400">*</span>
+                  </label>
+                  {manualForm.jumlah_tagihan && !isNaN(manualForm.jumlah_tagihan) && Number(manualForm.jumlah_tagihan) > 0 && (
+                    <span className="text-[11px] font-bold text-emerald-400">
+                      {formatRupiah(Number(manualForm.jumlah_tagihan))}
+                    </span>
+                  )}
+                </div>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  required
+                  placeholder="Contoh: 150000"
+                  value={manualForm.jumlah_tagihan}
+                  onChange={(e) => setManualForm({ ...manualForm, jumlah_tagihan: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 font-bold text-xs"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">
+                  💡 Nominal otomatis terisi sesuai paket pelanggan terpilih, atau dapat Anda sesuaikan secara bebas.
+                </p>
+              </div>
+
+              {/* Tanggal Jatuh Tempo */}
+              <div>
+                <label className="block text-slate-400 font-medium mb-1">
+                  Tanggal Jatuh Tempo <span className="text-rose-400">*</span>
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={manualForm.tanggal_jatuh_tempo}
+                  onChange={(e) => setManualForm({ ...manualForm, tanggal_jatuh_tempo: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 text-xs font-mono"
+                />
+              </div>
+
+              {/* Tombol Aksi Simpan & Batal */}
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowManualModal(false)}
+                  disabled={savingManual}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium rounded-xl transition text-xs"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingManual}
+                  className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:opacity-50 text-white font-bold rounded-xl transition shadow-lg shadow-cyan-900/30 text-xs flex items-center gap-1.5"
+                >
+                  {savingManual ? (
+                    <>
+                      <span className="inline-block animate-spin">⏳</span> Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <span>💾</span> Simpan Tagihan
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal Kasir Manual */}
       {showPayModal && selectedTagihan && (

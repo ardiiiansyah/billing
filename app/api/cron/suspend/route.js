@@ -1,15 +1,38 @@
+// app/api/cron/suspend/route.js
+// Cron job: Isolir otomatis pelanggan yang menunggak > 3 hari dari tanggal jatuh tempo
+// Menggunakan sistem batching & jeda waktu (delay) untuk notifikasi isolir
+// Dijadwalkan tiap hari jam 07:00 WIB via vercel.json
+
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
-import { kirimWA } from '@/lib/whatsapp'
+import { createClient } from '@supabase/supabase-js'
+import { kirimWABatch } from '@/lib/whatsapp'
+
+export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 export async function GET(request) {
+    // Verifikasi CRON_SECRET jika dikonfigurasi
+    const authHeader = request.headers.get('authorization')
+    if (
+        process.env.CRON_SECRET &&
+        authHeader &&
+        authHeader !== `Bearer ${process.env.CRON_SECRET}`
+    ) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
+
     try {
         const MAX_HARI_NUNGGAK = 3
         const today = new Date()
         today.setHours(0, 0, 0, 0)
 
-        // 1. Ambil tagihan belum bayar
-        const { data: tagihanList, error: tagihanErr } = await supabase
+        // 1. Ambil tagihan belum bayar beserta data pelanggan
+        const { data: tagihanList, error: tagihanErr } = await supabaseAdmin
             .from('tagihan')
             .select('id, bulan, tahun, jumlah_tagihan, tanggal_jatuh_tempo, status_pembayaran, pelanggan_id, pelanggan(id, nama, kode_pelanggan, no_wa, status)')
             .eq('status_pembayaran', 'belum_bayar')
@@ -58,22 +81,25 @@ export async function GET(request) {
 
         if (pelangganToSuspend.length === 0) {
             return NextResponse.json({
+                success: true,
                 message: 'Tidak ada pelanggan yang perlu di-suspend hari ini.',
-                total: 0
+                total_suspended: 0
             })
         }
 
-        // 2. Update status pelanggan menjadi isolir
-        const { error: updateErr } = await supabase
+        // 2. Update status pelanggan menjadi 'isolir' di database
+        const { error: updateErr } = await supabaseAdmin
             .from('pelanggan')
             .update({ status: 'isolir' })
             .in('id', pelangganToSuspend)
 
         if (updateErr) throw updateErr
 
-        // 3. Kirim WA via kirimWA & Simpan Log Notifikasi
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://sandbox-wifi.vercel.app'
-        const logResults = []
+        console.log(`[CRON SUSPEND] ${pelangganToSuspend.length} pelanggan berhasil di-isolir di database.`)
+
+        // 3. Susun antrean pesan WhatsApp
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://sandbox-wifi.vercel.app'
+        const antreanPesan = []
 
         for (const item of notifQueue) {
             if (!item.no_wa) continue
@@ -81,28 +107,47 @@ export async function GET(request) {
             const linkBayar = `${baseUrl}/bayar/${item.tagihan_id}`
             const pesan = `🛑 *PEMBERITAHUAN ISOLIR INTERNET*\n\nYth. Pelanggan Sultan WiFi (*${item.nama}*),\n\nMohon maaf, akses internet Anda untuk ID *${item.kode}* saat ini *DITANGGUHKAN / DI-ISOLIR* sementara karena tagihan bulan *${item.bulan}/${item.tahun}* telah melewati batas jatuh tempo.\n\n💳 *Total Tagihan:* Rp ${Number(item.nominal).toLocaleString('id-ID')}\n🔗 *Link Pembayaran Instan:*\n${linkBayar}\n\n_Akses internet akan otomatis AKTIF kembali beberapa saat setelah pembayaran Anda berhasil dikonfirmasi._\n\nTerima kasih,\n*Sultan WiFi Team*`
 
-            // Kirim via kirimWA
-            const result = await kirimWA(item.no_wa, pesan)
-
-            // Catat log
-            await supabase.from('log_notifikasi').insert({
+            antreanPesan.push({
+                nomor: item.no_wa,
+                pesan,
                 pelanggan_id: item.pelanggan_id,
-                no_wa: item.no_wa,
-                pesan: pesan,
-                jenis: 'isolir',
-                status: result ? 'terkirim' : 'gagal'
+                nama: item.nama,
+                kode: item.kode,
             })
+        }
 
-            logResults.push({ nama: item.nama, no_wa: item.no_wa, status: result ? 'terkirim' : 'gagal' })
+        // 4. Kirim notifikasi isolir bertahap dengan sistem batching (10 pesan/batch, jeda 2.5s)
+        const batchResult = await kirimWABatch(antreanPesan, {
+            batchSize: 10,
+            delayMs: 2500,
+        })
+
+        // 5. Simpan log notifikasi secara efisien (bulk insert)
+        const logInserts = batchResult.detail.map((res) => ({
+            pelanggan_id: res.pelanggan_id,
+            no_wa: res.nomor,
+            pesan: res.pesan,
+            jenis: 'isolir',
+            status: res.sukses ? 'terkirim' : 'gagal',
+        }))
+
+        if (logInserts.length > 0) {
+            const { error: logErr } = await supabaseAdmin.from('log_notifikasi').insert(logInserts)
+            if (logErr) {
+                console.error('[CRON SUSPEND] Error insert log_notifikasi:', logErr.message)
+            }
         }
 
         return NextResponse.json({
             success: true,
-            message: `Berhasil meng-isolir ${pelangganToSuspend.length} pelanggan.`,
+            message: `Berhasil meng-isolir ${pelangganToSuspend.length} pelanggan dan memproses pengiriman notifikasi WA.`,
+            total_suspended: pelangganToSuspend.length,
+            wa_terkirim: batchResult.berhasil,
+            wa_gagal: batchResult.gagal,
             suspended_ids: pelangganToSuspend,
-            wa_logs: logResults
         })
     } catch (err) {
+        console.error('[CRON SUSPEND] Error:', err.message)
         return NextResponse.json({ error: err.message }, { status: 500 })
     }
-}
+}

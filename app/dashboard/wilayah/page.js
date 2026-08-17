@@ -16,6 +16,13 @@ export default function WilayahPage() {
         id: null,
     })
 
+    // State untuk Modal Detail Pelanggan per Wilayah
+    const [detailModal, setDetailModal] = useState({
+        show: false,
+        wilayahNama: '',
+        pelangganList: [],
+    })
+
     const [formData, setFormData] = useState({
         nama: '',
         rt: '',
@@ -31,7 +38,7 @@ export default function WilayahPage() {
         try {
             const { data, error } = await supabase
                 .from('wilayah')
-                .select('*, pelanggan(*, paket(harga))')
+                .select('*, pelanggan(*, paket(nama_paket, harga))')
                 .order('rt', { ascending: true })
 
             if (error) throw error
@@ -252,11 +259,21 @@ export default function WilayahPage() {
                                     <div className="grid grid-cols-3 gap-2 text-xs">
                                         <div>
                                             <span className="text-slate-500 block text-[10px]">AKTIF</span>
-                                            <span className="font-bold text-emerald-400">{w.pelangganAktif} Warga</span>
+                                            <button
+                                                onClick={() => setDetailModal({ show: true, wilayahNama: `${w.nama} (RT ${w.rt}/RW ${w.rw})`, pelangganList: w.pelanggan || [] })}
+                                                className="font-bold text-emerald-400 hover:underline text-left"
+                                            >
+                                                {w.pelangganAktif} Warga
+                                            </button>
                                         </div>
                                         <div>
                                             <span className="text-slate-500 block text-[10px]">TOTAL</span>
-                                            <span className="font-semibold text-slate-300">{w.totalPelanggan} Warga</span>
+                                            <button
+                                                onClick={() => setDetailModal({ show: true, wilayahNama: `${w.nama} (RT ${w.rt}/RW ${w.rw})`, pelangganList: w.pelanggan || [] })}
+                                                className="font-semibold text-slate-300 hover:underline text-left"
+                                            >
+                                                {w.totalPelanggan} Warga 🔎
+                                            </button>
                                         </div>
                                         <div>
                                             <span className="text-slate-500 block text-[10px]">OMSET</span>
@@ -307,11 +324,21 @@ export default function WilayahPage() {
                                                 <td className="px-5 py-4">
                                                     <div className="font-bold text-white text-sm">{w.nama || `Wilayah RT ${w.rt}`}</div>
                                                 </td>
-                                                <td className="px-5 py-4 font-bold text-emerald-400 text-xs">
-                                                    {w.pelangganAktif} Warga
+                                                <td className="px-5 py-4">
+                                                    <button
+                                                        onClick={() => setDetailModal({ show: true, wilayahNama: `${w.nama} (RT ${w.rt}/RW ${w.rw})`, pelangganList: w.pelanggan || [] })}
+                                                        className="font-bold text-emerald-400 hover:underline text-xs flex items-center gap-1"
+                                                    >
+                                                        <span>{w.pelangganAktif} Warga</span>
+                                                    </button>
                                                 </td>
-                                                <td className="px-5 py-4 font-semibold text-slate-300 text-xs">
-                                                    {w.totalPelanggan} Warga
+                                                <td className="px-5 py-4">
+                                                    <button
+                                                        onClick={() => setDetailModal({ show: true, wilayahNama: `${w.nama} (RT ${w.rt}/RW ${w.rw})`, pelangganList: w.pelanggan || [] })}
+                                                        className="font-semibold text-cyan-400 hover:text-cyan-300 hover:underline text-xs flex items-center gap-1 bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/20 w-fit"
+                                                    >
+                                                        <span>👥 {w.totalPelanggan} Warga (Lihat)</span>
+                                                    </button>
                                                 </td>
                                                 <td className="px-5 py-4 font-extrabold text-emerald-400 text-xs">
                                                     {formatRupiah(w.potensiOmset)}
@@ -341,6 +368,66 @@ export default function WilayahPage() {
                     </>
                 )}
             </div>
+
+            {/* Modal Detail Daftar Pelanggan per Wilayah */}
+            {detailModal.show && (
+                <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-2xl shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+                        <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                            <div>
+                                <h3 className="text-base font-bold text-white">Daftar Warga / Pelanggan</h3>
+                                <p className="text-xs text-cyan-400 font-semibold mt-0.5">📍 Area: {detailModal.wilayahNama}</p>
+                            </div>
+                            <button
+                                onClick={() => setDetailModal({ show: false, wilayahNama: '', pelangganList: [] })}
+                                className="text-slate-400 hover:text-white text-lg font-bold"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="overflow-y-auto flex-1 space-y-2 pr-1">
+                            {detailModal.pelangganList.length === 0 ? (
+                                <div className="text-center py-10 text-slate-500 text-xs">
+                                    Belum ada pelanggan terdaftar di wilayah ini.
+                                </div>
+                            ) : (
+                                detailModal.pelangganList.map((p, idx) => (
+                                    <div key={p.id || idx} className="bg-slate-950/60 border border-slate-800/80 p-3.5 rounded-xl flex items-center justify-between gap-3">
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-mono text-cyan-400 font-bold text-xs">{p.kode_pelanggan}</span>
+                                                <span className="text-white font-bold text-xs">{p.nama}</span>
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${p.status === 'aktif' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}`}>
+                                                    {p.status === 'aktif' ? 'Aktif' : 'Isolir'}
+                                                </span>
+                                            </div>
+                                            <p className="text-[11px] text-slate-400">🏠 {p.alamat || '-'}</p>
+                                        </div>
+
+                                        <div className="text-right shrink-0">
+                                            <span className="text-[11px] text-slate-400 block font-mono">{p.no_wa || '-'}</span>
+                                            <span className="text-emerald-400 font-semibold text-[11px]">
+                                                {p.paket ? formatRupiah(p.paket.harga) : 'Tanpa Paket'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <div className="pt-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+                            <span>Total: <b className="text-white">{detailModal.pelangganList.length} warga</b></span>
+                            <button
+                                onClick={() => setDetailModal({ show: false, wilayahNama: '', pelangganList: [] })}
+                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl transition"
+                            >
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modal Form Tambah / Edit Wilayah */}
             {showModal && (

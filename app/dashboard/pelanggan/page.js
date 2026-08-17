@@ -7,6 +7,7 @@ import BulkActionBar from '@/components/BulkActionBar'
 export default function PelangganPage() {
   const [pelangganList, setPelangganList] = useState([])
   const [paketOptions, setPaketOptions] = useState([])
+  const [wilayahOptions, setWilayahOptions] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editId, setEditId] = useState(null)
@@ -52,8 +53,7 @@ export default function PelangganPage() {
     nama: '',
     no_wa: '',
     alamat: '',
-    rt: '',
-    rw: '',
+    wilayah_id: '',
     paket_id: '',
     tanggal_jatuh_tempo: 10,
     status: 'aktif',
@@ -63,6 +63,7 @@ export default function PelangganPage() {
   useEffect(() => {
     fetchPelanggan()
     fetchPaketOptions()
+    fetchWilayahOptions()
 
     const handleFocus = () => {
       if (document.visibilityState === 'visible') {
@@ -87,12 +88,17 @@ export default function PelangganPage() {
     setPaketOptions(data || [])
   }
 
+  async function fetchWilayahOptions() {
+    const { data } = await supabase.from('wilayah').select('id, nama, rt, rw')
+    setWilayahOptions(data || [])
+  }
+
   async function fetchPelanggan() {
     setLoading(true)
     try {
       const { data, error } = await supabase
         .from('pelanggan')
-        .select('*, paket(nama_paket, harga), wilayah(nama, rt, rw)')
+        .select('*, paket(nama_paket, harga), wilayah(id, nama, rt, rw)')
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -104,9 +110,9 @@ export default function PelangganPage() {
     }
   }
 
-  // List opsi RT dinamis dari data pelanggan
+  // List opsi RT dinamis dari data wilayah yang berelasi
   const rtOptions = useMemo(() => {
-    const rts = pelangganList.map((p) => p.rt).filter(Boolean)
+    const rts = pelangganList.map((p) => p.wilayah?.rt).filter(Boolean)
     return [...new Set(rts)].sort()
   }, [pelangganList])
 
@@ -119,7 +125,7 @@ export default function PelangganPage() {
         p.no_wa?.includes(search)
 
       const matchStatus = filterStatus ? p.status === filterStatus : true
-      const matchRt = filterRt ? String(p.rt) === String(filterRt) : true
+      const matchRt = filterRt ? String(p.wilayah?.rt) === String(filterRt) : true
       const matchPaket = filterPaket ? p.paket_id === filterPaket : true
 
       return matchSearch && matchStatus && matchRt && matchPaket
@@ -142,8 +148,7 @@ export default function PelangganPage() {
         nama: pelanggan.nama,
         no_wa: pelanggan.no_wa,
         alamat: pelanggan.alamat,
-        rt: pelanggan.rt || '',
-        rw: pelanggan.rw || '',
+        wilayah_id: pelanggan.wilayah_id || '',
         paket_id: pelanggan.paket_id || '',
         tanggal_jatuh_tempo: pelanggan.tanggal_jatuh_tempo || 10,
         status: pelanggan.status || 'aktif',
@@ -156,8 +161,7 @@ export default function PelangganPage() {
         nama: '',
         no_wa: '',
         alamat: '',
-        rt: '',
-        rw: '',
+        wilayah_id: '',
         paket_id: paketOptions[0]?.id || '',
         tanggal_jatuh_tempo: 10,
         status: 'aktif',
@@ -176,8 +180,7 @@ export default function PelangganPage() {
         nama: formData.nama,
         alamat: formData.alamat,
         no_wa: formData.no_wa,
-        rt: formData.rt,
-        rw: formData.rw,
+        wilayah_id: formData.wilayah_id || null,
         paket_id: formData.paket_id || null,
         tanggal_jatuh_tempo: formData.tanggal_jatuh_tempo,
         status: formData.status || 'aktif',
@@ -356,57 +359,45 @@ export default function PelangganPage() {
         </div>
       </div>
 
-      {/* Kartu Ringkasan Cepat (Dilengkapi efek hover interaktif sama seperti di Dashboard) */}
+      {/* Kartu Ringkasan Cepat */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Total Pelanggan */}
-        <div className="bg-gradient-to-b from-blue-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/10 hover:border-blue-500/50 cursor-pointer flex items-center justify-between">
+        <div className="bg-gradient-to-b from-blue-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between">
           <div>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Total Pelanggan</p>
             <p className="text-lg sm:text-xl font-extrabold text-white mt-1">{statsSummary.total}</p>
           </div>
-          <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm sm:text-base shadow-inner">
-            👥
-          </span>
+          <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm sm:text-base">👥</span>
         </div>
 
-        {/* Pelanggan Aktif */}
-        <div className="bg-gradient-to-b from-emerald-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-500/10 hover:border-emerald-500/50 cursor-pointer flex items-center justify-between">
+        <div className="bg-gradient-to-b from-emerald-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between">
           <div>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Pelanggan Aktif</p>
             <p className="text-lg sm:text-xl font-extrabold text-emerald-400 mt-1">{statsSummary.aktif}</p>
           </div>
-          <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm sm:text-base shadow-inner">
-            ✅
-          </span>
+          <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm sm:text-base">✅</span>
         </div>
 
-        {/* Status Isolir */}
-        <div className="bg-gradient-to-b from-rose-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-rose-500/10 hover:border-rose-500/50 cursor-pointer flex items-center justify-between">
+        <div className="bg-gradient-to-b from-rose-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between">
           <div>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Status Isolir</p>
             <p className="text-lg sm:text-xl font-extrabold text-rose-400 mt-1">{statsSummary.isolir}</p>
           </div>
-          <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm sm:text-base shadow-inner">
-            🔴
-          </span>
+          <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm sm:text-base">🔴</span>
         </div>
 
-        {/* Wilayah RT */}
-        <div className="bg-gradient-to-b from-amber-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-500/10 hover:border-amber-500/50 cursor-pointer flex items-center justify-between">
+        <div className="bg-gradient-to-b from-amber-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between">
           <div>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Wilayah RT</p>
             <p className="text-lg sm:text-xl font-extrabold text-amber-400 mt-1">{rtOptions.length} RT</p>
           </div>
-          <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm sm:text-base shadow-inner">
-            📍
-          </span>
+          <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm sm:text-base">📍</span>
         </div>
       </div>
 
       {/* Baris Filter Advanced */}
       <div className={`bg-slate-900/80 border border-slate-800/80 p-4 rounded-2xl space-y-3 shadow-xl shadow-black/20 ${showMobileFilter ? 'block' : 'hidden md:block'}`}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="flex items-center gap-2.5 bg-slate-950/80 border border-slate-800 px-3.5 py-2 rounded-xl focus-within:border-cyan-500/80 transition duration-200">
+          <div className="flex items-center gap-2.5 bg-slate-950/80 border border-slate-800 px-3.5 py-2 rounded-xl">
             <span className="text-slate-400 text-xs">🔍</span>
             <input
               type="text"
@@ -420,7 +411,7 @@ export default function PelangganPage() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-slate-950/80 border border-slate-800 text-xs text-slate-200 px-3.5 py-2 rounded-xl focus:outline-none focus:border-cyan-500/80 transition duration-200 cursor-pointer"
+            className="bg-slate-950/80 border border-slate-800 text-xs text-slate-200 px-3.5 py-2 rounded-xl focus:outline-none cursor-pointer"
           >
             <option value="">Semua Status</option>
             <option value="aktif">🟢 Status: Aktif</option>
@@ -430,7 +421,7 @@ export default function PelangganPage() {
           <select
             value={filterRt}
             onChange={(e) => setFilterRt(e.target.value)}
-            className="bg-slate-950/80 border border-slate-800 text-xs text-slate-200 px-3.5 py-2 rounded-xl focus:outline-none focus:border-cyan-500/80 transition duration-200 cursor-pointer"
+            className="bg-slate-950/80 border border-slate-800 text-xs text-slate-200 px-3.5 py-2 rounded-xl focus:outline-none cursor-pointer"
           >
             <option value="">Semua Wilayah RT</option>
             {rtOptions.map((rt) => (
@@ -443,7 +434,7 @@ export default function PelangganPage() {
           <select
             value={filterPaket}
             onChange={(e) => setFilterPaket(e.target.value)}
-            className="bg-slate-950/80 border border-slate-800 text-xs text-slate-200 px-3.5 py-2 rounded-xl focus:outline-none focus:border-cyan-500/80 transition duration-200 cursor-pointer"
+            className="bg-slate-950/80 border border-slate-800 text-xs text-slate-200 px-3.5 py-2 rounded-xl focus:outline-none cursor-pointer"
           >
             <option value="">Semua Paket</option>
             {paketOptions.map((pkt) => (
@@ -477,7 +468,6 @@ export default function PelangganPage() {
             <div className="flex flex-col items-center justify-center gap-1.5">
               <span className="text-2xl">🔍</span>
               <span className="font-medium text-slate-400">Tidak ada pelanggan ditemukan</span>
-              <span className="text-[11px] text-slate-600">Coba ubah kata kunci pencarian atau reset filter.</span>
             </div>
           </div>
         ) : (
@@ -495,7 +485,7 @@ export default function PelangganPage() {
                         type="checkbox"
                         checked={selectedIds.includes(p.id)}
                         onChange={() => handleToggleOne(p.id)}
-                        className="w-4 h-4 rounded border-slate-700 bg-slate-900 cursor-pointer accent-cyan-500"
+                        className="w-4 h-4 rounded border-slate-700 bg-slate-950 cursor-pointer accent-cyan-500"
                       />
                       <a href={`/dashboard/pelanggan/${p.id}`} className="font-mono text-cyan-400 font-bold text-xs hover:underline">
                         {p.kode_pelanggan}
@@ -513,7 +503,7 @@ export default function PelangganPage() {
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-cyan-400 text-xs shrink-0 shadow-inner">
+                    <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-cyan-400 text-xs shrink-0">
                       {getInitials(p.nama)}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -521,7 +511,7 @@ export default function PelangganPage() {
                         {p.nama}
                       </a>
                       <p className="text-slate-400 text-xs truncate mt-0.5">
-                        {p.alamat} <span className="text-slate-500">(RT {p.rt || '-'}/RW {p.rw || '-'})</span>
+                        {p.alamat} <span className="text-slate-500">({p.wilayah?.nama || 'Tanpa Wilayah'} - RT {p.wilayah?.rt || '-'}/RW {p.wilayah?.rw || '-'})</span>
                       </p>
                     </div>
                   </div>
@@ -580,7 +570,7 @@ export default function PelangganPage() {
                           type="checkbox"
                           checked={isAllSelected}
                           onChange={handleToggleAll}
-                          className="w-4 h-4 rounded border-slate-700 bg-slate-900 cursor-pointer accent-cyan-500"
+                          className="w-4 h-4 rounded border-slate-700 bg-slate-950 cursor-pointer accent-cyan-500"
                         />
                       </th>
                       <th className="px-5 py-3.5 font-bold">ID Pelanggan</th>
@@ -604,7 +594,7 @@ export default function PelangganPage() {
                             type="checkbox"
                             checked={selectedIds.includes(p.id)}
                             onChange={() => handleToggleOne(p.id)}
-                            className="w-4 h-4 rounded border-slate-700 bg-slate-900 cursor-pointer accent-cyan-500"
+                            className="w-4 h-4 rounded border-slate-700 bg-slate-950 cursor-pointer accent-cyan-500"
                           />
                         </td>
                         <td className="px-5 py-4 font-mono text-cyan-400 font-bold text-xs">
@@ -614,7 +604,7 @@ export default function PelangganPage() {
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-cyan-400 text-xs shrink-0 shadow-inner">
+                            <div className="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-cyan-400 text-xs shrink-0">
                               {getInitials(p.nama)}
                             </div>
                             <div>
@@ -622,7 +612,7 @@ export default function PelangganPage() {
                                 {p.nama}
                               </a>
                               <div className="text-xs text-slate-400 mt-0.5">
-                                {p.alamat} <span className="text-slate-500">(RT {p.rt || '-'}/RW {p.rw || '-'})</span>
+                                {p.alamat} <span className="text-slate-500">({p.wilayah?.nama || 'Tanpa Wilayah'} - RT {p.wilayah?.rt || '-'}/RW {p.wilayah?.rw || '-'})</span>
                               </div>
                             </div>
                           </div>
@@ -655,9 +645,9 @@ export default function PelangganPage() {
                         <td className="px-5 py-4">
                           <button
                             onClick={() => handleToggleStatus(p)}
-                            className={`px-3 py-1 rounded-full text-[11px] font-bold tracking-wide transition-all duration-200 ${p.status === 'aktif'
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20'
-                              : 'bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20'
+                            className={`px-3 py-1 rounded-full text-[11px] font-bold tracking-wide transition-all ${p.status === 'aktif'
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                              : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
                               }`}
                           >
                             {p.status === 'aktif' ? '🟢 Aktif' : '🔴 Isolir'}
@@ -667,14 +657,14 @@ export default function PelangganPage() {
                           <button
                             onClick={() => handleOpenModal(p)}
                             disabled={loading}
-                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition"
                           >
                             ✏️ Edit
                           </button>
                           <button
                             onClick={() => setConfirmDeleteModal({ show: true, id: p.id })}
                             disabled={loading}
-                            className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20"
                           >
                             🗑️ Hapus
                           </button>
@@ -735,16 +725,16 @@ export default function PelangganPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 font-medium mb-1">Pilihan Paket</label>
+                  <label className="block text-slate-400 font-medium mb-1">Pilihan Wilayah / Area RT/RW</label>
                   <select
-                    value={formData.paket_id}
-                    onChange={(e) => setFormData({ ...formData, paket_id: e.target.value })}
+                    value={formData.wilayah_id}
+                    onChange={(e) => setFormData({ ...formData, wilayah_id: e.target.value })}
                     className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 cursor-pointer"
                   >
-                    <option value="">-- Pilih Paket --</option>
-                    {paketOptions.map((pkt) => (
-                      <option key={pkt.id} value={pkt.id}>
-                        {pkt.nama_paket} ({formatRupiah(pkt.harga)})
+                    <option value="">-- Pilih Wilayah --</option>
+                    {wilayahOptions.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.nama} (RT {w.rt} / RW {w.rw})
                       </option>
                     ))}
                   </select>
@@ -763,26 +753,21 @@ export default function PelangganPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-slate-400 font-medium mb-1">RT</label>
-                  <input
-                    type="text"
-                    placeholder="01"
-                    value={formData.rt}
-                    onChange={(e) => setFormData({ ...formData, rt: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 font-medium mb-1">RW</label>
-                  <input
-                    type="text"
-                    placeholder="05"
-                    value={formData.rw}
-                    onChange={(e) => setFormData({ ...formData, rw: e.target.value })}
-                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
-                  />
+                  <label className="block text-slate-400 font-medium mb-1">Pilihan Paket</label>
+                  <select
+                    value={formData.paket_id}
+                    onChange={(e) => setFormData({ ...formData, paket_id: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 cursor-pointer"
+                  >
+                    <option value="">-- Pilih Paket --</option>
+                    {paketOptions.map((pkt) => (
+                      <option key={pkt.id} value={pkt.id}>
+                        {pkt.nama_paket} ({formatRupiah(pkt.harga)})
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-slate-400 font-medium mb-1">Tgl Jatuh Tempo</label>
@@ -809,7 +794,7 @@ export default function PelangganPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-bold rounded-xl transition shadow-lg shadow-cyan-600/25"
+                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 text-white font-bold rounded-xl transition shadow-lg shadow-cyan-600/25"
                 >
                   {loading ? 'Menyimpan...' : 'Simpan Pelanggan'}
                 </button>
@@ -841,7 +826,7 @@ export default function PelangganPage() {
               <button
                 onClick={executeDelete}
                 disabled={loading}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-rose-900/30"
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-xl transition"
               >
                 {loading ? 'Menghapus...' : 'Ya, Hapus'}
               </button>
@@ -941,7 +926,7 @@ export default function PelangganPage() {
                 <select
                   value={genBulan}
                   onChange={(e) => setGenBulan(Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-cyan-500 cursor-pointer"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none cursor-pointer"
                 >
                   {[...Array(12)].map((_, i) => (
                     <option key={i + 1} value={i + 1}>
@@ -958,7 +943,7 @@ export default function PelangganPage() {
                   onChange={(e) => setGenTahun(Number(e.target.value))}
                   min={2020}
                   max={2099}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none"
                 />
               </div>
             </div>
@@ -1009,7 +994,7 @@ export default function PelangganPage() {
                 rows={5}
                 value={templateWaBulk}
                 onChange={(e) => setTemplateWaBulk(e.target.value)}
-                className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-cyan-500 font-mono leading-relaxed"
+                className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-xs focus:outline-none font-mono leading-relaxed"
               />
             </div>
 

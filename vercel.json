@@ -5,6 +5,10 @@
             "schedule": "0 0 1 * *"
         },
         {
+            "path": "/api/cron/kirim-tagihan",
+            "schedule": "10 0 1 * *"
+        },
+        {
             "path": "/api/cron/notif-tagihan",
             "schedule": "0 1 * * *"
         },
@@ -13,4 +17,4 @@
             "schedule": "0 0 * * *"
         }
     ]
-}
+}

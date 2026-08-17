@@ -91,6 +91,18 @@ export async function POST(request) {
         })
       }
     }
+    // === TAMBAHAN UNTUK POIN 2 (RESET JIKA EXPIRE/CANCEL/DENY) ===
+    else if (['expire', 'cancel', 'deny'].includes(transaction_status)) {
+      await supabase
+        .from('tagihan')
+        .update({
+          status_pembayaran: 'belum_bayar',
+          status: 'belum_bayar',
+          payment_url: null,
+          midtrans_order_id: null
+        })
+        .eq('id', tagihan.id)
+    }
 
     return Response.json({ sukses: true })
   } catch (err) {
