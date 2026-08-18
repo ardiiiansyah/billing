@@ -17,7 +17,7 @@ export default function RootLayout({ children }) {
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
-      <body className="min-h-screen antialiased bg-slate-900 text-slate-100">
+      <body className="relative min-h-screen antialiased bg-slate-950 text-slate-100 overflow-x-hidden">
         {children}
         <script
           dangerouslySetInnerHTML={{
