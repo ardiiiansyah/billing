@@ -39,7 +39,13 @@ export default function DashboardLayout({ children }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-white pb-16 md:pb-0">
+    <div className="relative flex min-h-screen bg-slate-950 text-white pb-16 md:pb-0 overflow-x-hidden">
+
+      {/* === GLOBAL GLOW EFFECT (Efek Cahaya Latar Belakang Estetik) === */}
+      <div className="fixed top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[128px] pointer-events-none z-0" />
+      <div className="fixed bottom-0 right-10 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[128px] pointer-events-none z-0" />
+      {/* ============================================================= */}
+
       {/* Kirim state sidebarOpen dan fungsi toggle ke komponen Sidebar */}
       <Sidebar
         userEmail={user?.email}
@@ -48,7 +54,7 @@ export default function DashboardLayout({ children }) {
         setIsOpen={setSidebarOpen}
       />
 
-      <main className="flex-1 p-6 overflow-y-auto min-w-0">
+      <main className="relative z-10 flex-1 p-6 overflow-y-auto min-w-0">
         {children}
       </main>
 

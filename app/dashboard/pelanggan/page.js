@@ -368,7 +368,7 @@ export default function PelangganPage() {
 
       {/* Kartu Ringkasan Cepat */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-gradient-to-b from-blue-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between">
+        <div className="bg-gradient-to-b from-blue-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between transition-all duration-300 hover:border-blue-500/50 hover:-translate-y-0.5">
           <div>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Total Pelanggan</p>
             <p className="text-lg sm:text-xl font-extrabold text-white mt-1">{statsSummary.total}</p>
@@ -376,7 +376,7 @@ export default function PelangganPage() {
           <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm sm:text-base">👥</span>
         </div>
 
-        <div className="bg-gradient-to-b from-emerald-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between">
+        <div className="bg-gradient-to-b from-emerald-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between transition-all duration-300 hover:border-emerald-500/50 hover:-translate-y-0.5">
           <div>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Pelanggan Aktif</p>
             <p className="text-lg sm:text-xl font-extrabold text-emerald-400 mt-1">{statsSummary.aktif}</p>
@@ -384,7 +384,7 @@ export default function PelangganPage() {
           <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm sm:text-base">✅</span>
         </div>
 
-        <div className="bg-gradient-to-b from-rose-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between">
+        <div className="bg-gradient-to-b from-rose-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between transition-all duration-300 hover:border-rose-500/50 hover:-translate-y-0.5">
           <div>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Status Isolir</p>
             <p className="text-lg sm:text-xl font-extrabold text-rose-400 mt-1">{statsSummary.isolir}</p>
@@ -392,7 +392,7 @@ export default function PelangganPage() {
           <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm sm:text-base">🔴</span>
         </div>
 
-        <div className="bg-gradient-to-b from-amber-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between">
+        <div className="bg-gradient-to-b from-amber-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between transition-all duration-300 hover:border-amber-500/50 hover:-translate-y-0.5">
           <div>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Wilayah RT</p>
             <p className="text-lg sm:text-xl font-extrabold text-amber-400 mt-1">{rtOptions.length} RT</p>
