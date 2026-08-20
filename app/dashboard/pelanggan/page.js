@@ -41,7 +41,7 @@ export default function PelangganPage() {
   const [templateWaBulk, setTemplateWaBulk] = useState(
     'Halo Bapak/Ibu *[nama]*, berikut adalah pengumuman dari Sultan WiFi. Terima kasih 🙏'
   )
-  const [mediaFileWa, setMediaFileWa] = useState(null) // <--- State baru untuk file foto/video WA
+  const [mediaFileWa, setMediaFileWa] = useState(null)
   const [showWaProgress, setShowWaProgress] = useState(false)
   const [waProgress, setWaProgress] = useState({ total: 0, terkirim: 0, gagal: 0, logs: [] })
 
@@ -54,7 +54,6 @@ export default function PelangganPage() {
     kode_pelanggan: '',
     nama: '',
     no_wa: '',
-    alamat: '',
     odp: '',
     wilayah_id: '',
     paket_id: '',
@@ -148,7 +147,6 @@ export default function PelangganPage() {
         kode_pelanggan: pelanggan.kode_pelanggan,
         nama: pelanggan.nama,
         no_wa: pelanggan.no_wa,
-        alamat: pelanggan.alamat,
         odp: pelanggan.odp || '',
         wilayah_id: pelanggan.wilayah_id || '',
         paket_id: pelanggan.paket_id || '',
@@ -162,7 +160,6 @@ export default function PelangganPage() {
         kode_pelanggan: nextCode,
         nama: '',
         no_wa: '',
-        alamat: '',
         odp: '',
         wilayah_id: '',
         paket_id: paketOptions[0]?.id || '',
@@ -181,7 +178,6 @@ export default function PelangganPage() {
       const payload = {
         kode_pelanggan: formData.kode_pelanggan,
         nama: formData.nama,
-        alamat: formData.alamat,
         no_wa: formData.no_wa,
         odp: formData.odp || null,
         wilayah_id: formData.wilayah_id || null,
@@ -309,7 +305,6 @@ export default function PelangganPage() {
     try {
       let mediaUrl = ''
 
-      // Jika user melampirkan foto/video, upload dulu ke Supabase Storage (pastikan bucket 'media-wa' sudah dibuat)
       if (mediaFileWa) {
         const fileExt = mediaFileWa.name.split('.').pop()
         const fileName = `broadcast_${Date.now()}.${fileExt}`
@@ -332,14 +327,14 @@ export default function PelangganPage() {
           mode: 'pelanggan',
           ids: selectedIds,
           pesan: templateWaBulk,
-          media_url: mediaUrl // Mengirimkan URL media jika ada
+          media_url: mediaUrl
         }),
       })
       const data = await res.json()
       if (data.sukses) {
         setWaProgress({ total: data.total, terkirim: data.terkirim, gagal: data.gagal, logs: data.logs })
         setSelectedIds([])
-        setMediaFileWa(null) // Reset file setelah terkirim
+        setMediaFileWa(null)
       } else {
         alert('Gagal: ' + (data.error || 'Unknown error'))
         setShowWaProgress(false)
@@ -371,7 +366,6 @@ export default function PelangganPage() {
           </p>
         </div>
 
-        {/* Tombol Aksi Header Atas */}
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() => setShowMobileFilter(!showMobileFilter)}
@@ -391,7 +385,7 @@ export default function PelangganPage() {
 
       {/* Kartu Ringkasan Cepat */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-gradient-to-b from-blue-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between transition-all duration-300 hover:border-blue-500/50 hover:-translate-y-0.5">
+        <div className="bg-gradient-to-b from-blue-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between">
           <div>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Total Pelanggan</p>
             <p className="text-lg sm:text-xl font-extrabold text-white mt-1">{statsSummary.total}</p>
@@ -399,7 +393,7 @@ export default function PelangganPage() {
           <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-sm sm:text-base">👥</span>
         </div>
 
-        <div className="bg-gradient-to-b from-emerald-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between transition-all duration-300 hover:border-emerald-500/50 hover:-translate-y-0.5">
+        <div className="bg-gradient-to-b from-emerald-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between">
           <div>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Pelanggan Aktif</p>
             <p className="text-lg sm:text-xl font-extrabold text-emerald-400 mt-1">{statsSummary.aktif}</p>
@@ -407,7 +401,7 @@ export default function PelangganPage() {
           <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm sm:text-base">✅</span>
         </div>
 
-        <div className="bg-gradient-to-b from-rose-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between transition-all duration-300 hover:border-rose-500/50 hover:-translate-y-0.5">
+        <div className="bg-gradient-to-b from-rose-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between">
           <div>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Status Isolir</p>
             <p className="text-lg sm:text-xl font-extrabold text-rose-400 mt-1">{statsSummary.isolir}</p>
@@ -415,7 +409,7 @@ export default function PelangganPage() {
           <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-sm sm:text-base">🔴</span>
         </div>
 
-        <div className="bg-gradient-to-b from-amber-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between transition-all duration-300 hover:border-amber-500/50 hover:-translate-y-0.5">
+        <div className="bg-gradient-to-b from-amber-950/30 to-slate-900/90 border border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-lg shadow-black/40 flex items-center justify-between">
           <div>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-400">Wilayah RT</p>
             <p className="text-lg sm:text-xl font-extrabold text-amber-400 mt-1">{rtOptions.length} RT</p>
@@ -424,7 +418,7 @@ export default function PelangganPage() {
         </div>
       </div>
 
-      {/* Baris Filter Advanced dengan Filter ODP */}
+      {/* Baris Filter Advanced */}
       <div className={`bg-slate-900/80 border border-slate-800/80 p-4 rounded-2xl space-y-3 shadow-xl shadow-black/20 ${showMobileFilter ? 'block' : 'hidden md:block'}`}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <div className="flex items-center gap-2.5 bg-slate-950/80 border border-slate-800 px-3.5 py-2 rounded-xl">
@@ -552,7 +546,7 @@ export default function PelangganPage() {
                         {p.nama}
                       </a>
                       <p className="text-slate-400 text-xs truncate mt-0.5">
-                        {p.alamat} <span className="text-slate-500">({p.wilayah?.nama || 'Tanpa Wilayah'} - RT {p.wilayah?.rt || '-'}/RW {p.wilayah?.rw || '-'})</span>
+                        Wilayah: <span className="text-slate-300">{p.wilayah?.nama || 'Tanpa Wilayah'} - RT {p.wilayah?.rt || '-'}/RW {p.wilayah?.rw || '-'}</span>
                       </p>
                       {p.odp && (
                         <p className="text-amber-400 font-semibold text-xs mt-1">
@@ -659,7 +653,7 @@ export default function PelangganPage() {
                                 {p.nama}
                               </a>
                               <div className="text-xs text-slate-400 mt-0.5">
-                                {p.alamat} <span className="text-slate-500">({p.wilayah?.nama || 'Tanpa Wilayah'} - RT {p.wilayah?.rt || '-'}/RW {p.wilayah?.rw || '-'})</span>
+                                Wilayah: <span className="text-slate-300">{p.wilayah?.nama || 'Tanpa Wilayah'} - RT {p.wilayah?.rt || '-'}/RW {p.wilayah?.rw || '-'}</span>
                               </div>
                             </div>
                           </div>
@@ -823,18 +817,6 @@ export default function PelangganPage() {
                     ))}
                   </select>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-400 font-medium mb-1">Alamat Rumah</label>
-                <textarea
-                  rows={2}
-                  required
-                  placeholder="Alamat / Blok No..."
-                  value={formData.alamat}
-                  onChange={(e) => setFormData({ ...formData, alamat: e.target.value })}
-                  className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
-                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -1047,7 +1029,7 @@ export default function PelangganPage() {
         </div>
       )}
 
-      {/* Modal WA Pengumuman Masal dengan Input Foto/Video */}
+      {/* Modal WA Pengumuman Masal */}
       {showBulkWaModal && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl space-y-4">
@@ -1068,7 +1050,6 @@ export default function PelangganPage() {
               </p>
             </div>
 
-            {/* Input Tambahan untuk Foto / Video */}
             <div className="space-y-1.5">
               <label className="block text-xs font-medium text-slate-400">
                 Lampirkan Foto / Video (Opsional)
