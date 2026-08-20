@@ -1,5 +1,5 @@
 // app/api/bulk/wa/route.js
-// API endpoint: Kirim WA masal ke daftar pelanggan/tagihan dengan delay antrean
+// API endpoint: Kirim WA masal ke daftar pelanggan/tagihan dengan delay antrean & support media
 
 import { createClient } from '@supabase/supabase-js'
 import { kirimWA } from '@/lib/whatsapp'
@@ -14,9 +14,7 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 export async function POST(request) {
     try {
         const body = await request.json()
-        const { mode, ids, pesan } = body
-        // mode: 'tagihan' | 'pelanggan'
-        // ids: array of tagihan_id atau pelanggan_id
+        const { mode, ids, pesan, media_url } = body // <--- 1. Tangkap media_url di sini
 
         if (!ids || ids.length === 0 || !pesan) {
             return Response.json({ error: 'Data tidak lengkap' }, { status: 400 })
@@ -69,12 +67,12 @@ export async function POST(request) {
                 continue
             }
 
-            // Ganti placeholder di template pesan
             let pesanFinal = pesan
                 .replace(/\[nama\]/g, target.nama || 'Pelanggan')
                 .replace(/\[link_bayar\]/g, target.tagihan_id ? `${baseUrl}/bayar/${target.tagihan_id}` : '-')
 
-            const { sukses: berhasil } = await kirimWA(target.no_wa, pesanFinal)
+            // 2. Kirim media_url ke dalam fungsi kirimWA (pastikan fungsi helper kirimWA Anda mendukung parameter ke-3 ini)
+            const { sukses: berhasil } = await kirimWA(target.no_wa, pesanFinal, media_url || null)
 
             if (berhasil) {
                 sukses++
@@ -84,7 +82,6 @@ export async function POST(request) {
                 logs.push({ nama: target.nama, no_wa: target.no_wa, status: 'gagal' })
             }
 
-            // Delay 1.5 detik antar pesan untuk mencegah pemblokiran WA
             await delay(1500)
         }
 

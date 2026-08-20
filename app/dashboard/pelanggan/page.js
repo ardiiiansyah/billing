@@ -17,7 +17,7 @@ export default function PelangganPage() {
   const [filterStatus, setFilterStatus] = useState('')
   const [filterRt, setFilterRt] = useState('')
   const [filterPaket, setFilterPaket] = useState('')
-  const [filterOdp, setFilterOdp] = useState('') // <--- Filter ODP Baru
+  const [filterOdp, setFilterOdp] = useState('')
   const [showMobileFilter, setShowMobileFilter] = useState(false)
 
   // ── State Bulk Action ──────────────────────────────────────────────
@@ -41,6 +41,7 @@ export default function PelangganPage() {
   const [templateWaBulk, setTemplateWaBulk] = useState(
     'Halo Bapak/Ibu *[nama]*, berikut adalah pengumuman dari Sultan WiFi. Terima kasih 🙏'
   )
+  const [mediaFileWa, setMediaFileWa] = useState(null) // <--- State baru untuk file foto/video WA
   const [showWaProgress, setShowWaProgress] = useState(false)
   const [waProgress, setWaProgress] = useState({ total: 0, terkirim: 0, gagal: 0, logs: [] })
 
@@ -54,7 +55,7 @@ export default function PelangganPage() {
     nama: '',
     no_wa: '',
     alamat: '',
-    odp: '', // <--- Field ODP Baru
+    odp: '',
     wilayah_id: '',
     paket_id: '',
     tanggal_jatuh_tempo: 10,
@@ -112,13 +113,11 @@ export default function PelangganPage() {
     }
   }
 
-  // List opsi RT dinamis dari data wilayah yang berelasi
   const rtOptions = useMemo(() => {
     const rts = pelangganList.map((p) => p.wilayah?.rt).filter(Boolean)
     return [...new Set(rts)].sort()
   }, [pelangganList])
 
-  // Logika Filter Multi-Kriteria (Termasuk ODP)
   const filteredPelanggan = useMemo(() => {
     return pelangganList.filter((p) => {
       const matchSearch =
@@ -129,13 +128,12 @@ export default function PelangganPage() {
       const matchStatus = filterStatus ? p.status === filterStatus : true
       const matchRt = filterRt ? String(p.wilayah?.rt) === String(filterRt) : true
       const matchPaket = filterPaket ? p.paket_id === filterPaket : true
-      const matchOdp = filterOdp ? p.odp?.toLowerCase().includes(filterOdp.toLowerCase()) : true // <--- Filter ODP
+      const matchOdp = filterOdp ? p.odp?.toLowerCase().includes(filterOdp.toLowerCase()) : true
 
       return matchSearch && matchStatus && matchRt && matchPaket && matchOdp
     })
   }, [pelangganList, search, filterStatus, filterRt, filterPaket, filterOdp])
 
-  // Stats ringkasan cepat untuk header pelanggan
   const statsSummary = useMemo(() => {
     const total = pelangganList.length
     const aktif = pelangganList.filter(p => p.status === 'aktif').length
@@ -151,7 +149,7 @@ export default function PelangganPage() {
         nama: pelanggan.nama,
         no_wa: pelanggan.no_wa,
         alamat: pelanggan.alamat,
-        odp: pelanggan.odp || '', // <--- Set ODP
+        odp: pelanggan.odp || '',
         wilayah_id: pelanggan.wilayah_id || '',
         paket_id: pelanggan.paket_id || '',
         tanggal_jatuh_tempo: pelanggan.tanggal_jatuh_tempo || 10,
@@ -165,7 +163,7 @@ export default function PelangganPage() {
         nama: '',
         no_wa: '',
         alamat: '',
-        odp: '', // <--- Reset ODP
+        odp: '',
         wilayah_id: '',
         paket_id: paketOptions[0]?.id || '',
         tanggal_jatuh_tempo: 10,
@@ -185,7 +183,7 @@ export default function PelangganPage() {
         nama: formData.nama,
         alamat: formData.alamat,
         no_wa: formData.no_wa,
-        odp: formData.odp || null, // <--- Payload ODP
+        odp: formData.odp || null,
         wilayah_id: formData.wilayah_id || null,
         paket_id: formData.paket_id || null,
         tanggal_jatuh_tempo: formData.tanggal_jatuh_tempo,
@@ -307,16 +305,41 @@ export default function PelangganPage() {
     setShowBulkWaModal(false)
     setShowWaProgress(true)
     setWaProgress({ total: selectedIds.length, terkirim: 0, gagal: 0, logs: [] })
+
     try {
+      let mediaUrl = ''
+
+      // Jika user melampirkan foto/video, upload dulu ke Supabase Storage (pastikan bucket 'media-wa' sudah dibuat)
+      if (mediaFileWa) {
+        const fileExt = mediaFileWa.name.split('.').pop()
+        const fileName = `broadcast_${Date.now()}.${fileExt}`
+        const { error: uploadError } = await supabase.storage
+          .from('media-wa')
+          .upload(fileName, mediaFileWa)
+
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
+            .from('media-wa')
+            .getPublicUrl(fileName)
+          mediaUrl = publicUrlData.publicUrl
+        }
+      }
+
       const res = await fetch('/api/bulk/wa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'pelanggan', ids: selectedIds, pesan: templateWaBulk }),
+        body: JSON.stringify({
+          mode: 'pelanggan',
+          ids: selectedIds,
+          pesan: templateWaBulk,
+          media_url: mediaUrl // Mengirimkan URL media jika ada
+        }),
       })
       const data = await res.json()
       if (data.sukses) {
         setWaProgress({ total: data.total, terkirim: data.terkirim, gagal: data.gagal, logs: data.logs })
         setSelectedIds([])
+        setMediaFileWa(null) // Reset file setelah terkirim
       } else {
         alert('Gagal: ' + (data.error || 'Unknown error'))
         setShowWaProgress(false)
@@ -332,7 +355,7 @@ export default function PelangganPage() {
     setFilterStatus('')
     setFilterRt('')
     setFilterPaket('')
-    setFilterOdp('') // <--- Reset ODP Filter
+    setFilterOdp('')
   }
 
   return (
@@ -415,7 +438,6 @@ export default function PelangganPage() {
             />
           </div>
 
-          {/* Input Filter ODP */}
           <div className="flex items-center gap-2.5 bg-slate-950/80 border border-slate-800 px-3.5 py-2 rounded-xl">
             <span className="text-slate-400 text-xs">🛜</span>
             <input
@@ -1025,7 +1047,7 @@ export default function PelangganPage() {
         </div>
       )}
 
-      {/* Modal WA Pengumuman Masal */}
+      {/* Modal WA Pengumuman Masal dengan Input Foto/Video */}
       {showBulkWaModal && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl space-y-4">
@@ -1046,10 +1068,28 @@ export default function PelangganPage() {
               </p>
             </div>
 
+            {/* Input Tambahan untuk Foto / Video */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-medium text-slate-400">
+                Lampirkan Foto / Video (Opsional)
+              </label>
+              <input
+                type="file"
+                accept="image/*,video/*"
+                onChange={(e) => setMediaFileWa(e.target.files[0])}
+                className="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer bg-slate-950 border border-slate-800 rounded-xl p-1.5"
+              />
+              {mediaFileWa && (
+                <p className="text-[11px] text-cyan-400 font-medium">
+                  File terpilih: {mediaFileWa.name}
+                </p>
+              )}
+            </div>
+
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1">Template Pesan WA:</label>
               <textarea
-                rows={5}
+                rows={4}
                 value={templateWaBulk}
                 onChange={(e) => setTemplateWaBulk(e.target.value)}
                 className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-xs focus:outline-none font-mono leading-relaxed"
