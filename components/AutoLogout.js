@@ -2,11 +2,10 @@
 
 import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/utils/supabase/client'
+import { supabase } from '@/lib/supabaseClient' // Diubah agar sesuai dengan proyek Anda
 
 export default function AutoLogout({ timeoutMinutes = 15 }) {
     const router = useRouter()
-    const supabase = createClient()
     const timerRef = useRef(null)
 
     const handleLogout = async () => {
@@ -28,16 +27,12 @@ export default function AutoLogout({ timeoutMinutes = 15 }) {
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.hidden) {
-                // Saat aplikasi ditinggal (pindah tab, minimize browser, atau layar HP dikunci)
-                // Mulai hitung mundur 15 menit
                 startTimer()
             } else {
-                // Saat admin kembali membuka aplikasi sebelum waktunya habis, batalkan logout
                 clearTimer()
             }
         }
 
-        // Pantau perubahan status tab/aplikasi
         document.addEventListener('visibilitychange', handleVisibilityChange)
 
         return () => {
