@@ -29,9 +29,10 @@ export default function PaketPage() {
   async function fetchPaket() {
     setLoading(true)
     try {
+      // Mengambil data paket sekaligus relasi pelanggan untuk menghitung jumlah pengguna
       const { data, error } = await supabase
         .from('paket')
-        .select('*')
+        .select('*, pelanggan(id)')
         .order('harga', { ascending: true })
 
       if (error) throw error
@@ -125,7 +126,7 @@ export default function PaketPage() {
             Kelola Paket WiFi
           </h1>
           <p className="text-slate-400 text-xs sm:text-sm mt-1">
-            Atur pilihan kecepatan, harga bulanan, dan variasi paket langganan warga.
+            Atur pilihan kecepatan, harga bulanan, dan variasi paket langganan warga[cite: 2].
           </p>
         </div>
 
@@ -155,42 +156,45 @@ export default function PaketPage() {
           <>
             {/* Tampilan Card khusus Mobile (md:hidden) */}
             <div className="grid grid-cols-1 gap-3 md:hidden">
-              {paketList.map((pkt) => (
-                <div key={pkt.id} className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
-                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                    <span className="font-bold text-white text-sm">{pkt.nama_paket}</span>
-                    <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono font-bold text-xs">
-                      {pkt.kecepatan || '-'}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-center text-xs">
-                    <div>
-                      <span className="text-slate-500 block text-[10px]">HARGA BULANAN</span>
-                      <span className="font-extrabold text-emerald-400 text-sm">{formatRupiah(pkt.harga)}</span>
+              {paketList.map((pkt) => {
+                const totalPelanggan = pkt.pelanggan ? pkt.pelanggan.length : 0
+                return (
+                  <div key={pkt.id} className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-lg">
+                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                      <span className="font-bold text-white text-sm">{pkt.nama_paket}</span>
+                      <span className="px-2.5 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono font-bold text-xs">
+                        {pkt.kecepatan || '-'}
+                      </span>
                     </div>
-                    <div className="text-right max-w-[50%]">
-                      <span className="text-slate-500 block text-[10px]">DESKRIPSI</span>
-                      <span className="text-slate-400 truncate block">{pkt.deskripsi || '-'}</span>
+
+                    <div className="flex justify-between items-center text-xs">
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">HARGA BULANAN</span>
+                        <span className="font-extrabold text-emerald-400 text-sm">{formatRupiah(pkt.harga)}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-slate-500 block text-[10px]">JUMLAH PELANGGAN</span>
+                        <span className="text-cyan-400 font-bold text-xs">{totalPelanggan} Orang</span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-800/80">
+                      <button
+                        onClick={() => handleOpenModal(pkt)}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition border border-slate-700"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteModal({ show: true, id: pkt.id })}
+                        className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20"
+                      >
+                        🗑️ Hapus
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-800/80">
-                    <button
-                      onClick={() => handleOpenModal(pkt)}
-                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition border border-slate-700"
-                    >
-                      ✏️ Edit
-                    </button>
-                    <button
-                      onClick={() => setConfirmDeleteModal({ show: true, id: pkt.id })}
-                      className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20"
-                    >
-                      🗑️ Hapus
-                    </button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             {/* Tampilan Tabel khusus Desktop (hidden md:block) */}
@@ -202,45 +206,50 @@ export default function PaketPage() {
                       <th className="px-5 py-3.5 font-bold">Nama Paket</th>
                       <th className="px-5 py-3.5 font-bold">Kecepatan</th>
                       <th className="px-5 py-3.5 font-bold">Harga Bulanan</th>
-                      <th className="px-5 py-3.5 font-bold">Deskripsi</th>
+                      <th className="px-5 py-3.5 font-bold">Jumlah Pelanggan</th>
                       <th className="px-5 py-3.5 font-bold text-right">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/50">
-                    {paketList.map((pkt) => (
-                      <tr key={pkt.id} className="hover:bg-slate-800/40 transition-colors duration-150">
-                        <td className="px-5 py-4 font-bold text-white text-sm">
-                          {pkt.nama_paket}
-                        </td>
-                        <td className="px-5 py-4">
-                          <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono font-bold text-xs">
-                            {pkt.kecepatan || '-'}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 font-extrabold text-emerald-400 text-xs">
-                          {formatRupiah(pkt.harga)}
-                        </td>
-                        <td className="px-5 py-4 text-slate-400 text-xs">
-                          {pkt.deskripsi || '-'}
-                        </td>
-                        <td className="px-5 py-4 text-right whitespace-nowrap space-x-1.5">
-                          <button
-                            onClick={() => handleOpenModal(pkt)}
-                            disabled={loading}
-                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            ✏️ Edit
-                          </button>
-                          <button
-                            onClick={() => setConfirmDeleteModal({ show: true, id: pkt.id })}
-                            disabled={loading}
-                            className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            🗑️ Hapus
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {paketList.map((pkt) => {
+                      const totalPelanggan = pkt.pelanggan ? pkt.pelanggan.length : 0
+                      return (
+                        <tr key={pkt.id} className="hover:bg-slate-800/40 transition-colors duration-150">
+                          <td className="px-5 py-4 font-bold text-white text-sm">
+                            {pkt.nama_paket}
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono font-bold text-xs">
+                              {pkt.kecepatan || '-'}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 font-extrabold text-emerald-400 text-xs">
+                            {formatRupiah(pkt.harga)}
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold text-xs">
+                              👥 {totalPelanggan} Pelanggan
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-right whitespace-nowrap space-x-1.5">
+                            <button
+                              onClick={() => handleOpenModal(pkt)}
+                              disabled={loading}
+                              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              ✏️ Edit
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteModal({ show: true, id: pkt.id })}
+                              disabled={loading}
+                              className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold transition border border-rose-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              🗑️ Hapus
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>

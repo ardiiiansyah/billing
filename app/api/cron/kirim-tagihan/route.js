@@ -20,6 +20,14 @@ export async function GET(request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // --- KODE INI NANTINYA DIHAPUS JIKA SUDAH INGIN PRODUCTION --- ///
+    return NextResponse.json({
+        success: true,
+        message: 'pengiriman WA ditangguhkan sementara sampai midtrans sudah siap.',
+        total: 0,
+    })
+    // ===================== //
+
     const supabaseAdmin = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL,
         process.env.SUPABASE_SERVICE_ROLE_KEY
