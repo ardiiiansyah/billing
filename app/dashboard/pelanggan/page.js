@@ -61,17 +61,11 @@ export default function PelangganPage() {
     status: 'aktif',
   })
 
-  // ── AUTO-SYNC REALTIME & POLLING ──────────────────────────────────
+  // ── DIPERBAIKI: HANYA FETCH SEKALI SAAT MOUNT (BEBAS LOOPING) ──────
   useEffect(() => {
     fetchPelanggan()
     fetchPaketOptions()
     fetchWilayahOptions()
-
-    const handleFocus = () => {
-      if (document.visibilityState === 'visible') {
-        fetchPelanggan()
-      }
-    }
   }, [])
 
   async function fetchPaketOptions() {
@@ -718,15 +712,26 @@ export default function PelangganPage() {
         )}
       </div>
 
-      {/* Modal Form Tambah / Edit */}
+      {/* ── DIPERBAIKI: MODAL FORM TAMBAH/EDIT YANG PAS & FIXED DI TENGAH ── */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl my-auto max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <span>{editId ? '✏️' : '➕'}</span>
-              <span>{editId ? 'Edit Data Pelanggan' : 'Tambah Pelanggan Baru'}</span>
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+            {/* Header Modal (Diam di atas) */}
+            <div className="p-5 pb-3 border-b border-slate-800 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <span>{editId ? '✏️' : '➕'}</span>
+                <span>{editId ? 'Edit Data Pelanggan' : 'Tambah Pelanggan Baru'}</span>
+              </h3>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Form Body (Bisa di-scroll jika panjang) */}
+            <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 text-xs flex-1">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-slate-400 font-medium mb-1">Kode Pelanggan</label>
@@ -833,24 +838,26 @@ export default function PelangganPage() {
                   </select>
                 </div>
               </div>
-
-              <div className="flex justify-end gap-3 pt-3 border-t border-slate-800/80">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium rounded-xl transition"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 text-white font-bold rounded-xl transition shadow-lg shadow-cyan-600/25"
-                >
-                  {loading ? 'Menyimpan...' : 'Simpan Pelanggan'}
-                </button>
-              </div>
             </form>
+
+            {/* Footer Modal (Tombol Simpan / Batal - Diam di bawah, selalu kelihatan) */}
+            <div className="p-4 border-t border-slate-800 bg-slate-900/90 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium rounded-xl transition text-xs"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={loading}
+                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 text-white font-bold rounded-xl transition shadow-lg shadow-cyan-600/25 text-xs"
+              >
+                {loading ? 'Menyimpan...' : 'Simpan Pelanggan'}
+              </button>
+            </div>
           </div>
         </div>
       )}
