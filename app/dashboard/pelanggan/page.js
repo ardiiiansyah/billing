@@ -72,17 +72,6 @@ export default function PelangganPage() {
         fetchPelanggan()
       }
     }
-
-    const interval = setInterval(() => {
-      fetchPelanggan()
-    }, 10000)
-
-    document.addEventListener('visibilitychange', handleFocus)
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleFocus)
-      clearInterval(interval)
-    }
   }, [])
 
   async function fetchPaketOptions() {
