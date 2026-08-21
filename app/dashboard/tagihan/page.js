@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { createPortal } from 'react-dom'
 import BulkActionBar from '@/components/BulkActionBar'
 
 export default function TagihanPage() {
@@ -790,8 +791,8 @@ export default function TagihanPage() {
       </div>
 
       {/* Modal Form Tagihan Manual */}
-      {showManualModal && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+      {showManualModal && createPortal(
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-[999999] animate-in fade-in duration-200">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl space-y-4 text-xs">
             <div className="flex justify-between items-start border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
@@ -839,17 +840,6 @@ export default function TagihanPage() {
                     ))}
                   </select>
                 )}
-
-                {manualForm.pelanggan_id && (() => {
-                  const selected = pelangganOptions.find((p) => p.id === manualForm.pelanggan_id)
-                  if (!selected) return null
-                  return (
-                    <div className="mt-1.5 flex items-center justify-between text-[11px] text-cyan-400/90 bg-cyan-950/25 px-2.5 py-1.5 rounded-lg border border-cyan-800/40">
-                      <span>📦 Paket: <strong>{selected.paket?.nama_paket || 'Tanpa Paket'}</strong></span>
-                      <span>📅 Default Tempo: <strong>Tgl {selected.tanggal_jatuh_tempo || 10}</strong></span>
-                    </div>
-                  )
-                })()}
               </div>
 
               {/* Periode Bulan & Tahun */}
@@ -891,16 +881,9 @@ export default function TagihanPage() {
 
               {/* Nominal Tagihan */}
               <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-slate-400 font-medium">
-                    Nominal Tagihan (Rp) <span className="text-rose-400">*</span>
-                  </label>
-                  {manualForm.jumlah_tagihan && !isNaN(manualForm.jumlah_tagihan) && Number(manualForm.jumlah_tagihan) > 0 && (
-                    <span className="text-[11px] font-bold text-emerald-400">
-                      {formatRupiah(Number(manualForm.jumlah_tagihan))}
-                    </span>
-                  )}
-                </div>
+                <label className="block text-slate-400 font-medium mb-1">
+                  Nominal Tagihan (Rp) <span className="text-rose-400">*</span>
+                </label>
                 <input
                   type="number"
                   min="1"
@@ -911,9 +894,6 @@ export default function TagihanPage() {
                   onChange={(e) => setManualForm({ ...manualForm, jumlah_tagihan: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 font-bold text-xs"
                 />
-                <p className="text-[10px] text-slate-500 mt-1">
-                  💡 Nominal otomatis terisi sesuai paket pelanggan terpilih, atau dapat Anda sesuaikan secara bebas.
-                </p>
               </div>
 
               {/* Tanggal Jatuh Tempo */}
@@ -943,27 +923,20 @@ export default function TagihanPage() {
                 <button
                   type="submit"
                   disabled={savingManual}
-                  className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:opacity-50 text-white font-bold rounded-xl transition shadow-lg shadow-cyan-900/30 text-xs flex items-center gap-1.5"
+                  className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold rounded-xl transition text-xs"
                 >
-                  {savingManual ? (
-                    <>
-                      <span className="inline-block animate-spin">⏳</span> Menyimpan...
-                    </>
-                  ) : (
-                    <>
-                      <span>💾</span> Simpan Tagihan
-                    </>
-                  )}
+                  {savingManual ? 'Menyimpan...' : 'Simpan Tagihan'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Kasir Manual */}
-      {showPayModal && selectedTagihan && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      {showPayModal && selectedTagihan && createPortal(
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl space-y-4 text-xs">
             <div>
               <h3 className="text-base font-bold text-white mb-1">Kasir Pembayaran Tunai</h3>
@@ -1025,12 +998,13 @@ export default function TagihanPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Custom Modal Konfirmasi Generate Tagihan Bulanan */}
-      {confirmGenerateModal && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      {confirmGenerateModal && createPortal(
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-center">
             <span className="text-4xl block">⚡</span>
             <div className="space-y-1">
@@ -1056,12 +1030,13 @@ export default function TagihanPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Custom Modal Konfirmasi Aksi Massal */}
-      {confirmActionModal.show && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      {confirmActionModal.show && createPortal(
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-center">
             <span className="text-4xl block">⚠️</span>
             <div className="space-y-1">
@@ -1086,12 +1061,13 @@ export default function TagihanPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Custom Modal Hasil Generate / Informasi */}
-      {resultModal.show && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      {resultModal.show && createPortal(
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-center">
             <span className="text-4xl block">✨</span>
             <div className="space-y-1">
@@ -1108,7 +1084,8 @@ export default function TagihanPage() {
               Tutup
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Bulk Action Bar */}
@@ -1141,8 +1118,8 @@ export default function TagihanPage() {
       />
 
       {/* Modal WA Masal */}
-      {showBulkWaModal && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      {showBulkWaModal && createPortal(
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl space-y-4 text-xs">
             <div className="flex justify-between items-center border-b border-slate-800 pb-3">
               <div>
@@ -1184,7 +1161,8 @@ export default function TagihanPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Progress WA */}

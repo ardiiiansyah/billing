@@ -1,9 +1,17 @@
 'use client'
 
-export default function BulkActionBar({ selectedCount, onClear, actions = [] }) {
-    if (selectedCount === 0) return null
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 
-    // Helper pemetaan variasi warna tombol agar lebih rapi & kontras
+export default function BulkActionBar({ selectedCount, onClear, actions = [] }) {
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    if (!mounted || selectedCount === 0) return null
+
     const getVariantStyle = (variant) => {
         switch (variant) {
             case 'danger':
@@ -17,23 +25,31 @@ export default function BulkActionBar({ selectedCount, onClear, actions = [] }) 
         }
     }
 
-    return (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 duration-300 max-w-[95vw]">
-            {/* Tambahkan overflow-x-auto dan flex-nowrap agar tidak turun ke bawah */}
-            <div className="flex items-center gap-3 bg-slate-900/90 backdrop-blur-md border border-slate-800 shadow-2xl shadow-black/80 rounded-full px-4 py-2.5 overflow-x-auto flex-nowrap">
+    return createPortal(
+        <div style={{ position: 'fixed', bottom: '72px', left: '50%', transform: 'translateX(-50%)', zIndex: 2147483647 }} className="w-[92vw] max-w-sm px-2">
+            <div className="flex flex-col gap-2.5 bg-slate-900/95 backdrop-blur-md border border-slate-700 shadow-2xl rounded-2xl p-3">
 
-                {/* Badge Jumlah Item */}
-                <div className="flex items-center gap-2 pr-3 border-r border-slate-800 shrink-0">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500/20 text-xs font-bold text-cyan-400">
-                        {selectedCount}
-                    </span>
-                    <span className="text-slate-300 text-xs font-medium whitespace-nowrap">
-                        terpilih
-                    </span>
+                {/* Bagian Atas: Info Jumlah & Tombol Batal */}
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <div className="flex items-center gap-2">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500/20 text-xs font-bold text-cyan-400">
+                            {selectedCount}
+                        </span>
+                        <span className="text-slate-300 text-xs font-medium">
+                            pelanggan terpilih
+                        </span>
+                    </div>
+                    <button
+                        onClick={onClear}
+                        className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors text-xs flex items-center gap-1"
+                        title="Batal seleksi"
+                    >
+                        <span>✕</span> Batalkan
+                    </button>
                 </div>
 
-                {/* Tombol Aksi */}
-                <div className="flex items-center gap-2 flex-nowrap shrink-0">
+                {/* Tombol Aksi (Grid 2 Kolom yang Rapi di HP) */}
+                <div className="grid grid-cols-2 gap-2">
                     {actions.map((action, i) => (
                         <button
                             key={i}
@@ -41,26 +57,18 @@ export default function BulkActionBar({ selectedCount, onClear, actions = [] }) 
                             disabled={action.loading}
                             title={action.title || action.label}
                             className={`
-                                flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all duration-200 whitespace-nowrap
+                                flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all duration-200 whitespace-nowrap
                                 disabled:opacity-50 disabled:cursor-not-allowed
                                 ${getVariantStyle(action.variant)}
                             `}
                         >
                             <span>{action.icon}</span>
-                            <span>{action.loading ? 'Memproses...' : action.label}</span>
+                            <span>{action.loading ? '...' : action.label}</span>
                         </button>
                     ))}
                 </div>
-
-                {/* Tombol Batal */}
-                <button
-                    onClick={onClear}
-                    className="ml-1 p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors shrink-0"
-                    title="Batal seleksi"
-                >
-                    ✕
-                </button>
             </div>
-        </div>
+        </div>,
+        document.body
     )
 }

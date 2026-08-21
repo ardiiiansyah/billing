@@ -321,7 +321,7 @@ export default function LaporanKeuanganPage() {
                                             <div className="font-semibold text-white">{item.pelanggan?.nama || '-'}</div>
                                             <div className="text-xs text-slate-500 font-mono">{item.pelanggan?.no_wa || '-'}</div>
                                         </td>
-                                        <td className="px-6 py-4 font-mono text-cyan-400 text-xs">
+                                        <td className="px-6 py-4 whitespace-nowrap font-mono text-cyan-400 text-xs">
                                             {item.pelanggan?.wilayah ? `RT ${item.pelanggan.wilayah.rt}/RW ${item.pelanggan.wilayah.rw}` : '-'}
                                         </td>
                                         <td className="px-6 py-4 text-xs text-slate-300">
@@ -330,11 +330,11 @@ export default function LaporanKeuanganPage() {
                                         <td className="px-6 py-4 text-xs text-slate-300 font-semibold">
                                             {item.bulan ? (namaBulanList[Number(item.bulan) - 1] || item.bulan) : '-'} {item.tahun}
                                         </td>
-                                        <td className="px-6 py-4 font-mono font-bold text-white">
+                                        <td className="px-6 py-4 whitespace-nowrap font-mono font-bold text-white">
                                             Rp {(Number(item.jumlah_tagihan) || Number(item.nominal) || 0).toLocaleString('id-ID')}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${item.status === 'lunas'
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${item.status === 'lunas'
                                                 ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
                                                 : 'bg-rose-950/80 text-rose-400 border border-rose-800'
                                                 }`}>

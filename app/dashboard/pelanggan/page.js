@@ -492,6 +492,30 @@ export default function PelangganPage() {
           </div>
         ) : (
           <>
+            {/* Tombol Pilih Semua khusus Mobile */}
+            <div className="flex items-center justify-between px-1 mb-3 md:hidden">
+              <label className="flex items-center gap-2 text-xs text-slate-300 font-medium cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.length === filteredPelanggan.length && filteredPelanggan.length > 0}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedIds(filteredPelanggan.map(p => p.id));
+                    } else {
+                      setSelectedIds([]);
+                    }
+                  }}
+                  className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
+                />
+                <span>Pilih Semua ({filteredPelanggan.length})</span>
+              </label>
+              {selectedIds.length > 0 && (
+                <span className="text-xs text-cyan-400 font-bold">
+                  {selectedIds.length} dipilih
+                </span>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 gap-3 md:hidden">
               {filteredPelanggan.map((p) => (
                 <div
@@ -550,15 +574,15 @@ export default function PelangganPage() {
                     <div>
                       <span className="text-slate-500 block text-[10px]">JATUH TEMPO & WA</span>
                       <span className="text-slate-300 font-medium">Tgl {p.tanggal_jatuh_tempo}</span>
-                      <div className="mt-0.5">
+                      <div className="mt-0.5 overflow-x-auto whitespace-nowrap">
                         {p.no_wa ? (
                           <a
                             href={`https://wa.me/${p.no_wa.replace(/^0/, '62')}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-emerald-400 font-mono text-[11px] font-semibold hover:underline"
+                            className="inline-flex items-center gap-1 text-emerald-400 font-mono text-[10px] font-semibold hover:underline"
                           >
-                            <span>💬</span> {p.no_wa}
+                            <span>💬</span> <span className="whitespace-nowrap">{p.no_wa}</span>
                           </a>
                         ) : (
                           <span className="text-slate-500">-</span>
@@ -869,8 +893,8 @@ export default function PelangganPage() {
       )}
 
       {/* Modal Custom Konfirmasi Hapus Pelanggan */}
-      {confirmDeleteModal.show && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      {confirmDeleteModal.show && createPortal(
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[999999]">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-center">
             <span className="text-4xl block">🗑️</span>
             <div className="space-y-1">
@@ -896,7 +920,8 @@ export default function PelangganPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Bulk Action Bar */}
@@ -936,8 +961,8 @@ export default function PelangganPage() {
       />
 
       {/* Modal Custom Konfirmasi Status */}
-      {confirmStatusModal.show && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      {confirmStatusModal.show && createPortal(
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4">
             <div className="text-center space-y-2">
               <span className="text-4xl block">{confirmStatusModal.status === 'aktif' ? '🟢' : '🔴'}</span>
@@ -967,12 +992,13 @@ export default function PelangganPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Generate Tagihan Terpilih */}
-      {showBulkGenModal && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      {showBulkGenModal && createPortal(
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4">
             <div className="flex justify-between items-center border-b border-slate-800 pb-3">
               <div>
@@ -1028,12 +1054,13 @@ export default function PelangganPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal WA Pengumuman Masal */}
-      {showBulkWaModal && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      {showBulkWaModal && createPortal(
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl space-y-4">
             <div className="flex justify-between items-center border-b border-slate-800 pb-3">
               <div>
@@ -1092,7 +1119,8 @@ export default function PelangganPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Progress WA */}

@@ -260,42 +260,63 @@ export default function DashboardPage() {
         </div>
 
         {/* Distribusi Paket */}
-        <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-xl shadow-black/20 hover:border-slate-700/80 transition-all duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-              <span>🥧</span> Distribusi Paket
+        <div className="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-cyan-500"></span> Distribusi Paket
             </h3>
-            <span className="text-[11px] text-slate-500 font-medium">Pelanggan Aktif</span>
+            <span className="text-xs text-slate-400">Pelanggan Aktif</span>
           </div>
 
-          {loading ? (
-            <div className="h-52 flex items-center justify-center text-slate-500 text-xs">Memuat data...</div>
-          ) : distribusiPaket.length === 0 ? (
-            <div className="h-52 flex flex-col items-center justify-center text-slate-500 text-xs gap-1">
-              <span className="text-xl">📦</span>
-              <span>Belum ada data paket</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 items-center gap-4">
+            {/* Grafik Donat Bersih Tanpa Teks Menumpuk */}
+            <div className="h-[180px] w-full flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={distribusiPaket}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={75}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {distribusiPaket.map((entry, index) => {
+                      // Warna-warni modern untuk setiap bagian paket
+                      const colors = ['#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#eab308', '#10b981', '#6366f1'];
+                      return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                    })}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#090d16', borderColor: '#1e293b', borderRadius: '0.75rem', fontSize: '12px', color: '#fff' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={210}>
-              <PieChart>
-                <Pie
-                  data={distribusiPaket}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={45}
-                  outerRadius={75}
-                  paddingAngle={4}
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}
-                >
-                  {distribusiPaket.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} cornerRadius={4} />)}
-                </Pie>
-                <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 12, fontSize: '12px' }} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
+
+            {/* Daftar Keterangan / Legend Kustom yang Rapi */}
+            <div className="space-y-1.5 max-h-[170px] overflow-y-auto pr-1">
+              {distribusiPaket.map((item, index) => {
+                const colors = ['bg-cyan-500', 'bg-blue-500', 'bg-violet-500', 'bg-pink-500', 'bg-orange-500', 'bg-yellow-500', 'bg-emerald-500', 'bg-indigo-500'];
+                const totalSemua = distribusiPaket.reduce((acc, curr) => acc + curr.value, 0);
+                const persentase = totalSemua > 0 ? ((item.value / totalSemua) * 100).toFixed(0) : 0;
+
+                return (
+                  <div key={index} className="flex items-center justify-between text-xs bg-slate-950/40 px-2.5 py-1.5 rounded-xl border border-slate-800/50">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full ${colors[index % colors.length]}`}></span>
+                      <span className="text-slate-300 font-medium truncate max-w-[90px]">{item.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2 font-mono">
+                      <span className="text-slate-400">{item.value}x</span>
+                      <span className="text-white font-bold">{persentase}%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
