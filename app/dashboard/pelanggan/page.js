@@ -720,8 +720,8 @@ export default function PelangganPage() {
 
       {/* Modal Form Tambah / Edit */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl overflow-y-auto max-h-[90vh]">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl my-auto max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <span>{editId ? '✏️' : '➕'}</span>
               <span>{editId ? 'Edit Data Pelanggan' : 'Tambah Pelanggan Baru'}</span>
