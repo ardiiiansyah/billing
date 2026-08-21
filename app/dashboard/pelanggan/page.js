@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import BulkActionBar from '@/components/BulkActionBar'
+import { createPortal } from 'react-dom'
 
 export default function PelangganPage() {
   const [pelangganList, setPelangganList] = useState([])
@@ -124,6 +125,7 @@ export default function PelangganPage() {
   }, [pelangganList])
 
   const handleOpenModal = (pelanggan = null) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     if (pelanggan) {
       setEditId(pelanggan.id)
       setFormData({
@@ -712,17 +714,19 @@ export default function PelangganPage() {
         )}
       </div>
 
-      {/* ── DIPERBAIKI: MODAL FORM TAMBAH/EDIT YANG PAS & FIXED DI TENGAH ── */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
-            {/* Header Modal (Diam di atas) */}
-            <div className="p-5 pb-3 border-b border-slate-800 flex items-center justify-between">
+      {/* Modal Form Tambah / Edit dengan React Portal */}
+      {showModal && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[85vh] my-auto overflow-hidden">
+
+            {/* Header Modal */}
+            <div className="p-5 pb-3 border-b border-slate-800 flex items-center justify-between shrink-0 bg-slate-900">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <span>{editId ? '✏️' : '➕'}</span>
                 <span>{editId ? 'Edit Data Pelanggan' : 'Tambah Pelanggan Baru'}</span>
               </h3>
               <button
+                type="button"
                 onClick={() => setShowModal(false)}
                 className="text-slate-400 hover:text-white p-1 rounded-lg"
               >
@@ -730,8 +734,8 @@ export default function PelangganPage() {
               </button>
             </div>
 
-            {/* Form Body (Bisa di-scroll jika panjang) */}
-            <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 text-xs flex-1">
+            {/* Form Body */}
+            <form onSubmit={handleSubmit} id="pelanggan-form" className="p-5 overflow-y-auto space-y-4 text-xs flex-1">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-slate-400 font-medium mb-1">Kode Pelanggan</label>
@@ -840,8 +844,8 @@ export default function PelangganPage() {
               </div>
             </form>
 
-            {/* Footer Modal (Tombol Simpan / Batal - Diam di bawah, selalu kelihatan) */}
-            <div className="p-4 border-t border-slate-800 bg-slate-900/90 flex justify-end gap-3">
+            {/* Footer Modal */}
+            <div className="p-4 border-t border-slate-800 bg-slate-900 flex justify-end gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
@@ -850,16 +854,18 @@ export default function PelangganPage() {
                 Batal
               </button>
               <button
-                type="button"
-                onClick={handleSubmit}
+                type="submit"
+                form="pelanggan-form"
                 disabled={loading}
                 className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-700 text-white font-bold rounded-xl transition shadow-lg shadow-cyan-600/25 text-xs"
               >
                 {loading ? 'Menyimpan...' : 'Simpan Pelanggan'}
               </button>
             </div>
+
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Custom Konfirmasi Hapus Pelanggan */}
