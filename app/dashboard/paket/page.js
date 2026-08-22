@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function PaketPage() {
+  const [mounted, setMounted] = useState(false)
   const [paketList, setPaketList] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -23,6 +25,7 @@ export default function PaketPage() {
   })
 
   useEffect(() => {
+    setMounted(true)
     fetchPaket()
   }, [])
 
@@ -259,8 +262,8 @@ export default function PaketPage() {
       </div>
 
       {/* Modal Form Tambah / Edit Paket */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      {mounted && showModal && createPortal(
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999999] animate-in fade-in duration-200">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl space-y-4">
             <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
               <span>{editId ? '✏️' : '➕'}</span>
@@ -333,12 +336,13 @@ export default function PaketPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Custom Konfirmasi Hapus Paket */}
-      {confirmDeleteModal.show && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      {mounted && confirmDeleteModal.show && createPortal(
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999999] animate-in fade-in duration-200">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-center">
             <span className="text-4xl block">🗑️</span>
             <div className="space-y-1">
@@ -364,7 +368,8 @@ export default function PaketPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function WilayahPage() {
+    const [mounted, setMounted] = useState(false)
     const [wilayahList, setWilayahList] = useState([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
@@ -30,6 +32,7 @@ export default function WilayahPage() {
     })
 
     useEffect(() => {
+        setMounted(true)
         fetchWilayah()
     }, [])
 
@@ -370,8 +373,8 @@ export default function WilayahPage() {
             </div>
 
             {/* Modal Detail Daftar Pelanggan per Wilayah */}
-            {detailModal.show && (
-                <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            {mounted && detailModal.show && createPortal(
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999999] animate-in fade-in duration-200">
                     <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-2xl shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
                         <div className="flex justify-between items-center border-b border-slate-800 pb-3">
                             <div>
@@ -380,7 +383,7 @@ export default function WilayahPage() {
                             </div>
                             <button
                                 onClick={() => setDetailModal({ show: false, wilayahNama: '', pelangganList: [] })}
-                                className="text-slate-400 hover:text-white text-lg font-bold"
+                                className="text-slate-400 hover:text-white text-lg font-bold p-1 rounded-lg transition-colors"
                             >
                                 ✕
                             </button>
@@ -426,12 +429,13 @@ export default function WilayahPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Modal Form Tambah / Edit Wilayah */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            {mounted && showModal && createPortal(
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999999] animate-in fade-in duration-200">
                     <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl space-y-4">
                         <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
                             <span>{editId ? '✏️' : '➕'}</span>
@@ -494,12 +498,13 @@ export default function WilayahPage() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Modal Custom Konfirmasi Hapus Wilayah */}
-            {confirmDeleteModal.show && (
-                <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            {mounted && confirmDeleteModal.show && createPortal(
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999999] animate-in fade-in duration-200">
                     <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-center">
                         <span className="text-4xl block">🗑️</span>
                         <div className="space-y-1">
@@ -525,7 +530,8 @@ export default function WilayahPage() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     )
