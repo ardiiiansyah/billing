@@ -24,11 +24,17 @@ export async function GET(request) {
         process.env.SUPABASE_SERVICE_ROLE_KEY
     )
 
-    const now = new Date()
-    const bulan = now.getMonth() + 1
-    const tahun = now.getFullYear()
+    // Dapatkan bulan dan tahun berdasarkan zona waktu WIB (Asia/Jakarta)
+    const formatter = new Intl.DateTimeFormat('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        year: 'numeric',
+        month: 'numeric',
+    });
+    const parts = formatter.formatToParts(new Date());
+    const bulan = parseInt(parts.find(p => p.type === 'month').value, 10);
+    const tahun = parseInt(parts.find(p => p.type === 'year').value, 10);
 
-    console.log(`[CRON GENERATE] Memulai generate tagihan untuk periode ${bulan}/${tahun}...`)
+    console.log(`[CRON GENERATE] Memulai generate tagihan untuk periode ${bulan}/${tahun} (WIB)...`);
 
     // 1. Eksekusi database RPC generate tagihan bulanan
     const { data, error } = await supabaseAdmin.rpc('generate_tagihan_bulanan', {
