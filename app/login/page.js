@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [infoMsg, setInfoMsg] = useState('')
+  const [isForgotMode, setIsForgotMode] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -38,6 +39,31 @@ export default function LoginPage() {
         setErrorMsg(error.message || 'Login gagal. Periksa email & password Anda.')
       } else {
         router.push('/dashboard')
+      }
+    } catch (err) {
+      setErrorMsg('Terjadi kesalahan koneksi.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setErrorMsg('')
+    setInfoMsg('')
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/login/reset-password`,
+      })
+
+      if (error) {
+        setErrorMsg(error.message || 'Gagal mengirim email reset password.')
+      } else {
+        setInfoMsg(`Link reset password telah dikirim ke ${email}. Silakan cek inbox atau folder spam Anda.`)
+        setIsForgotMode(false)
+        setEmail('')
       }
     } catch (err) {
       setErrorMsg('Terjadi kesalahan koneksi.')
@@ -106,69 +132,137 @@ export default function LoginPage() {
         )}
 
         {/* Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 mb-2 tracking-wider uppercase">
-              Email
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@sultanwifi.id"
-              className="w-full px-4 py-3 rounded-xl text-slate-100 placeholder-slate-600 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-              style={{
-                background: 'rgba(2, 8, 23, 0.8)',
-                border: '1px solid rgba(51, 65, 85, 0.8)',
-              }}
-            />
-          </div>
+        {isForgotMode ? (
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-2 tracking-wider uppercase">
+                Email Admin
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@sultanwifi.id"
+                className="w-full px-4 py-3 rounded-xl text-slate-100 placeholder-slate-600 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                style={{
+                  background: 'rgba(2, 8, 23, 0.8)',
+                  border: '1px solid rgba(51, 65, 85, 0.8)',
+                }}
+              />
+            </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-400 mb-2 tracking-wider uppercase">
-              Password
-            </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full px-4 py-3 rounded-xl text-slate-100 placeholder-slate-600 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-              style={{
-                background: 'rgba(2, 8, 23, 0.8)',
-                border: '1px solid rgba(51, 65, 85, 0.8)',
-              }}
-            />
-          </div>
+            <div className="pt-1">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 px-4 text-white font-semibold rounded-xl text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  background: loading
+                    ? 'rgba(8, 145, 178, 0.5)'
+                    : 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)',
+                  boxShadow: loading ? 'none' : '0 8px 24px rgba(8, 145, 178, 0.3)',
+                }}
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                    Mengirim...
+                  </span>
+                ) : (
+                  'Kirim Link Reset Password'
+                )}
+              </button>
+            </div>
 
-          <div className="pt-1">
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 px-4 text-white font-semibold rounded-xl text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                background: loading
-                  ? 'rgba(8, 145, 178, 0.5)'
-                  : 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)',
-                boxShadow: loading ? 'none' : '0 8px 24px rgba(8, 145, 178, 0.3)',
-              }}
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  Memproses...
-                </span>
-              ) : (
-                'Masuk ke Dashboard'
-              )}
-            </button>
-          </div>
-        </form>
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={() => { setIsForgotMode(false); setErrorMsg(''); setEmail('') }}
+                className="text-xs text-slate-500 hover:text-cyan-400 transition-colors duration-200"
+              >
+                ← Kembali ke Login
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-2 tracking-wider uppercase">
+                Email
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@sultanwifi.id"
+                className="w-full px-4 py-3 rounded-xl text-slate-100 placeholder-slate-600 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                style={{
+                  background: 'rgba(2, 8, 23, 0.8)',
+                  border: '1px solid rgba(51, 65, 85, 0.8)',
+                }}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-2 tracking-wider uppercase">
+                Password
+              </label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 rounded-xl text-slate-100 placeholder-slate-600 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                style={{
+                  background: 'rgba(2, 8, 23, 0.8)',
+                  border: '1px solid rgba(51, 65, 85, 0.8)',
+                }}
+              />
+            </div>
+
+            <div className="pt-1">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 px-4 text-white font-semibold rounded-xl text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  background: loading
+                    ? 'rgba(8, 145, 178, 0.5)'
+                    : 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)',
+                  boxShadow: loading ? 'none' : '0 8px 24px rgba(8, 145, 178, 0.3)',
+                }}
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                    Memproses...
+                  </span>
+                ) : (
+                  'Masuk ke Dashboard'
+                )}
+              </button>
+            </div>
+
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={() => { setIsForgotMode(true); setErrorMsg(''); setPassword('') }}
+                className="text-xs text-slate-500 hover:text-cyan-400 transition-colors duration-200"
+              >
+                Lupa password?
+              </button>
+            </div>
+          </form>
+        )}
       </div>
 
       {/* Footer */}
