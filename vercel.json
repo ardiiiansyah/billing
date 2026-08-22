@@ -7,10 +7,6 @@
         {
             "path": "/api/cron/notif-tagihan",
             "schedule": "30 1 * * *"
-        },
-        {
-            "path": "/api/cron/suspend",
-            "schedule": "0 2 * * *"
         }
     ]
 }

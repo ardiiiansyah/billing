@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { createPortal } from 'react-dom'
 import BulkActionBar from '@/components/BulkActionBar'
+import SearchableSelect from '@/components/ui/SearchableSelect'
 
 export default function TagihanPage() {
   const [tagihanList, setTagihanList] = useState([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
+  const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('semua')
   const [showPayModal, setShowPayModal] = useState(false)
   const [selectedTagihan, setSelectedTagihan] = useState(null)
@@ -367,7 +369,7 @@ export default function TagihanPage() {
     if (errUpdate) {
       setResultModal({ show: true, message: 'Pembayaran tercatat, tapi gagal update status tagihan: ' + errUpdate.message })
     } else {
-      // 3. TAMBAHKAN LOGIKA KIRIM WA OTOMATIS DI SINI
+      // 3. Logika kirim WA otomatis
       try {
         const pesanWA =
           `Halo Bapak/Ibu *${selectedTagihan.pelanggan?.nama}*,\n\n` +
@@ -393,10 +395,29 @@ export default function TagihanPage() {
     }
   }
 
-  const filteredTagihan = tagihanList.filter((t) => {
-    if (filterStatus === 'semua') return true
-    return t.status_pembayaran === filterStatus
-  })
+  // Filter dan Pencarian Real-time Tagihan
+  const filteredTagihan = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return tagihanList.filter((t) => {
+      const matchSearch =
+        t.pelanggan?.nama?.toLowerCase().includes(search.toLowerCase()) ||
+        t.pelanggan?.kode_pelanggan?.toLowerCase().includes(search.toLowerCase()) ||
+        t.pelanggan?.no_wa?.includes(search)
+
+      let matchStatus = true
+      if (filterStatus === 'expired') {
+        // Tagihan lewat jatuh tempo & belum lunas
+        const isPastDue = t.tanggal_jatuh_tempo && String(t.tanggal_jatuh_tempo).length >= 8
+          ? t.tanggal_jatuh_tempo < today
+          : Number(t.tanggal_jatuh_tempo) < new Date().getDate()
+        matchStatus = t.status_pembayaran !== 'lunas' && isPastDue
+      } else if (filterStatus !== 'semua') {
+        matchStatus = t.status_pembayaran === filterStatus || t.status === filterStatus
+      }
+
+      return matchSearch && matchStatus
+    })
+  }, [tagihanList, search, filterStatus])
 
   const formatRupiah = (val) => {
     return new Intl.NumberFormat('id-ID', {
@@ -406,12 +427,21 @@ export default function TagihanPage() {
     }).format(val)
   }
 
-  const counts = {
-    semua: tagihanList.length,
-    belum_bayar: tagihanList.filter((t) => t.status_pembayaran === 'belum_bayar').length,
-    lunas: tagihanList.filter((t) => t.status_pembayaran === 'lunas').length,
-    sebagian: tagihanList.filter((t) => t.status_pembayaran === 'sebagian').length,
-  }
+  const counts = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return {
+      semua: tagihanList.length,
+      belum_bayar: tagihanList.filter((t) => t.status_pembayaran === 'belum_bayar' || (!t.status_pembayaran && t.status === 'belum_bayar')).length,
+      lunas: tagihanList.filter((t) => t.status_pembayaran === 'lunas' || t.status === 'lunas').length,
+      sebagian: tagihanList.filter((t) => t.status_pembayaran === 'sebagian').length,
+      expired: tagihanList.filter((t) => {
+        const isPastDue = t.tanggal_jatuh_tempo && String(t.tanggal_jatuh_tempo).length >= 8
+          ? t.tanggal_jatuh_tempo < today
+          : Number(t.tanggal_jatuh_tempo) < new Date().getDate()
+        return t.status_pembayaran !== 'lunas' && isPastDue
+      }).length,
+    }
+  }, [tagihanList])
 
   const isAllSelected = filteredTagihan.length > 0 && filteredTagihan.every(t => selectedIds.includes(t.id))
 
@@ -551,7 +581,7 @@ export default function TagihanPage() {
           { label: 'Total Tagihan', count: counts.semua, color: 'text-white', icon: '📊', bgIcon: 'bg-blue-500/10 text-blue-400', gradient: 'from-blue-950/30 to-slate-900/90', hoverShadow: 'hover:shadow-blue-500/10 hover:border-blue-500/50' },
           { label: 'Belum Bayar', count: counts.belum_bayar, color: 'text-rose-400', icon: '⚠️', bgIcon: 'bg-rose-500/10 text-rose-400', gradient: 'from-rose-950/30 to-slate-900/90', hoverShadow: 'hover:shadow-rose-500/10 hover:border-rose-500/50' },
           { label: 'Lunas', count: counts.lunas, color: 'text-emerald-400', icon: '✅', bgIcon: 'bg-emerald-500/10 text-emerald-400', gradient: 'from-emerald-950/30 to-slate-900/90', hoverShadow: 'hover:shadow-emerald-500/10 hover:border-emerald-500/50' },
-          { label: 'Sebagian', count: counts.sebagian, color: 'text-amber-400', icon: '⏳', bgIcon: 'bg-amber-500/10 text-amber-400', gradient: 'from-amber-950/30 to-slate-900/90', hoverShadow: 'hover:shadow-amber-500/10 hover:border-amber-500/50' },
+          { label: 'Lewat Tempo', count: counts.expired, color: 'text-amber-400', icon: '⏳', bgIcon: 'bg-amber-500/10 text-amber-400', gradient: 'from-amber-950/30 to-slate-900/90', hoverShadow: 'hover:shadow-amber-500/10 hover:border-amber-500/50' },
         ].map((s) => (
           <div
             key={s.label}
@@ -568,25 +598,69 @@ export default function TagihanPage() {
         ))}
       </div>
 
-      {/* Tab Filter Status (Diubah menjadi Grid 2 kolom di HP agar tidak terpotong) */}
-      <div className="grid grid-cols-2 sm:flex items-center gap-2">
-        {[
-          { id: 'semua', label: 'Semua' },
-          { id: 'belum_bayar', label: 'Belum Bayar' },
-          { id: 'lunas', label: 'Lunas' },
-          { id: 'sebagian', label: 'Sebagian' },
-        ].map((st) => (
-          <button
-            key={st.id}
-            onClick={() => setFilterStatus(st.id)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 text-center ${filterStatus === st.id
-              ? 'bg-slate-800 text-white border border-slate-700 shadow-md'
-              : 'bg-slate-900/60 text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-slate-800/80'
-              }`}
-          >
-            {st.label}
-          </button>
-        ))}
+      {/* Baris Pencarian & Filter Status Tagihan */}
+      <div className="bg-slate-900/80 border border-slate-800/80 p-3.5 sm:p-4 rounded-2xl space-y-3 shadow-xl shadow-black/20">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          {/* Input Search Bar Real-time */}
+          <div className="flex-1 flex items-center gap-2.5 bg-slate-950 border border-slate-800 focus-within:border-cyan-500 focus-within:ring-1 focus-within:ring-cyan-500/30 px-3.5 py-2.5 rounded-xl transition">
+            <span className="text-slate-400 text-xs">🔍</span>
+            <input
+              type="text"
+              placeholder="Cari Nama Pelanggan, ID (WIFI-xxx), atau No WhatsApp..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-transparent text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="text-slate-500 hover:text-slate-300 text-xs px-1"
+                title="Hapus pencarian"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Tab Filter Status */}
+          <div className="grid grid-cols-2 sm:flex items-center gap-1.5 overflow-x-auto">
+            {[
+              { id: 'semua', label: 'Semua' },
+              { id: 'belum_bayar', label: 'Belum Bayar' },
+              { id: 'lunas', label: 'Lunas' },
+              { id: 'sebagian', label: 'Sebagian' },
+              { id: 'expired', label: 'Lewat Tempo' },
+            ].map((st) => (
+              <button
+                key={st.id}
+                onClick={() => setFilterStatus(st.id)}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all duration-200 text-center whitespace-nowrap ${filterStatus === st.id
+                  ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/30'
+                  : 'bg-slate-950 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800'
+                  }`}
+              >
+                {st.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Ringkasan Hasil Filter */}
+        {(search || filterStatus !== 'semua') && (
+          <div className="flex items-center justify-between text-xs text-slate-400 pt-1 border-t border-slate-800/60">
+            <span>
+              Menampilkan <strong>{filteredTagihan.length}</strong> dari <strong>{tagihanList.length}</strong> tagihan
+              {search && <span> untuk kata kunci "<em>{search}</em>"</span>}
+            </span>
+            <button
+              onClick={() => { setSearch(''); setFilterStatus('semua'); }}
+              className="text-cyan-400 hover:underline text-[11px]"
+            >
+              Reset Filter
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Daftar Tagihan: Mobile Card View & Desktop Table View */}
@@ -599,8 +673,16 @@ export default function TagihanPage() {
           <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-12 text-center text-slate-500">
             <div className="flex flex-col items-center justify-center gap-1.5">
               <span className="text-3xl mb-1">🧾</span>
-              <span className="font-medium text-slate-400 text-xs">Tidak ada tagihan ditemukan.</span>
-              <span className="text-[11px] text-slate-600">Klik tombol "Generate Tagihan Bulanan" di atas untuk membuat tagihan baru.</span>
+              <span className="font-medium text-slate-400 text-xs">
+                {search || filterStatus !== 'semua'
+                  ? 'Tidak ada tagihan yang cocok dengan filter / pencarian.'
+                  : 'Tidak ada tagihan ditemukan.'}
+              </span>
+              <span className="text-[11px] text-slate-600">
+                {search || filterStatus !== 'semua'
+                  ? 'Coba ganti kata kunci pencarian atau reset filter status.'
+                  : 'Klik tombol "Generate Tagihan Bulanan" di atas untuk membuat tagihan baru.'}
+              </span>
             </div>
           </div>
         ) : (
@@ -635,7 +717,7 @@ export default function TagihanPage() {
                             : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
                           }`}
                       >
-                        {t.status_pembayaran.replace('_', ' ')}
+                        {t.status_pembayaran?.replace('_', ' ') || 'belum bayar'}
                       </span>
                     </div>
 
@@ -650,7 +732,7 @@ export default function TagihanPage() {
                       <div>
                         <span className="text-slate-500 block text-[10px]">PERIODE & TEMPO</span>
                         <span className="font-medium text-slate-200">{periodeStr}</span>
-                        <div className="text-slate-400 text-[11px]">Jatuh Tempo: Tgl {t.tanggal_jatuh_tempo}</div>
+                        <div className="text-slate-400 text-[11px]">Jatuh Tempo: {t.tanggal_jatuh_tempo}</div>
                       </div>
                       <div>
                         <span className="text-slate-500 block text-[10px]">NOMINAL TAGIHAN</span>
@@ -732,7 +814,7 @@ export default function TagihanPage() {
                           })()}
                         </td>
                         <td className="px-4 sm:px-6 py-4 font-bold text-emerald-400 align-middle text-xs">{formatRupiah(t.jumlah_tagihan)}</td>
-                        <td className="px-4 sm:px-6 py-4 text-slate-300 font-medium align-middle text-xs">Tgl {t.tanggal_jatuh_tempo}</td>
+                        <td className="px-4 sm:px-6 py-4 text-slate-300 font-medium align-middle text-xs">{t.tanggal_jatuh_tempo}</td>
                         <td className="px-4 sm:px-6 py-4 align-middle">
                           <span
                             className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${t.status_pembayaran === 'lunas'
@@ -742,7 +824,7 @@ export default function TagihanPage() {
                                 : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
                               }`}
                           >
-                            {t.status_pembayaran.replace('_', ' ')}
+                            {t.status_pembayaran?.replace('_', ' ') || 'belum bayar'}
                           </span>
                         </td>
                         <td className="px-4 sm:px-6 py-4 text-right align-middle">
@@ -783,14 +865,14 @@ export default function TagihanPage() {
         <div className="font-semibold text-slate-200 mb-2 flex items-center gap-1.5">
           <span>ℹ️</span> Panduan Penggunaan Tagihan & Kasir
         </div>
-        <div>• <span className="text-cyan-400 font-semibold">+ Tagihan Manual</span> — Membuat tagihan kustom untuk pelanggan tertentu (pemasangan baru, ganti perangkat, atau susulan).</div>
+        <div>• <span className="text-cyan-400 font-semibold">+ Tagihan Manual</span> — Membuat tagihan kustom untuk pelanggan tertentu dengan pencarian autocomplete (pemasangan baru, ganti perangkat, atau susulan).</div>
         <div>• <span className="text-emerald-400 font-semibold">Generate Bulanan</span> — Menghasilkan tagihan rutin otomatis untuk seluruh pelanggan aktif pada bulan berjalan.</div>
         <div>• <span className="text-emerald-400 font-semibold">Kirim WA</span> — Menghasilkan link pembayaran online via Midtrans (QRIS / Transfer Bank / Minimarket) dan otomatis membuka WhatsApp pelanggan.</div>
         <div>• <span className="text-slate-300 font-semibold">Tunai</span> — Mencatat pembayaran tunai atau transfer manual secara langsung oleh kasir.</div>
         <div>• Status tagihan akan berubah otomatis menjadi <span className="text-emerald-400 font-semibold">Lunas</span> setelah pembayaran terkonfirmasi.</div>
       </div>
 
-      {/* Modal Form Tagihan Manual */}
+      {/* Modal Form Tagihan Manual dengan SearchableSelect */}
       {showManualModal && createPortal(
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-[999999] animate-in fade-in duration-200">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl space-y-4 text-xs">
@@ -816,7 +898,7 @@ export default function TagihanPage() {
             </div>
 
             <form onSubmit={handleSaveManualTagihan} className="space-y-3.5">
-              {/* Dropdown Pelanggan Aktif */}
+              {/* Autocomplete / Searchable Combobox Pelanggan */}
               <div>
                 <label className="block text-slate-400 font-medium mb-1">
                   Pilih Pelanggan Aktif <span className="text-rose-400">*</span>
@@ -826,19 +908,12 @@ export default function TagihanPage() {
                     Memuat daftar pelanggan aktif...
                   </div>
                 ) : (
-                  <select
-                    required
+                  <SearchableSelect
+                    options={pelangganOptions}
                     value={manualForm.pelanggan_id}
-                    onChange={(e) => handleSelectPelanggan(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 text-xs cursor-pointer"
-                  >
-                    <option value="">-- Pilih Pelanggan Aktif --</option>
-                    {pelangganOptions.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.kode_pelanggan} - {p.nama} {p.paket ? `(${p.paket.nama_paket} - ${formatRupiah(p.paket.harga)})` : ''}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(selectedId) => handleSelectPelanggan(selectedId)}
+                    placeholder="Ketik & pilih pelanggan (ID / Nama / WA)..."
+                  />
                 )}
               </div>
 
@@ -923,7 +998,7 @@ export default function TagihanPage() {
                 <button
                   type="submit"
                   disabled={savingManual}
-                  className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold rounded-xl transition text-xs"
+                  className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold rounded-xl transition text-xs shadow-md shadow-cyan-600/25"
                 >
                   {savingManual ? 'Menyimpan...' : 'Simpan Tagihan'}
                 </button>
@@ -1002,31 +1077,29 @@ export default function TagihanPage() {
         document.body
       )}
 
-      {/* Custom Modal Konfirmasi Generate Tagihan Bulanan */}
+      {/* Modal Konfirmasi Generate Tagihan */}
       {confirmGenerateModal && createPortal(
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-center">
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-xs text-center">
             <span className="text-4xl block">⚡</span>
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-white">Generate Tagihan Bulanan</h3>
-              <p className="text-xs text-slate-400">
-                Generate tagihan untuk bulan {currentMonth}/{currentYear} untuk semua pelanggan aktif?
+            <div>
+              <h3 className="text-base font-bold text-white">Generate Tagihan Bulanan?</h3>
+              <p className="text-slate-400 mt-1">
+                Sistem akan membuat tagihan untuk semua pelanggan berstatus <strong>Aktif</strong> pada bulan {bulanOptions.find(b => b.val === currentMonth)?.label} {currentYear}.
               </p>
             </div>
-
             <div className="flex justify-center gap-3 pt-2">
               <button
                 onClick={() => setConfirmGenerateModal(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium rounded-xl transition"
               >
                 Batal
               </button>
               <button
                 onClick={handleGenerateBulanan}
-                disabled={generating}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-emerald-900/30"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition shadow-lg shadow-emerald-900/30"
               >
-                {generating ? 'Memproses...' : 'Ya, Generate'}
+                Ya, Generate Sekarang
               </button>
             </div>
           </div>
@@ -1034,30 +1107,48 @@ export default function TagihanPage() {
         document.body
       )}
 
-      {/* Custom Modal Konfirmasi Aksi Massal */}
+      {/* Modal Result Notification */}
+      {resultModal.show && createPortal(
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-xs text-center">
+            <span className="text-3xl block">🔔</span>
+            <p className="text-slate-200 font-medium whitespace-pre-line leading-relaxed">
+              {resultModal.message}
+            </p>
+            <div className="pt-2">
+              <button
+                onClick={() => setResultModal({ show: false, message: '' })}
+                className="w-full px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition border border-slate-700"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Modal Konfirmasi Tindakan Massal (Bulk Action) */}
       {confirmActionModal.show && createPortal(
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-center">
-            <span className="text-4xl block">⚠️</span>
-            <div className="space-y-1">
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-xs text-center">
+            <span className="text-3xl block">⚠️</span>
+            <div>
               <h3 className="text-base font-bold text-white">{confirmActionModal.title}</h3>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {confirmActionModal.message}
-              </p>
+              <p className="text-slate-400 mt-1">{confirmActionModal.message}</p>
             </div>
-
             <div className="flex justify-center gap-3 pt-2">
               <button
                 onClick={() => setConfirmActionModal({ show: false, title: '', message: '', onConfirm: null })}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium rounded-xl transition"
               >
                 Batal
               </button>
               <button
                 onClick={confirmActionModal.onConfirm}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-rose-900/30"
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl transition"
               >
-                Ya, Lanjutkan
+                Lanjutkan
               </button>
             </div>
           </div>
@@ -1065,99 +1156,38 @@ export default function TagihanPage() {
         document.body
       )}
 
-      {/* Custom Modal Hasil Generate / Informasi */}
-      {resultModal.show && createPortal(
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-sm shadow-2xl space-y-4 text-center">
-            <span className="text-4xl block">✨</span>
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-white">Informasi</h3>
-              <p className="text-xs text-slate-300 whitespace-pre-line leading-relaxed">
-                {resultModal.message}
-              </p>
-            </div>
-
-            <button
-              onClick={() => setResultModal({ show: false, message: '' })}
-              className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-cyan-600/25"
-            >
-              Tutup
-            </button>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Bulk Action Bar */}
-      <BulkActionBar
-        selectedCount={selectedIds.length}
-        onClear={() => setSelectedIds([])}
-        actions={[
-          {
-            label: 'Kirim WA',
-            icon: '📲',
-            variant: 'success',
-            loading: bulkLoading,
-            onClick: () => setShowBulkWaModal(true),
-          },
-          {
-            label: 'Lunas Cash',
-            icon: '💵',
-            variant: 'default',
-            loading: bulkLoading,
-            onClick: handleBulkPayCash,
-          },
-          {
-            label: 'Hapus',
-            icon: '🗑️',
-            variant: 'danger',
-            loading: bulkLoading,
-            onClick: handleBulkDelete,
-          },
-        ]}
-      />
-
-      {/* Modal WA Masal */}
+      {/* Modal Template Broadcast WA Masal Tagihan */}
       {showBulkWaModal && createPortal(
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-lg shadow-2xl space-y-4 text-xs">
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl space-y-4 text-xs">
             <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-              <div>
-                <h3 className="text-base font-bold text-white">Kirim WA Masal</h3>
-                <p className="text-slate-400 mt-0.5">{selectedIds.length} tagihan dipilih</p>
-              </div>
+              <h3 className="text-base font-bold text-white">Broadcast WA Tagihan ({selectedIds.length} Pelanggan)</h3>
               <button onClick={() => setShowBulkWaModal(false)} className="text-slate-400 hover:text-white">✕</button>
             </div>
-
-            <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 text-slate-400 space-y-1">
-              <p className="text-slate-300 font-semibold mb-1">💡 Variabel yang bisa digunakan:</p>
-              <p><code className="text-cyan-400 font-bold">[nama]</code> — Nama pelanggan</p>
-              <p><code className="text-cyan-400 font-bold">[link_bayar]</code> — Link pembayaran online</p>
-            </div>
-
-            <div>
-              <label className="block text-slate-400 font-medium mb-1">Template Pesan WA:</label>
+            <div className="space-y-2">
+              <label className="block text-slate-400 font-medium">Format Pesan WhatsApp:</label>
               <textarea
                 rows={5}
                 value={templateWaBulk}
-                onChange={e => setTemplateWaBulk(e.target.value)}
-                className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-xs focus:outline-none focus:border-cyan-500 font-mono leading-relaxed"
+                onChange={(e) => setTemplateWaBulk(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 text-xs font-mono"
               />
+              <p className="text-[11px] text-slate-500">
+                Gunakan variabel <code>[nama]</code> dan <code>[link_bayar]</code> untuk menyisipkan data pelanggan.
+              </p>
             </div>
-
-            <div className="flex justify-end gap-3 pt-1">
+            <div className="flex justify-end gap-3 pt-2 border-t border-slate-800">
               <button
                 onClick={() => setShowBulkWaModal(false)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 transition"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium rounded-xl transition"
               >
                 Batal
               </button>
               <button
                 onClick={handleBulkWaSend}
-                disabled={!templateWaBulk.trim()}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-xl transition shadow-lg shadow-emerald-900/30"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition shadow-md shadow-emerald-900/30"
               >
-                🚀 Kirim Sekarang
+                Kirim Pesan Sekarang
               </button>
             </div>
           </div>
@@ -1165,52 +1195,60 @@ export default function TagihanPage() {
         document.body
       )}
 
-      {/* Modal Progress WA */}
-      {showWaProgress && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      {/* Modal Progress Broadcast WA */}
+      {showWaProgress && createPortal(
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-[999999]">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md shadow-2xl space-y-4 text-xs">
-            <h3 className="text-base font-bold text-white border-b border-slate-800 pb-3">📲 Progres Pengiriman WA</h3>
-
+            <h3 className="text-base font-bold text-white">Proses Pengiriman WA Massal</h3>
             <div className="space-y-2">
-              <div className="flex justify-between text-slate-400">
-                <span>Terkirim: <b className="text-emerald-400">{waProgress.terkirim}</b></span>
-                <span>Gagal: <b className="text-rose-400">{waProgress.gagal}</b></span>
-                <span>Total: <b className="text-white">{waProgress.total}</b></span>
+              <div className="flex justify-between text-xs text-slate-400">
+                <span>Progress: {waProgress.terkirim + waProgress.gagal} / {waProgress.total}</span>
+                <span className="text-emerald-400">Sukses: {waProgress.terkirim}</span>
+                <span className="text-rose-400">Gagal: {waProgress.gagal}</span>
               </div>
               <div className="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
                 <div
-                  className="bg-emerald-500 h-2.5 rounded-full transition-all duration-500"
-                  style={{ width: waProgress.total > 0 ? `${((waProgress.terkirim + waProgress.gagal) / waProgress.total) * 100}%` : '0%' }}
+                  className="bg-gradient-to-r from-cyan-500 to-emerald-500 h-2.5 rounded-full transition-all duration-300"
+                  style={{ width: `${waProgress.total > 0 ? ((waProgress.terkirim + waProgress.gagal) / waProgress.total) * 100 : 0}%` }}
                 />
               </div>
             </div>
 
-            {waProgress.logs.length > 0 && (
-              <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-800 divide-y divide-slate-800/60 bg-slate-950/40">
-                {waProgress.logs.map((log, i) => (
-                  <div key={i} className="px-3 py-2 flex justify-between items-center text-xs">
-                    <span className="text-slate-300 font-medium">{log.nama}</span>
-                    <span className={`font-semibold ${log.status === 'terkirim' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {log.status === 'terkirim' ? '✓ Terkirim' : '✗ Gagal'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="max-h-40 overflow-y-auto bg-slate-950 p-2.5 rounded-xl border border-slate-800 font-mono text-[10px] space-y-1">
+              {waProgress.logs?.map((log, idx) => (
+                <div key={idx} className={log.sukses ? 'text-emerald-400' : 'text-rose-400'}>
+                  {log.pesan || `${log.nama}: ${log.sukses ? 'Terkirim' : 'Gagal'}`}
+                </div>
+              ))}
+            </div>
 
-            {(waProgress.terkirim + waProgress.gagal) < waProgress.total ? (
-              <p className="text-center text-slate-400 animate-pulse">⏳ Mengirim pesan, mohon tunggu...</p>
-            ) : (
+            <div className="flex justify-end pt-2 border-t border-slate-800">
               <button
                 onClick={() => setShowWaProgress(false)}
-                className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-xl transition"
+                disabled={waProgress.terkirim + waProgress.gagal < waProgress.total}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white font-bold rounded-xl transition"
               >
-                Tutup
+                Selesai
               </button>
-            )}
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
+
+      {/* Floating Bulk Action Bar */}
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        totalCount={filteredTagihan.length}
+        onClearSelection={() => setSelectedIds([])}
+        onSelectAll={handleToggleAll}
+        onBulkStatus={() => {}}
+        onBulkDelete={handleBulkDelete}
+        onBulkWa={() => setShowBulkWaModal(true)}
+        onBulkPayCash={handleBulkPayCash}
+        isAllSelected={isAllSelected}
+        loading={bulkLoading}
+      />
     </div>
   )
 }
