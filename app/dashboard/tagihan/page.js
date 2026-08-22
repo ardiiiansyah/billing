@@ -1239,15 +1239,30 @@ export default function TagihanPage() {
       {/* Floating Bulk Action Bar */}
       <BulkActionBar
         selectedCount={selectedIds.length}
-        totalCount={filteredTagihan.length}
-        onClearSelection={() => setSelectedIds([])}
-        onSelectAll={handleToggleAll}
-        onBulkStatus={() => {}}
-        onBulkDelete={handleBulkDelete}
-        onBulkWa={() => setShowBulkWaModal(true)}
-        onBulkPayCash={handleBulkPayCash}
-        isAllSelected={isAllSelected}
-        loading={bulkLoading}
+        onClear={() => setSelectedIds([])}
+        actions={[
+          {
+            label: 'Bayar Tunai',
+            icon: '💵',
+            variant: 'success',
+            loading: bulkLoading,
+            onClick: handleBulkPayCash,
+          },
+          {
+            label: 'Broadcast WA',
+            icon: '📲',
+            variant: 'default',
+            loading: bulkLoading,
+            onClick: () => setShowBulkWaModal(true),
+          },
+          {
+            label: 'Hapus',
+            icon: '🗑️',
+            variant: 'danger',
+            loading: bulkLoading,
+            onClick: handleBulkDelete,
+          },
+        ]}
       />
     </div>
   )
