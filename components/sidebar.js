@@ -37,19 +37,23 @@ export default function Sidebar({ userEmail = 'ardia6916@wifi.id', onLogout, isO
                 {/* Header / Brand Logo & Tombol Collapse */}
                 <div className="p-4 border-b border-slate-800 flex items-center justify-between">
                     {isOpen ? (
-                        <div className="flex items-center gap-3 overflow-hidden">
-                            <div className="w-9 h-9 bg-cyan-600 rounded-xl flex items-center justify-center text-slate-950 font-bold text-lg shadow-md shadow-cyan-500/20 shrink-0">
-                                📶
-                            </div>
+                        <div className="flex items-center gap-2.5 overflow-hidden">
+                            <img
+                                src="/logo-login.png"
+                                alt="Beat Net"
+                                className="w-9 h-9 object-contain shrink-0"
+                            />
                             <div className="truncate">
-                                <h2 className="font-bold text-white text-sm tracking-wide leading-tight truncate">Sultan WiFi</h2>
+                                <h2 className="font-bold text-white text-sm tracking-wide leading-tight truncate">Beat Net</h2>
                                 <p className="text-xs text-slate-400">Billing System</p>
                             </div>
                         </div>
                     ) : (
-                        <div className="w-9 h-9 bg-cyan-600 rounded-xl flex items-center justify-center text-slate-950 font-bold text-lg shadow-md shadow-cyan-500/20 mx-auto">
-                            📶
-                        </div>
+                        <img
+                            src="/logo-login.png"
+                            alt="Beat Net"
+                            className="w-9 h-9 object-contain mx-auto"
+                        />
                     )}
 
                     {/* Tombol Buka/Tutup Sidebar */}

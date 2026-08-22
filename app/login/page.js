@@ -78,7 +78,7 @@ export default function LoginPage() {
               className="w-44 h-auto object-contain block drop-shadow-lg"
             />
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-wide">Sultan WiFi</h1>
+          <h1 className="text-2xl font-bold text-white tracking-wide">Beat Net Indonesia</h1>
           <p className="text-xs text-slate-400 mt-1.5 tracking-wider uppercase">Portal Admin & Pengelola</p>
 
           {/* Divider */}
@@ -173,7 +173,7 @@ export default function LoginPage() {
 
       {/* Footer */}
       <p className="mt-6 text-slate-600 text-xs text-center">
-        © {new Date().getFullYear()} Sultan WiFi · Beat Net Indonesia
+        © {new Date().getFullYear()} Beat Net Indonesia
       </p>
     </main>
   )

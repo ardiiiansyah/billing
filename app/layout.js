@@ -1,7 +1,7 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'Sultan WiFi Billing & Management',
+  title: 'Beat Net Indonesia',
   description: 'Aplikasi Manajemen & Tagihan WiFi RT/RW',
   manifest: '/manifest.json',
   icons: {
