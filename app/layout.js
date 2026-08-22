@@ -5,8 +5,8 @@ export const metadata = {
   description: 'Aplikasi Manajemen & Tagihan WiFi RT/RW',
   manifest: '/manifest.json',
   icons: {
-    icon: '/icon-192.png',
-    apple: '/icon-192.png',
+    icon: '/icon-512.png',
+    apple: '/icon-512.png',
   },
 }
 
@@ -19,8 +19,8 @@ export default function RootLayout({ children }) {
     <html lang="id">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/icon-192.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="icon" href="/icon-512.png" type="image/png" sizes="512x512" />
+        <link rel="apple-touch-icon" href="/icon-512.png" />
       </head>
       <body className="relative min-h-screen antialiased bg-slate-950 text-slate-100 overflow-x-hidden">
         {children}
