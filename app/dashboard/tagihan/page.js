@@ -687,6 +687,24 @@ export default function TagihanPage() {
           </div>
         ) : (
           <>
+            {/* Tombol Pilih Semua khusus Mobile / PWA */}
+            <div className="flex items-center justify-between px-1 mb-3 md:hidden">
+              <label className="flex items-center gap-2 text-xs text-slate-300 font-medium cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isAllSelected}
+                  onChange={handleToggleAll}
+                  className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-cyan-600 focus:ring-cyan-500 cursor-pointer accent-cyan-500"
+                />
+                <span>Pilih Semua ({filteredTagihan.length})</span>
+              </label>
+              {selectedIds.length > 0 && (
+                <span className="text-xs text-cyan-400 font-bold">
+                  {selectedIds.length} dipilih
+                </span>
+              )}
+            </div>
+
             {/* Tampilan Card khusus Mobile (md:hidden) */}
             <div className="grid grid-cols-1 gap-3 md:hidden">
               {filteredTagihan.map((t) => {
@@ -710,7 +728,7 @@ export default function TagihanPage() {
                         <span className="font-mono text-cyan-400 font-bold text-xs">{t.pelanggan?.kode_pelanggan || '-'}</span>
                       </div>
                       <span
-                        className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${t.status_pembayaran === 'lunas'
+                        className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase whitespace-nowrap ${t.status_pembayaran === 'lunas'
                           ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
                           : t.status_pembayaran === 'sebagian'
                             ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'

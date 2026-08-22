@@ -359,11 +359,11 @@ export default function DashboardPage() {
                     <td className="px-5 py-3 font-medium text-white">{t.pelanggan?.nama || '-'}</td>
                     <td className="px-5 py-3 text-emerald-400 font-semibold">{formatRupiah(t.jumlah_tagihan)}</td>
                     <td className="px-5 py-3">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide ${statusBadge(t.status_pembayaran)}`}>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide whitespace-nowrap inline-block ${statusBadge(t.status_pembayaran)}`}>
                         {t.status_pembayaran?.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-slate-400">{new Date(t.tanggal_jatuh_tempo).toLocaleDateString('id-ID')}</td>
+                    <td className="px-5 py-3 text-slate-400 whitespace-nowrap">{new Date(t.tanggal_jatuh_tempo).toLocaleDateString('id-ID')}</td>
                   </tr>
                 ))}
               </tbody>
