@@ -52,14 +52,17 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-slate-950">
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-xl">
-        <div className="text-center mb-8">
-          <img
-            src="logo-login.png" // Sesuaikan dengan nama file asli di folder public Anda
-            alt="Beat Net Indonesia"
-            className="w-40 h-auto object-contain mb-2"
-          />
-          <h1 className="text-3xl font-bold text-white tracking-tight">Sultan WiFi</h1>
-          <p className="text-slate-400 text-sm mt-1">Portal Login Admin & Pengelola</p>
+        {/* Logo & Header */}
+        <div className="flex flex-col items-center text-center mb-8">
+          <div className="flex justify-center w-full mb-4">
+            <img
+              src="/logo-login.png"
+              alt="Beat Net Indonesia"
+              className="w-32 h-auto object-contain block"
+            />
+          </div>
+          <h1 className="text-xl font-bold text-white tracking-wide">Beat Net Indonesia</h1>
+          <p className="text-xs text-slate-400 mt-1">Portal Login Admin & Pengelola</p>
         </div>
 
         {infoMsg && (
