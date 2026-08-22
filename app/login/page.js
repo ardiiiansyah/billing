@@ -54,7 +54,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-xl">
         <div className="text-center mb-8">
           <img
-            src="/LogoLogo_Transparent.png" // Sesuaikan dengan nama file asli di folder public Anda
+            src="logo-login.png" // Sesuaikan dengan nama file asli di folder public Anda
             alt="Beat Net Indonesia"
             className="w-40 h-auto object-contain mb-2"
           />
