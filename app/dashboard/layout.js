@@ -43,8 +43,8 @@ export default function DashboardLayout({ children }) {
   return (
     <div className="relative flex min-h-screen bg-slate-950 text-white pb-16 md:pb-0 overflow-x-hidden">
 
-      {/* Komponen Auto Logout (aktif jika aplikasi ditinggal 15 menit) */}
-      <AutoLogout timeoutMinutes={15} />
+      {/* Komponen Auto Logout (aktif jika aplikasi ditinggal / tidak dibuka 5 menit) */}
+      <AutoLogout timeoutMinutes={5} />
 
       {/* Efek Glow Kosmik */}
       <div className="fixed top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/15 rounded-full blur-[128px] pointer-events-none z-0" />
