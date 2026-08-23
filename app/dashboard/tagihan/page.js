@@ -45,7 +45,7 @@ export default function TagihanPage() {
   const [bulkLoading, setBulkLoading] = useState(false)
   const [showBulkWaModal, setShowBulkWaModal] = useState(false)
   const [templateWaBulk, setTemplateWaBulk] = useState(
-    'Halo Bapak/Ibu *[nama]*, tagihan WiFi Sultan bulan ini belum dibayar.\n\nSegera lakukan pembayaran via link berikut:\n[link_bayar]\n\nTerima kasih 🙏'
+    'Halo Bapak/Ibu *[nama]* 🙏\n\nPemberitahuan tagihan internet *Beat Net Indonesia*:\n📅 Periode: *[bulan] [tahun]*\n💰 Jumlah: *[nominal]*\n\n💳 *Pembayaran dapat ditransfer melalui:*\n• *MANDIRI*: 60010685562 (Sultan Pasha)\n• *DANA*: 08986172767 (Sultan Pasha)\n\nMohon kirimkan bukti transfer jika sudah membayar agar pembayaran dapat segera diproses. Terima kasih! 🙏\n\n_Mohon untuk di-save nomor ini karena segala informasi mengenai layanan akan diinfokan di sini 🙏_'
   )
   const [showWaProgress, setShowWaProgress] = useState(false)
   const [waProgress, setWaProgress] = useState({ total: 0, terkirim: 0, gagal: 0, logs: [] })
@@ -292,14 +292,17 @@ export default function TagihanPage() {
         return
       }
 
-      const linkBayar = `${window.location.origin}/bayar/${tagihan.id}`
+      const nominalFormatted = Number(tagihan.jumlah_tagihan).toLocaleString('id-ID')
       const pesanWA =
-        `Halo Bapak/Ibu *${tagihan.pelanggan?.nama}*, ` +
-        `tagihan WiFi Sultan bulan ${tagihan.bulan} ${tagihan.tahun} sebesar *Rp ${Number(tagihan.jumlah_tagihan).toLocaleString('id-ID')}* ` +
-        `sudah siap dibayar.\n\n` +
-        `Klik link berikut untuk bayar:\n` +
-        `${linkBayar}\n\n` +
-        `Terima kasih 🙏`
+        `Halo Bapak/Ibu *${tagihan.pelanggan?.nama}* 🙏\n\n` +
+        `Pemberitahuan tagihan internet *Beat Net Indonesia*:\n` +
+        `📅 Periode: *${tagihan.bulan} ${tagihan.tahun}*\n` +
+        `💰 Jumlah: *Rp ${nominalFormatted}*\n\n` +
+        `💳 *Pembayaran dapat ditransfer melalui:*\n` +
+        `• *MANDIRI*: 60010685562 (Sultan Pasha)\n` +
+        `• *DANA*: 08986172767 (Sultan Pasha)\n\n` +
+        `Mohon kirimkan bukti transfer jika sudah membayar agar pembayaran dapat segera diproses. Terima kasih! 🙏\n\n` +
+        `_Mohon untuk di-save nomor ini karena segala informasi mengenai layanan akan diinfokan di sini 🙏_`
 
       const resWa = await fetch('/api/wa/kirim', {
         method: 'POST',

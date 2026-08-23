@@ -99,10 +99,10 @@ export async function GET(request) {
 
         if (jatuhTempoStr === tglHariIni) {
             kategori = "hari_h";
-            pesan = `Halo Bapak/Ibu *${nama}*,\n\nPengingat tagihan Beat Net Indonesia periode *${bulanText} ${t.tahun}* sebesar *${nominalText}* jatuh tempo *HARI INI* (${tglText}).\n\n💳 *Link Pembayaran Online (Bisa QRIS, VA, E-Wallet):*\n${linkBayar}\n\nMohon segera melakukan pembayaran agar koneksi internet tetap lancar dan tidak terputus. Mohon untuk di save nomer ini karna segala informasi mengenai layanan akan di infokan di sini 🙏`;
+            pesan = `Halo Bapak/Ibu 🙏\n\nPemberitahuan tagihan internet *Beat Net Indonesia*:\n Periode: *${bulanText} ${t.tahun}*\n💰 Jumlah: *${nominalText}*\n⏳ Jatuh Tempo: *HARI INI (${tglText})*\n\n💳 *Pembayaran dapat ditransfer melalui:*\n• *MANDIRI*: 60010685562 (Sultan Pasha)\n• *DANA*: 08986172767 (Sultan Pasha)\n\nMohon kirimkan bukti transfer jika sudah membayar agar pembayaran dapat segera diproses. Terima kasih! 🙏\n\n_Mohon untuk di-save nomor ini karena segala informasi mengenai layanan akan diinfokan di sini 🙏_`;
         } else if (jatuhTempoStr === tglHPlus3) {
             kategori = "h_plus_3";
-            pesan = `⚠️ *PERINGATAN TUNGGAKAN INTERNET*\n\nHalo Bapak/Ibu *${nama}*,\nKami menginformasikan bahwa tagihan WiFi periode *${bulanText} ${t.tahun}* sebesar *${nominalText}* telah *MELEWATI JATUH TEMPO* sejak ${tglText}.\n\n💳 *Segera lunasi melalui link berikut:*\n${linkBayar}\n\n⚠️ *PENTING:* Mohon segera melakukan pelunasan hari ini untuk menghindari *pemutusan/isolir jaringan secara otomatis*. Abaikan pesan ini jika Anda sudah melakukan pembayaran. Terima kasih.`;
+            pesan = `⚠️ *PERINGATAN TUNGGAKAN INTERNET*\n\nHalo Bapak/Ibu,\nKami menginformasikan bahwa tagihan internet *Beat Net Indonesia* periode *${bulanText} ${t.tahun}* sebesar *${nominalText}* telah *MELEWATI JATUH TEMPO* sejak ${tglText}.\n\n💳 *Silakan segera lakukan pelunasan ke:*\n• *MANDIRI*: 60010685562 (Sultan Pasha)\n• *DANA*: 08986172767 (Sultan Pasha)\n\n⚠️ *PENTING:* Mohon segera melunasi hari ini dan kirimkan bukti transfer untuk menghindari *pemutusan/isolir jaringan secara otomatis*. Abaikan pesan ini jika Anda sudah melakukan pembayaran. Terima kasih. 🙏`;
         }
 
         // Cek apakah sudah pernah terkirim hari ini
