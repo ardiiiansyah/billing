@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
+:root {
+  --brand-900: #123C3A;
+  --brand-700: #176B63;
+  --brand-100: #DDF3ED;
+  --surface-0: #FFFFFF;
+  --surface-50: #F7F9F7;
+}
+
 body {
-  background-color: #0f172a;
-  color: #f8fafc;
+  background-color: var(--surface-50);
+  color: var(--brand-900);
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, sans-serif;
 }
 
 @keyframes fadeIn {

@@ -2,7 +2,9 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 
 export async function proxy(request) {
-    let proxyResponse = NextResponse.next({
+    const pathname = request.nextUrl.pathname
+    const isApiRoute = pathname.startsWith('/api/')
+    const response = NextResponse.next({
         request: {
             headers: request.headers,
         },
@@ -19,33 +21,34 @@ export async function proxy(request) {
                 setAll(cookiesToSet) {
                     cookiesToSet.forEach(({ name, value, options }) => {
                         request.cookies.set({ name, value, ...options })
-                        proxyResponse.cookies.set(name, value, options)
+                        response.cookies.set(name, value, options)
                     })
                 },
             },
         }
     )
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    // Redirect user yang belum login saat mengakses dashboard
-    if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+    if (!user) {
+        if (isApiRoute) {
+            return NextResponse.json({ error: 'Unauthorized: Login required' }, { status: 401 })
+        }
         return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    // Redirect user yang sudah login saat mengakses halaman login
-    if (user && request.nextUrl.pathname === '/login') {
+    if (pathname === '/login') {
         return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
-    return proxyResponse
+    return response
 }
 
 export const config = {
     matcher: [
         '/dashboard/:path*',
         '/login',
+        '/api/bulk/:path*',
+        '/api/wa/:path*',
     ],
 }

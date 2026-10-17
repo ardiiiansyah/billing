@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { formatBulan } from '@/lib/whatsapp'
+import { createPaymentLink } from '@/lib/mayar'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -9,70 +10,77 @@ const supabase = createClient(
 export async function POST(request) {
   try {
     const body = await request.json()
-    const { tagihan_id, pelanggan_nama, pelanggan_wa, jumlah, bulan, tahun } = body
+    const { tagihan_id } = body
 
-    if (!tagihan_id || !jumlah) {
+    if (!tagihan_id) {
       return Response.json({ error: 'Data tidak lengkap' }, { status: 400 })
     }
 
-    const orderId = `SULTAN-${tagihan_id.slice(0, 8)}-${Date.now()}`
-    const serverKey = process.env.MIDTRANS_SERVER_KEY
-    const authKey = Buffer.from(serverKey + ':').toString('base64')
+    // Never trust payment amount or customer details from the browser.
+    const { data: tagihan, error: tagihanError } = await supabase
+      .from('tagihan')
+      .select('id, jumlah_tagihan, bulan, tahun, status_pembayaran, pelanggan:pelanggan_id(nama, no_wa)')
+      .eq('id', tagihan_id)
+      .single()
 
-    const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true'
-    const midtransUrl = isProduction
-      ? 'https://app.midtrans.com/snap/v1/transactions'
-      : 'https://app.sandbox.midtrans.com/snap/v1/transactions'
-
-    // Domain tujuan redirect setelah popup ditutup/selesai
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://sandbox-wifi.vercel.app'
-
-    const midtransRes = await fetch(midtransUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${authKey}`,
-      },
-      body: JSON.stringify({
-        transaction_details: {
-          order_id: orderId,
-          gross_amount: Math.round(Number(jumlah)),
-        },
-        // === TAMBAHAN UNTUK MENCEGAH LARI KE EXAMPLE.COM ===
-        callbacks: {
-          finish: `${baseUrl}/bayar/${tagihan_id}`
-        },
-        customer_details: {
-          first_name: pelanggan_nama || 'Pelanggan',
-          phone: pelanggan_wa || '',
-        },
-        enabled_payments: ['qris', 'indomaret', 'alfamart', 'bca_va', 'bni_va', 'bri_va'],
-        item_details: [
-          {
-            id: tagihan_id,
-            price: Math.round(Number(jumlah)),
-            quantity: 1,
-            name: `Tagihan WiFi ${formatBulan(bulan)} ${tahun}`,
-          },
-        ],
-      }),
-    })
-
-    const midtransData = await midtransRes.json()
-
-    if (!midtransRes.ok || !midtransData.redirect_url) {
-      console.error('[PAYMENT] Midtrans error:', midtransData)
-      return Response.json({ error: midtransData.error_messages?.[0] || 'Gagal buat transaksi' }, { status: 500 })
+    if (tagihanError || !tagihan) {
+      return Response.json({ error: 'Tagihan tidak ditemukan' }, { status: 404 })
     }
 
-    const paymentUrl = midtransData.redirect_url
+    if (!['belum_bayar', 'UNPAID'].includes(tagihan.status_pembayaran)) {
+      return Response.json({ error: 'Tagihan tidak tersedia untuk pembayaran' }, { status: 409 })
+    }
 
-    await supabase
-      .from('tagihan')
-      .update({ payment_url: paymentUrl, midtrans_order_id: orderId })
-      .eq('id', tagihan_id)
+    const amount = Math.round(Number(tagihan.jumlah_tagihan))
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+      return Response.json({ error: 'Nominal tagihan tidak valid' }, { status: 500 })
+    }
 
-    return Response.json({ sukses: true, payment_url: paymentUrl, order_id: orderId })
+    const pelangganNama = tagihan.pelanggan?.nama || 'Pelanggan'
+    const pelangganWa = tagihan.pelanggan?.no_wa || ''
+
+    const customerFee = 240
+    const totalAmount = amount + customerFee
+    const referenceId = `SULTAN-${tagihan_id.slice(0, 8)}-${Date.now()}`
+    const dueDate = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10)
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+    const payment = await createPaymentLink({
+      amount: totalAmount,
+      referenceId,
+      customerName: pelangganNama,
+      customerPhone: pelangganWa,
+      description: `Tagihan WiFi ${formatBulan(tagihan.bulan)} ${tagihan.tahun}`,
+      dueDate,
+      redirectUrl: `${baseUrl}/bayar/${tagihan_id}`,
+      metadata: { tagihan_id },
+    })
+
+    const { error: attemptError } = await supabase.from('payment_attempts').insert({
+      tagihan_id: tagihan.id,
+      status: 'PENDING',
+      provider: 'mayar',
+      payment_url: payment.paymentUrl,
+      gateway_order_id: payment.gatewayOrderId,
+      customer_fee: customerFee,
+      payment_metadata: { ...payment.rawResponse, reference_id: referenceId },
+    })
+    if (attemptError) throw attemptError
+
+    const { error: updateError } = await supabase.from('tagihan').update({
+      payment_url: payment.paymentUrl,
+      gateway_order_id: payment.gatewayOrderId,
+      gateway_provider: 'mayar',
+      customer_fee: customerFee,
+    }).eq('id', tagihan.id)
+    if (updateError) {
+      await supabase.from('payment_attempts')
+        .delete()
+        .eq('gateway_order_id', payment.gatewayOrderId)
+        .eq('tagihan_id', tagihan.id)
+      throw updateError
+    }
+
+    return Response.json({ sukses: true, payment_url: payment.paymentUrl, order_id: payment.gatewayOrderId })
   } catch (err) {
     console.error('[PAYMENT] Error:', err)
     return Response.json({ error: err.message || 'Gagal membuat transaksi' }, { status: 500 })

@@ -60,6 +60,8 @@ export default function PelangganPage() {
     paket_id: '',
     tanggal_jatuh_tempo: 10,
     status: 'aktif',
+    latitude: '',
+    longitude: '',
   })
 
   // ── DIPERBAIKI: HANYA FETCH SEKALI SAAT MOUNT (BEBAS LOOPING) ──────
@@ -137,6 +139,8 @@ export default function PelangganPage() {
         paket_id: pelanggan.paket_id || '',
         tanggal_jatuh_tempo: pelanggan.tanggal_jatuh_tempo || 10,
         status: pelanggan.status || 'aktif',
+        latitude: pelanggan.latitude ?? '',
+        longitude: pelanggan.longitude ?? '',
       })
     } else {
       setEditId(null)
@@ -150,6 +154,8 @@ export default function PelangganPage() {
         paket_id: paketOptions[0]?.id || '',
         tanggal_jatuh_tempo: 10,
         status: 'aktif',
+        latitude: '',
+        longitude: '',
       })
     }
     setShowModal(true)
@@ -160,6 +166,13 @@ export default function PelangganPage() {
     setLoading(true)
 
     try {
+      const latitude = formData.latitude === '' ? null : Number(formData.latitude)
+      const longitude = formData.longitude === '' ? null : Number(formData.longitude)
+      if ((latitude !== null && (!Number.isFinite(latitude) || latitude < -90 || latitude > 90)) ||
+        (longitude !== null && (!Number.isFinite(longitude) || longitude < -180 || longitude > 180))) {
+        alert('Koordinat GPS tidak valid.')
+        return
+      }
       const payload = {
         kode_pelanggan: formData.kode_pelanggan,
         nama: formData.nama,
@@ -169,6 +182,8 @@ export default function PelangganPage() {
         paket_id: formData.paket_id || null,
         tanggal_jatuh_tempo: formData.tanggal_jatuh_tempo,
         status: formData.status || 'aktif',
+        latitude,
+        longitude,
       }
 
       if (editId) {
@@ -187,6 +202,18 @@ export default function PelangganPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const gunakanLokasiSaatIni = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation tidak didukung browser ini.')
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => setFormData(prev => ({ ...prev, latitude: coords.latitude.toFixed(7), longitude: coords.longitude.toFixed(7) })),
+      () => alert('Lokasi tidak dapat diakses. Pastikan izin lokasi telah diberikan.'),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    )
   }
 
   const handleToggleStatus = async (pelanggan) => {
@@ -781,6 +808,19 @@ export default function PelangganPage() {
                     onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
                     className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
                   />
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <label className="text-slate-400 font-medium">Koordinat Lokasi Rumah</label>
+                  <button type="button" onClick={gunakanLokasiSaatIni} className="text-cyan-400 hover:text-cyan-300 font-semibold">
+                    Gunakan Lokasi Saat Ini
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <input type="number" step="any" min="-90" max="90" placeholder="Latitude" value={formData.latitude} onChange={(e) => setFormData({ ...formData, latitude: e.target.value })} className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 font-mono" />
+                  <input type="number" step="any" min="-180" max="180" placeholder="Longitude" value={formData.longitude} onChange={(e) => setFormData({ ...formData, longitude: e.target.value })} className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500 font-mono" />
                 </div>
               </div>
 

@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabaseClient'
+import { requireAdmin } from '@/lib/server-auth'
 
 export async function POST(request) {
     try {
+        const { response: authResponse } = await requireAdmin(request)
+        if (authResponse) return authResponse
+
         const { wilayah_id, pesan } = await request.json()
 
         // 1. Ambil nomor WA semua pelanggan yang terdaftar di wilayah tersebut

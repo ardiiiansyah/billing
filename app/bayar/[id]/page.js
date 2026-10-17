@@ -18,7 +18,7 @@ export default function BayarPage({ params }) {
     async function fetchTagihan() {
         const { data, error } = await supabase
             .from('tagihan')
-            .select('*, pelanggan(nama, kode_pelanggan, no_wa, alamat, paket(nama_paket, kecepatan))')
+            .select('id, bulan, tahun, jumlah_tagihan, tanggal_jatuh_tempo, status_pembayaran, pelanggan(nama, kode_pelanggan, paket(nama_paket, kecepatan))')
             .eq('id', id)
             .single()
 
@@ -40,11 +40,6 @@ export default function BayarPage({ params }) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     tagihan_id: tagihan.id,
-                    pelanggan_nama: tagihan.pelanggan?.nama,
-                    pelanggan_wa: tagihan.pelanggan?.no_wa,
-                    jumlah: tagihan.jumlah_tagihan,
-                    bulan: tagihan.bulan,
-                    tahun: tagihan.tahun,
                 }),
             })
 
@@ -84,11 +79,12 @@ export default function BayarPage({ params }) {
     }
 
     const isLunas = tagihan.status_pembayaran === 'lunas'
+    const isExpired = tagihan.status_pembayaran === 'dibatalkan'
 
     return (
         <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
             <div className="w-full max-w-md">
-                <div className="text-center mb-6">
+                <div className="text-center mb-5">
                     <div className="w-14 h-14 bg-cyan-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">📶</div>
                     <h1 className="text-xl font-bold text-white">Sultan WiFi</h1>
                     <p className="text-slate-400 text-sm">Portal Pembayaran Pelanggan</p>
@@ -99,6 +95,11 @@ export default function BayarPage({ params }) {
                         <div className="bg-emerald-900/50 border-b border-emerald-800 px-5 py-3 flex items-center gap-2">
                             <span className="text-emerald-400 text-lg">✅</span>
                             <span className="text-emerald-400 font-semibold text-sm">Tagihan ini sudah LUNAS</span>
+                        </div>
+                    ) : isExpired ? (
+                        <div className="bg-slate-800 border-b border-slate-700 px-5 py-3 flex items-center gap-2">
+                            <span className="text-slate-300 text-lg">ℹ️</span>
+                            <span className="text-slate-300 font-semibold text-sm">Tagihan tidak tersedia</span>
                         </div>
                     ) : (
                         <div className="bg-red-900/30 border-b border-red-900 px-5 py-3 flex items-center gap-2">
@@ -119,7 +120,6 @@ export default function BayarPage({ params }) {
                                 <div className="text-slate-500 text-xs">{tagihan.pelanggan?.paket?.kecepatan}</div>
                             </div>
                         </div>
-                        <div className="text-xs text-slate-500">{tagihan.pelanggan?.alamat}</div>
                     </div>
 
                     <div className="p-5 border-b border-slate-800 space-y-3">
@@ -150,6 +150,8 @@ export default function BayarPage({ params }) {
                                 <div className="text-emerald-400 font-semibold">Terima kasih sudah membayar!</div>
                                 <div className="text-slate-400 text-xs mt-1">Internet kamu tetap aktif bulan ini.</div>
                             </div>
+                        ) : isExpired ? (
+                            <p className="text-center text-sm text-slate-400">Silakan hubungi admin untuk mendapatkan tagihan terbaru.</p>
                         ) : (
                             <>
                                 <button
@@ -157,10 +159,10 @@ export default function BayarPage({ params }) {
                                     disabled={paying}
                                     className="w-full py-3.5 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white font-bold rounded-xl transition text-sm"
                                 >
-                                    {paying ? '⏳ Memproses...' : '💳 Bayar Sekarang'}
+                                    {paying ? '⏳ Menghubungkan...' : '💳 Lanjut ke Pembayaran'}
                                 </button>
                                 <p className="text-center text-xs text-slate-500 mt-3">
-                                    Pembayaran via Virtual Account, Alfamart, atau Indomaret
+                                    Pembayaran aman melalui halaman resmi Mayar dengan QRIS, e-wallet, atau transfer bank.
                                 </p>
                             </>
                         )}

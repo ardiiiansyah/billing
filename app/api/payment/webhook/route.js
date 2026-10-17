@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import crypto from 'crypto'
+import { verifyWebhookSignature } from '@/lib/mayar'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -8,29 +8,52 @@ const supabase = createClient(
 
 export async function POST(request) {
   try {
-    const body = await request.json()
-    const { order_id, status_code, gross_amount, signature_key, transaction_status, fraud_status } = body
-
-    // Verifikasi signature Midtrans
-    const serverKey = process.env.MIDTRANS_SERVER_KEY
-    const hash = crypto
-      .createHash('sha512')
-      .update(`${order_id}${status_code}${gross_amount}${serverKey}`)
-      .digest('hex')
-
-    if (hash !== signature_key) {
+    const rawBody = await request.text()
+    const signature = request.headers.get('x-mayar-signature') || request.headers.get('x-signature')
+    if (!verifyWebhookSignature(rawBody, signature)) {
       return Response.json({ error: 'Invalid signature' }, { status: 401 })
+    }
+    const body = JSON.parse(rawBody)
+    const eventId = body.event_id || body.id
+    const gatewayOrderId = body.reference || body.reference_id || body.data?.id
+    const status = String(body.status || body.event || body.data?.status || '').toUpperCase()
+    const tagihanId = body.metadata?.tagihan_id || body.data?.metadata?.tagihan_id
+    const amount = Number(body.amount || body.data?.amount)
+    if (!eventId || !gatewayOrderId || !tagihanId || !Number.isFinite(amount)) {
+      return Response.json({ error: 'Invalid webhook payload' }, { status: 400 })
+    }
+    if (!['PAID', 'SUCCESS', 'SETTLEMENT'].includes(status)) {
+      return Response.json({ sukses: true, ignored: true })
     }
 
     // 1. Cari data tagihan berdasarkan midtrans_order_id saja
     const { data: tagihan, error: errTagihan } = await supabase
       .from('tagihan')
-      .select('id, bulan, tahun, pelanggan_id, jumlah_tagihan, status_pembayaran')
-      .eq('midtrans_order_id', order_id)
+      .select('id, bulan, tahun, pelanggan_id, jumlah_tagihan, status_pembayaran, customer_fee, gateway_order_id')
+      .eq('id', tagihanId)
       .single()
 
     if (errTagihan || !tagihan) {
       return Response.json({ error: 'Tagihan tidak ditemukan' }, { status: 404 })
+    }
+
+    const expectedAmount = Number(tagihan.jumlah_tagihan) + Number(tagihan.customer_fee || 0)
+    if (!Number.isSafeInteger(amount) || amount !== expectedAmount) {
+      return Response.json({ error: 'Nominal pembayaran tidak sesuai tagihan' }, { status: 422 })
+    }
+
+    const { data: attempt, error: attemptError } = await supabase
+      .from('payment_attempts')
+      .select('id, gateway_order_id, status')
+      .eq('tagihan_id', tagihan.id)
+      .eq('gateway_order_id', gatewayOrderId)
+      .eq('provider', 'mayar')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (attemptError || !attempt || (tagihan.gateway_order_id && tagihan.gateway_order_id !== gatewayOrderId)) {
+      return Response.json({ error: 'Referensi gateway tidak sesuai' }, { status: 422 })
     }
 
     // 2. Ambil data pelanggan secara terpisah untuk menghindari error build relasi
@@ -50,34 +73,24 @@ export async function POST(request) {
       }
     }
 
-    // Update status berdasarkan status Midtrans
-    const isLunas =
-      (transaction_status === 'capture' && fraud_status === 'accept') ||
-      transaction_status === 'settlement'
+    const { data: rpcResult, error: rpcError } = await supabase.rpc('process_gateway_payment', {
+      p_tagihan_id: tagihan.id,
+      p_event_id: eventId,
+      p_reference: gatewayOrderId,
+      p_amount: amount,
+      p_method: body.payment_method || body.data?.payment_method || 'mayar',
+      p_paid_at: body.paid_at || body.data?.paid_at || new Date().toISOString(),
+    })
+    if (rpcError) {
+      console.error('[WEBHOOK MAYAR] RPC gagal:', { code: rpcError.code, message: rpcError.message })
+      return Response.json({ error: 'Gagal memproses pembayaran' }, { status: 500 })
+    }
 
-    if (isLunas && tagihan.status_pembayaran !== 'lunas') {
-      // 3. Insert ke tabel pembayaran
-      await supabase.from('pembayaran').insert([{
-        tagihan_id: tagihan.id,
-        jumlah_bayar: Number(gross_amount),
-        metode_pembayaran: 'midtrans',
-        referensi_pembayaran: order_id,
-        diterima_oleh: 'Midtrans',
-        catatan: `Auto-confirmed via webhook. Status: ${transaction_status}`,
-      }])
-
-      // 4. UPDATE status tagihan menjadi lunas
-      await supabase
-        .from('tagihan')
-        .update({
-          status_pembayaran: 'lunas',
-          status: 'lunas'
-        })
-        .eq('id', tagihan.id)
+    if (!rpcResult?.already_processed && tagihan.status_pembayaran !== 'lunas') {
 
       // 5. Kirim WhatsApp otomatis konfirmasi lunas ke pelanggan via Fonnte
       if (pelangganWa) {
-        const pesanWA = `Halo Bapak/Ibu *${pelangganNama}*, pembayaran untuk tagihan WiFi bulan *${tagihan.bulan} ${tagihan.tahun}* sebesar *Rp ${Number(gross_amount).toLocaleString('id-ID')}* via Midtrans telah *BERHASIL* dan Lunas. Terima kasih sudah berlangganan! 🙏`
+        const pesanWA = `Halo Bapak/Ibu *${pelangganNama}*, pembayaran tagihan WiFi bulan *${tagihan.bulan} ${tagihan.tahun}* sebesar *Rp ${amount.toLocaleString('id-ID')}* via Mayar telah *BERHASIL* dan Lunas. Terima kasih.`
 
         await fetch('https://api.fonnte.com/send', {
           method: 'POST',
@@ -90,18 +103,6 @@ export async function POST(request) {
           }),
         })
       }
-    }
-    // === TAMBAHAN UNTUK POIN 2 (RESET JIKA EXPIRE/CANCEL/DENY) ===
-    else if (['expire', 'cancel', 'deny'].includes(transaction_status)) {
-      await supabase
-        .from('tagihan')
-        .update({
-          status_pembayaran: 'belum_bayar',
-          status: 'belum_bayar',
-          payment_url: null,
-          midtrans_order_id: null
-        })
-        .eq('id', tagihan.id)
     }
 
     return Response.json({ sukses: true })

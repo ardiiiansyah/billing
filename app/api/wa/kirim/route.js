@@ -1,8 +1,12 @@
 import { kirimWA } from '@/lib/whatsapp'
 import { supabase } from '@/lib/supabaseClient'
+import { requireAdmin } from '@/lib/server-auth'
 
 export async function POST(request) {
     try {
+        const { response: authResponse } = await requireAdmin(request)
+        if (authResponse) return authResponse
+
         const body = await request.json()
         const { nomor, pesan } = body
 
@@ -19,7 +23,7 @@ export async function POST(request) {
                 no_wa: nomor,
                 jenis_pesan: 'Tagihan / Pesan WA',
                 pesan: pesan,
-                status: sukses ? 'terkirim' : 'gagal',
+                status: sukses ? 'sent' : 'failed',
             },
         ])
 

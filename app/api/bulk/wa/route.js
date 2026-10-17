@@ -3,6 +3,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { kirimWA } from '@/lib/whatsapp'
+import { requireAdmin } from '@/lib/server-auth'
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -13,6 +14,9 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 export async function POST(request) {
     try {
+        const { response: authResponse } = await requireAdmin(request)
+        if (authResponse) return authResponse
+
         const body = await request.json()
         const { mode, ids, pesan, media_url } = body // <--- 1. Tangkap media_url di sini
 
@@ -76,10 +80,10 @@ export async function POST(request) {
 
             if (berhasil) {
                 sukses++
-                logs.push({ nama: target.nama, no_wa: target.no_wa, status: 'terkirim' })
+                logs.push({ nama: target.nama, no_wa: target.no_wa, status: 'sent' })
             } else {
                 gagal++
-                logs.push({ nama: target.nama, no_wa: target.no_wa, status: 'gagal' })
+                logs.push({ nama: target.nama, no_wa: target.no_wa, status: 'failed' })
             }
 
             await delay(1500)

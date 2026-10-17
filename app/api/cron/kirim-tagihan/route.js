@@ -8,34 +8,28 @@ import { kirimWABatch, formatBulan, formatRupiah, formatTanggal } from '@/lib/wh
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
+const MAX_MESSAGES_PER_RUN = 20
 
 export async function GET(request) {
     // Verifikasi CRON_SECRET jika dikonfigurasi
     const authHeader = request.headers.get('authorization')
-    if (
-        process.env.CRON_SECRET &&
-        authHeader &&
-        authHeader !== `Bearer ${process.env.CRON_SECRET}`
-    ) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const expectedSecret = process.env.CRON_SECRET
+    if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
+        return NextResponse.json({ error: 'Unauthorized: Invalid or missing token' }, { status: 401 })
     }
-
-    // --- KODE INI NANTINYA DIHAPUS JIKA SUDAH INGIN PRODUCTION --- ///
-    return NextResponse.json({
-        success: true,
-        message: 'pengiriman WA ditangguhkan sementara sampai midtrans sudah siap.',
-        total: 0,
-    })
-    // ===================== //
 
     const supabaseAdmin = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL,
         process.env.SUPABASE_SERVICE_ROLE_KEY
     )
 
-    const now = new Date()
-    const bulan = now.getMonth() + 1
-    const tahun = now.getFullYear()
+    const parts = new Intl.DateTimeFormat('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        year: 'numeric',
+        month: 'numeric',
+    }).formatToParts(new Date())
+    const bulan = Number(parts.find(part => part.type === 'month')?.value)
+    const tahun = Number(parts.find(part => part.type === 'year')?.value)
 
     console.log(`[CRON KIRIM TAGIHAN] Mengambil tagihan belum bayar periode ${bulan}/${tahun}...`)
 
@@ -49,6 +43,7 @@ export async function GET(request) {
             jumlah_tagihan,
             tanggal_jatuh_tempo,
             status_pembayaran,
+            payment_url,
             pelanggan:pelanggan_id (
                 id,
                 nama,
@@ -59,6 +54,7 @@ export async function GET(request) {
         .eq('tahun', tahun)
         .eq('status_pembayaran', 'belum_bayar')
         .not('pelanggan', 'is', null)
+        .limit(MAX_MESSAGES_PER_RUN)
 
     if (tagihanError) {
         console.error('[CRON KIRIM TAGIHAN] Gagal mengambil data tagihan:', tagihanError.message)
@@ -75,11 +71,11 @@ export async function GET(request) {
         })
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || ''
-
-    // Susun antrean pesan WhatsApp
+    // Claim each invoice before sending. The partial unique index makes this
+    // safe when two cron invocations run at the same time.
     const antreanPesan = []
     let tidakAdaNomor = 0
+    let sudahDiklaim = 0
 
     for (const t of tagihan) {
         if (!t.pelanggan) continue
@@ -90,16 +86,37 @@ export async function GET(request) {
             continue
         }
 
-        const linkBayar = baseUrl ? `${baseUrl}/bayar/${t.id}` : '-'
+        if (!t.payment_url) continue
+
+        const { data: claimed, error: claimError } = await supabaseAdmin
+            .from('log_notifikasi')
+            .insert({
+                tagihan_id: t.id,
+                pelanggan_id: t.pelanggan.id,
+                no_wa,
+                jenis_pesan: 'tagihan_diterbitkan',
+                pesan: '',
+                status: 'queued',
+                attempt_count: 1,
+            })
+            .select('id')
+            .maybeSingle()
+
+        if (claimError || !claimed) {
+            sudahDiklaim++
+            continue
+        }
+
+        const linkBayar = t.payment_url
         const jatuhTempoStr = t.tanggal_jatuh_tempo ? formatTanggal(t.tanggal_jatuh_tempo) : '-'
 
         const pesan =
-            `Halo Bapak/Ibu *${nama}*, ` +
-            `tagihan WiFi Sultan bulan *${formatBulan(bulan)} ${tahun}* ` +
-            `sebesar *${formatRupiah(t.jumlah_tagihan)}* telah diterbitkan.\n\n` +
-            `Jatuh tempo: *${jatuhTempoStr}*\n\n` +
-            `Klik link berikut untuk bayar:\n${linkBayar}\n\n` +
-            `Terima kasih 🙏`
+            `Yth. Bapak/Ibu *${nama}*,\n\n` +
+            `Berikut tagihan internet WiFi periode *${formatBulan(bulan)} ${tahun}*:\n` +
+            `- Total Tagihan: *${formatRupiah(t.jumlah_tagihan)}*\n` +
+            `- Batas Pembayaran: *${jatuhTempoStr}*\n\n` +
+            `Silakan lakukan pembayaran melalui tautan resmi berikut:\n${linkBayar}\n\n` +
+            `_Pesan ini dikirim otomatis oleh sistem billing._\nTerima kasih.`
 
         antreanPesan.push({
             nomor: no_wa,
@@ -107,16 +124,29 @@ export async function GET(request) {
             tagihan_id: t.id,
             pelanggan_id: t.pelanggan.id,
             nama,
+            log_id: claimed.id,
         })
     }
 
     console.log(`[CRON KIRIM TAGIHAN] Total antrean: ${antreanPesan.length} pelanggan (tanpa nomor WA: ${tidakAdaNomor})`)
 
-    // Kirim menggunakan batching: 12 pesan per batch, delay 2.5 detik antar batch
+    // Keep each invocation bounded so Vercel can finish before maxDuration.
     const hasilBatch = await kirimWABatch(antreanPesan, {
-        batchSize: 12,
-        delayMs: 2500,
+        batchSize: 10,
+        delayMs: 750,
     })
+
+    for (const result of hasilBatch.detail) {
+        await supabaseAdmin
+            .from('log_notifikasi')
+            .update({
+                status: result.sukses ? 'sent' : 'failed',
+                pesan: result.pesan,
+                sent_at: result.sukses ? new Date().toISOString() : null,
+                error_message: result.sukses ? null : (result.error || 'Fonnte gagal mengirim pesan'),
+            })
+            .eq('id', result.log_id)
+    }
 
     return NextResponse.json({
         success: true,
@@ -125,6 +155,7 @@ export async function GET(request) {
         total_tagihan: tagihan.length,
         antrean_diproses: antreanPesan.length,
         tanpa_nomor_wa: tidakAdaNomor,
+        sudah_diproses: sudahDiklaim,
         wa_terkirim: hasilBatch.berhasil,
         wa_gagal: hasilBatch.gagal,
     })

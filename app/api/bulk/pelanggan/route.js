@@ -2,6 +2,7 @@
 // API endpoint: Aksi masal pada pelanggan (update status, generate tagihan)
 
 import { createClient } from '@supabase/supabase-js'
+import { requireAdmin } from '@/lib/server-auth'
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -10,6 +11,9 @@ const supabase = createClient(
 
 export async function POST(request) {
     try {
+        const { response: authResponse } = await requireAdmin(request)
+        if (authResponse) return authResponse
+
         const body = await request.json()
         const { action, ids, payload } = body
         // action: 'update_status' | 'generate_tagihan'

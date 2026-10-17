@@ -24,12 +24,9 @@ function getLocalDateString(offsetDays = 0) {
 
 export async function GET(request) {
     const authHeader = request.headers.get("authorization");
-    if (
-        process.env.CRON_SECRET &&
-        authHeader &&
-        authHeader !== `Bearer ${process.env.CRON_SECRET}`
-    ) {
-        return Response.json({ error: "Unauthorized" }, { status: 401 });
+    const expectedSecret = process.env.CRON_SECRET;
+    if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
+        return Response.json({ error: "Unauthorized: Invalid or missing token" }, { status: 401 });
     }
 
     const tglHariIni = getLocalDateString(0);      // Hari H
@@ -99,10 +96,10 @@ export async function GET(request) {
 
         if (jatuhTempoStr === tglHariIni) {
             kategori = "hari_h";
-            pesan = `Halo Bapak/Ibu 🙏\n\nPemberitahuan tagihan internet *Beat Net Indonesia*:\n Periode: *${bulanText} ${t.tahun}*\n💰 Jumlah: *${nominalText}*\n⏳ Jatuh Tempo: *HARI INI (${tglText})*\n\n💳 *Pembayaran dapat ditransfer melalui:*\n• *MANDIRI*: 60010685562 (Sultan Pasha)\n• *DANA*: 08986172767 (Sultan Pasha)\n\nMohon kirimkan bukti transfer jika sudah membayar agar pembayaran dapat segera diproses. Terima kasih! 🙏\n\n_Mohon untuk di-save nomor ini karena segala informasi mengenai layanan akan diinfokan di sini 🙏_`;
+            pesan = `Yth. Bapak/Ibu *${nama}*,\n\nBerikut tagihan internet WiFi periode *${bulanText} ${t.tahun}*:\n- Total Tagihan: *${nominalText}*\n- Batas Pembayaran: *${tglText}*\n\nSilakan lakukan pembayaran instan melalui tautan resmi berikut:\n${linkBayar}\n\n_Pembayaran akan terkonfirmasi secara otomatis._\nTerima kasih.`;
         } else if (jatuhTempoStr === tglHPlus3) {
             kategori = "h_plus_3";
-            pesan = `⚠️ *PERINGATAN TUNGGAKAN INTERNET*\n\nHalo Bapak/Ibu,\nKami menginformasikan bahwa tagihan internet *Beat Net Indonesia* periode *${bulanText} ${t.tahun}* sebesar *${nominalText}* telah *MELEWATI JATUH TEMPO* sejak ${tglText}.\n\n💳 *Silakan segera lakukan pelunasan ke:*\n• *MANDIRI*: 60010685562 (Sultan Pasha)\n• *DANA*: 08986172767 (Sultan Pasha)\n\n⚠️ *PENTING:* Mohon segera melunasi hari ini dan kirimkan bukti transfer untuk menghindari *pemutusan/isolir jaringan secara otomatis*. Abaikan pesan ini jika Anda sudah melakukan pembayaran. Terima kasih. 🙏`;
+            pesan = `Yth. Bapak/Ibu *${nama}*,\n\n⚠️ Peringatan tagihan internet WiFi periode *${bulanText} ${t.tahun}* sebesar *${nominalText}* telah melewati batas pembayaran *${tglText}*.\n\nSilakan lunasi melalui tautan resmi berikut:\n${linkBayar}\n\nAbaikan pesan ini jika pembayaran sudah dilakukan. Terima kasih.`;
         }
 
         // Cek apakah sudah pernah terkirim hari ini
