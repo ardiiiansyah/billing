@@ -30,15 +30,18 @@ export async function proxy(request) {
 
     const { data: { user } } = await supabase.auth.getUser()
 
+    // /login is public: an unauthenticated request must continue normally.
+    // Only authenticated users should be redirected away from the login page.
+    if (pathname === '/login') {
+        if (user) return NextResponse.redirect(new URL('/dashboard', request.url))
+        return response
+    }
+
     if (!user) {
         if (isApiRoute) {
             return NextResponse.json({ error: 'Unauthorized: Login required' }, { status: 401 })
         }
         return NextResponse.redirect(new URL('/login', request.url))
-    }
-
-    if (pathname === '/login') {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
     return response
