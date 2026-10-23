@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "test": "node --experimental-loader ./tests/alias-loader.mjs --test tests/*.test.mjs",
     "start": "next start"
   },
   "dependencies": {

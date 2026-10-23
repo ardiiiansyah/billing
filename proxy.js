@@ -2,7 +2,12 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 
 export async function proxy(request) {
+    if (request.nextUrl.pathname.startsWith('/api/payment/webhook')) {
+        return NextResponse.next()
+    }
+
     const pathname = request.nextUrl.pathname
+
     const isApiRoute = pathname.startsWith('/api/')
     const response = NextResponse.next({
         request: {

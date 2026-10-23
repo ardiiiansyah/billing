@@ -49,7 +49,7 @@ BEGIN
         RAISE EXCEPTION 'Tagihan tidak ditemukan';
     END IF;
 
-    IF p_amount < v_tagihan.jumlah_tagihan THEN
+    IF p_amount <> v_tagihan.jumlah_tagihan + COALESCE(v_tagihan.customer_fee, 0) THEN
         RAISE EXCEPTION 'Nominal pembayaran tidak sesuai tagihan';
     END IF;
 

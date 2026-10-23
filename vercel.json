@@ -5,6 +5,10 @@
             "schedule": "0 17 * * *"
         },
         {
+            "path": "/api/cron/generate-payment-links",
+            "schedule": "5 17 * * *"
+        },
+        {
             "path": "/api/cron/kirim-tagihan",
             "schedule": "15 17 * * *"
         },
