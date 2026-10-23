@@ -1,7 +1,7 @@
 # Graph Report - billing  (2026-10-23)
 
 ## Corpus Check
-- 82 files · ~55,082 words
+- 82 files · ~55,130 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 3 file(s) not represented in the graph (top: (none) 2, .css 1)
 

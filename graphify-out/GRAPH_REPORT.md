@@ -1,17 +1,17 @@
 # Graph Report - billing  (2026-10-23)
 
 ## Corpus Check
-- 82 files · ~55,130 words
+- 83 files · ~55,290 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 3 file(s) not represented in the graph (top: (none) 2, .css 1)
 
 ## Summary
-- 502 nodes · 653 edges · 30 communities (19 shown, 6 thin omitted)
+- 504 nodes · 656 edges · 39 communities (27 shown, 7 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b7f26ef1`
+- Built from commit: `4d5d13f1`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -32,15 +32,24 @@
 - 2. Checklist Rencana Aksi (Action Plan Checklist)
 - 6. Layout Per Screen
 - manifest.json
-- Design Brief — CRM & Billing RT/RW Net
+- 5. User Flows
 - mayar-webhook.test.mjs
+- Design Brief — CRM & Billing RT/RW Net
+- 4. Screen Inventory
 - overdue/route.js
+- 8. State Screen Kunci
+- 10. Accessibility
 - compilerOptions
 - [id]/layout.js
 - resolve
 - app/layout.js
+- 2. Visual Direction
+- PelangganPage
+- 1. Design Principles
 - AGENTS.md
 - vercel.json
+- 3. Design Tokens
+- 9. Responsive Behaviour
 
 ## God Nodes (most connected - your core abstractions)
 1. `react` - 25 edges
@@ -69,11 +78,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (30 total, 6 thin omitted)
+## Communities (39 total, 7 thin omitted)
 
 ### Community 0 - "react"
 Cohesion: 0.06
-Nodes (19): dynamic, LaporanKeuanganPage(), BULAN, COLORS, DashboardPage(), PaketPage(), DetailPelangganPage(), PelangganPage() (+11 more)
+Nodes (18): dynamic, LaporanKeuanganPage(), BULAN, COLORS, DashboardPage(), PaketPage(), DetailPelangganPage(), TagihanPage() (+10 more)
 
 ### Community 1 - "whatsapp.js"
 Cohesion: 0.11
@@ -112,8 +121,8 @@ Cohesion: 0.09
 Nodes (22): 10. Open Questions & Prasyarat Teknis (Sebelum Coding Dimulai), 1. Problem Statement, 2. Target User & Persona, 3. Goals & Non-Goals, 4. User Stories, 5. Roadmap Fitur (MVP / v2 / Nanti), 6. Functional Requirements (Detail per Fitur MVP), 7. Sketsa Data Model (+14 more)
 
 ### Community 10 - "requireAdmin"
-Cohesion: 0.12
-Nodes (23): POST(), supabase, POST(), supabase, GET(), POST(), POST(), GET() (+15 more)
+Cohesion: 0.11
+Nodes (24): POST(), supabase, POST(), supabase, GET(), POST(), POST(), GET() (+16 more)
 
 ### Community 11 - "dependencies"
 Cohesion: 0.12
@@ -135,22 +144,54 @@ Nodes (9): 6. Layout Per Screen, Customer Detail, Customer List, Dashboard Overv
 Cohesion: 0.22
 Nodes (8): background_color, description, display, icons, name, short_name, start_url, theme_color
 
-### Community 16 - "Design Brief — CRM & Billing RT/RW Net"
-Cohesion: 0.04
-Nodes (46): 10. Accessibility, 1.1 Cash position first, 1.2 One-person operation, 1.3 Operational confidence, 1. Design Principles, 2. Visual Direction, 3. Design Tokens, 4. Screen Inventory (+38 more)
+### Community 16 - "5. User Flows"
+Cohesion: 0.29
+Nodes (7): 5. User Flows, Billing otomatis, Menambahkan pelanggan, Overdue dan perpanjangan, Pembayaran digital, Pembayaran tunai, Rekonsiliasi
+
+### Community 18 - "Design Brief — CRM & Billing RT/RW Net"
+Cohesion: 0.33
+Nodes (5): 7. Component Library, Acceptance Checklist Sebelum Coding, Arah Produk, Design Brief — CRM & Billing RT/RW Net, Keputusan Akhir
+
+### Community 19 - "4. Screen Inventory"
+Cohesion: 0.33
+Nodes (6): 4. Screen Inventory, Authentication, Billing, Customer dan package, Finance dan settings, Operational
 
 ### Community 20 - "overdue/route.js"
 Cohesion: 0.50
 Nodes (4): dynamic, GET(), getBusinessDateWib(), maxDuration
 
+### Community 21 - "8. State Screen Kunci"
+Cohesion: 0.33
+Nodes (6): 8. State Screen Kunci, Customer List, Dashboard, Finance Overview, Integration Settings, Invoice List dan Detail
+
+### Community 22 - "10. Accessibility"
+Cohesion: 0.40
+Nodes (5): 10. Accessibility, Focus dan keyboard, Kontras, Motion, Semantic HTML dan ARIA
+
 ### Community 23 - "compilerOptions"
 Cohesion: 0.40
 Nodes (4): compilerOptions, baseUrl, lib, paths
 
+### Community 27 - "2. Visual Direction"
+Cohesion: 0.40
+Nodes (5): 2. Visual Direction, Mood, Referensi, Tipografi, Yang dihindari
+
+### Community 29 - "1. Design Principles"
+Cohesion: 0.50
+Nodes (4): 1.1 Cash position first, 1.2 One-person operation, 1.3 Operational confidence, 1. Design Principles
+
+### Community 37 - "3. Design Tokens"
+Cohesion: 0.50
+Nodes (4): 3. Design Tokens, Spacing, radius, dan shadow, Tipografi, Warna
+
+### Community 38 - "9. Responsive Behaviour"
+Cohesion: 0.50
+Nodes (4): 9. Responsive Behaviour, Desktop — 1200 px ke atas, Mobile — 320–767 px, Tablet — 768–1199 px
+
 ## Knowledge Gaps
-- **269 isolated node(s):** `supabase`, `supabase`, `supabase`, `dynamic`, `maxDuration` (+264 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 321 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **270 isolated node(s):** `supabase`, `supabase`, `supabase`, `dynamic`, `maxDuration` (+265 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 322 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -158,13 +199,13 @@ _Questions this graph is uniquely positioned to answer:_
 - **Why does `react` connect `react` to `whatsapp.js`, `cn`, `package.json`?**
   _High betweenness centrality (0.059) - this node is a cross-community bridge._
 - **Why does `@supabase/supabase-js` connect `whatsapp.js` to `requireAdmin`, `overdue/route.js`, `package.json`?**
-  _High betweenness centrality (0.045) - this node is a cross-community bridge._
+  _High betweenness centrality (0.046) - this node is a cross-community bridge._
 - **Why does `dependencies` connect `dependencies` to `package.json`?**
   _High betweenness centrality (0.024) - this node is a cross-community bridge._
 - **What connects `supabase`, `supabase`, `supabase` to the rest of the system?**
-  _269 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _270 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `react` be split into smaller, more focused modules?**
-  _Cohesion score 0.05649717514124294 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06233766233766234 - nodes in this community are weakly interconnected._
 - **Should `whatsapp.js` be split into smaller, more focused modules?**
   _Cohesion score 0.1066066066066066 - nodes in this community are weakly interconnected._
 - **Should `Standard Security & Threat Model` be split into smaller, more focused modules?**
