@@ -12,9 +12,13 @@ export async function POST(request) {
     }
     const { tagihan_id } = body || {}
 
+    // SECURITY: Validate UUID format to prevent injection
     if (typeof tagihan_id !== 'string' || !/^[0-9a-f-]{36}$/i.test(tagihan_id)) {
       return Response.json({ error: 'tagihan_id tidak valid' }, { status: 400 })
     }
+    
+    // SECURITY: Amount is NEVER accepted from client - always fetched from database
+    // This prevents price tampering attacks
 
     const result = await createAttemptForInvoice(tagihan_id)
     return Response.json({ sukses: true, payment_url: result.attempt.payment_url, order_id: result.attempt.gateway_order_id, reused: result.reused })

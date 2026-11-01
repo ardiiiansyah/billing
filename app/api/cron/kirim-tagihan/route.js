@@ -5,6 +5,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { kirimWABatch, formatBulan, formatRupiah, formatTanggal } from '@/lib/whatsapp'
+import { captureWhatsAppError, captureMessage } from '@/lib/monitoring'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -146,6 +147,15 @@ export async function GET(request) {
                 error_message: result.sukses ? null : (result.error || 'Fonnte gagal mengirim pesan'),
             })
             .eq('id', result.log_id)
+    }
+
+    // Alert if too many failures
+    if (hasilBatch.gagal > 0 && hasilBatch.gagal > hasilBatch.total * 0.3) {
+        captureMessage(
+            `High WhatsApp failure rate in cron: ${hasilBatch.gagal}/${hasilBatch.total} failed`,
+            'warning',
+            { tags: { component: 'whatsapp', cron: 'kirim-tagihan' } }
+        )
     }
 
     return NextResponse.json({

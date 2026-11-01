@@ -1,4 +1,5 @@
 import './globals.css'
+import '@/lib/env' // Validate environment variables at startup
 
 export const metadata = {
   title: 'Beat Net Indonesia',
@@ -7,6 +8,12 @@ export const metadata = {
   icons: {
     icon: '/icon-512.png',
     apple: '/icon-512.png',
+  },
+  // Security headers via metadata
+  other: {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
   },
 }
 

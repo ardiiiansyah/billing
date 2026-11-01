@@ -15,9 +15,10 @@ export async function POST(request) {
         if (authResponse) return authResponse
 
         const body = await request.json()
-        const { action, ids } = body
-        // action: 'pay_cash' | 'delete'
+        const { action, ids, reason } = body
+        // action: 'pay_cash' | 'cancel'
         // ids: array of tagihan_id
+        // reason: required for cancel action (audit trail)
 
         if (!action || !ids || ids.length === 0) {
             return Response.json({ error: 'Data tidak lengkap' }, { status: 400 })
@@ -59,18 +60,29 @@ export async function POST(request) {
             })
         }
 
-        // ── AKSI: Hapus Tagihan ──────────────────────────────────────
-        if (action === 'delete') {
-            const { error: deleteErr } = await supabase
-                .from('tagihan')
-                .delete()
-                .in('id', ids)
+        // ── AKSI: Batalkan Tagihan (Soft Delete) ────────────────────
+        if (action === 'cancel') {
+            // SECURITY: Require reason for audit trail
+            if (!reason || reason.trim().length < 5) {
+                return Response.json({ error: 'Alasan pembatalan wajib diisi (minimal 5 karakter)' }, { status: 400 })
+            }
 
-            if (deleteErr) throw deleteErr
+            // Soft delete: update status to 'dibatalkan' instead of hard delete
+            // This preserves financial records for audit purposes
+            const { error: cancelErr } = await supabase
+                .from('tagihan')
+                .update({ 
+                    status_pembayaran: 'dibatalkan',
+                    catatan: `Dibatalkan: ${reason}` 
+                })
+                .in('id', ids)
+                .in('status_pembayaran', ['belum_bayar', 'UNPAID']) // Only cancel unpaid invoices
+
+            if (cancelErr) throw cancelErr
 
             return Response.json({
                 sukses: true,
-                message: `${ids.length} tagihan berhasil dihapus.`,
+                message: `${ids.length} tagihan berhasil dibatalkan.`,
                 total_diproses: ids.length,
             })
         }

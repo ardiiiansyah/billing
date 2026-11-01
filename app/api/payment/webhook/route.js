@@ -1,8 +1,12 @@
 import crypto from 'node:crypto'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { verifyWebhookSignature } from '@/lib/mayar'
+import { captureWebhookError, captureMessage } from '@/lib/monitoring'
 
 export const dynamic = 'force-dynamic'
+
+// Webhook replay window: reject events older than 5 minutes or from future
+const REPLAY_WINDOW_SECONDS = 300
 
 export async function POST(request) {
   const requestId = crypto.randomUUID()
@@ -33,9 +37,28 @@ export async function POST(request) {
 
     const signature = request.headers.get('x-mayar-signature') || request.headers.get('x-signature')
     const payloadHash = crypto.createHash('sha256').update(rawBody).digest('hex')
+    
+    // SECURITY: Verify webhook signature using constant-time comparison
     if (!verifyWebhookSignature(rawBody, signature)) {
       console.error('[WEBHOOK ERROR] Signature mismatch', { requestId, payloadHash })
       return Response.json({ error: 'Invalid signature' }, { status: 401 })
+    }
+    
+    // SECURITY: Replay protection - check timestamp if provided by Mayar
+    const timestamp = request.headers.get('x-timestamp') || body.timestamp
+    if (timestamp) {
+      const eventTime = new Date(timestamp).getTime()
+      const now = Date.now()
+      const diff = Math.abs(now - eventTime) / 1000
+      
+      if (diff > REPLAY_WINDOW_SECONDS) {
+        console.error('[WEBHOOK ERROR] Timestamp outside replay window', { 
+          requestId, 
+          timestamp, 
+          diffSeconds: diff.toFixed(0) 
+        })
+        return Response.json({ error: 'Event timestamp outside allowed window' }, { status: 401 })
+      }
     }
     const eventId = String(body.event_id || body.eventId || body.id || '')
     const gatewayOrderId = String(body.reference || body.reference_id || body.data?.reference || body.data?.id || '')
@@ -46,8 +69,17 @@ export async function POST(request) {
     const { data: attempt, error: attemptError } = await supabaseAdmin.from('payment_attempts')
       .select('id, tagihan_id, gateway_order_id, amount, status')
       .eq('provider', 'mayar').eq('gateway_order_id', gatewayOrderId).maybeSingle()
-    if (attemptError) throw attemptError
-    if (!attempt) return Response.json({ error: 'Referensi gateway tidak sesuai' }, { status: 422 })
+    if (attemptError) {
+      captureWebhookError(attemptError, { gatewayOrderId, eventId })
+      throw attemptError
+    }
+    if (!attempt) {
+      captureMessage('Webhook received for unknown gateway order', 'warning', {
+        tags: { component: 'webhook' },
+        extra: { gatewayOrderId, eventId }
+      })
+      return Response.json({ error: 'Referensi gateway tidak sesuai' }, { status: 422 })
+    }
     if (Number(attempt.amount) !== amount) return Response.json({ error: 'Nominal pembayaran tidak sesuai' }, { status: 422 })
 
     if (!['PAID', 'SUCCESS', 'SETTLEMENT'].includes(status)) {
@@ -61,11 +93,13 @@ export async function POST(request) {
     })
     if (rpcError) {
       console.error('[WEBHOOK MAYAR] Processing failed', { requestId, code: rpcError.code })
+      captureWebhookError(rpcError, { eventId, gatewayOrderId, amount, tagihan_id: attempt.tagihan_id })
       return Response.json({ error: 'Gagal memproses pembayaran' }, { status: 500 })
     }
     return Response.json({ sukses: true, already_processed: Boolean(result?.already_processed) })
   } catch (error) {
     console.error('[WEBHOOK MAYAR] Error', { requestId, message: error.message })
+    captureWebhookError(error, { requestId })
     return Response.json({ error: 'Webhook processing error', request_id: requestId }, { status: 500 })
   }
 }

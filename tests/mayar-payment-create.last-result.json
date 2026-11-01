@@ -1,0 +1,34 @@
+{
+  "tested_at": "2026-10-23T02:37:29.546Z",
+  "url": "https://api.mayar.io/hl/v2/payments/create",
+  "reference_id": "1e20f62a-68be-4f0a-b332-50452c34b661",
+  "request_payload": {
+    "amount": 1240,
+    "reference_id": "1e20f62a-68be-4f0a-b332-50452c34b661",
+    "name": "Sandbox Test",
+    "email": "[REDACTED]",
+    "mobile": "[REDACTED]",
+    "description": "Tagihan WiFi sandbox diagnostic",
+    "notes": "Tagihan WiFi sandbox diagnostic",
+    "due_date": "2026-10-26",
+    "redirect_url": "https://beatnet.vercel.app/bayar/sandbox-test",
+    "metadata": {
+      "tagihan_id": "sandbox-test"
+    }
+  },
+  "http_status": 400,
+  "status_text": "Bad Request",
+  "response": {
+    "statusCode": 400,
+    "messages": "Validation Error",
+    "data": [
+      {
+        "type": "stringMax",
+        "message": "The 'notes' field length must be less than or equal to 24 characters long.",
+        "field": "notes",
+        "expected": 24,
+        "actual": 31
+      }
+    ]
+  }
+}

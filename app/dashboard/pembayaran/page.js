@@ -246,7 +246,7 @@ export default function PembayaranPage() {
                             <option value="cash">Tunai (Cash)</option>
                             <option value="transfer">Transfer Bank</option>
                             <option value="qris">QRIS</option>
-                            <option value="midtrans">Midtrans</option>
+                            <option value="mayar">Mayar</option>
                         </select>
                     </div>
                 </div>
