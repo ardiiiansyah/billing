@@ -42,6 +42,7 @@ export default function PaketPage() {
       setPaketList(data || [])
     } catch (err) {
       console.error('DEBUG FETCH PAKET ERROR:', err.message)
+      alert('Gagal memuat data paket: ' + err.message)
     } finally {
       setLoading(false)
     }
@@ -92,7 +93,7 @@ export default function PaketPage() {
       await fetchPaket()
     } catch (err) {
       console.error('DEBUG SUBMIT PAKET ERROR:', err.message)
-      alert('Maaf, gagal menyimpan data paket: ' + err.message)
+      alert('Gagal menyimpan paket: ' + err.message)
     } finally {
       setLoading(false)
     }
@@ -299,6 +300,7 @@ export default function PaketPage() {
                   <label className="block text-slate-400 font-medium mb-1">Kecepatan</label>
                   <input
                     type="text"
+                    required
                     placeholder="10 Mbps"
                     value={formData.kecepatan}
                     onChange={(e) => setFormData({ ...formData, kecepatan: e.target.value })}

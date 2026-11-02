@@ -48,6 +48,7 @@ export default function WilayahPage() {
             setWilayahList(data || [])
         } catch (err) {
             console.error('DEBUG FETCH ERROR:', err.message)
+            alert('Gagal memuat data wilayah: ' + err.message)
         } finally {
             setLoading(false)
         }
@@ -131,7 +132,7 @@ export default function WilayahPage() {
             await fetchWilayah()
         } catch (err) {
             console.error('DEBUG ERROR:', err.message)
-            alert('Maaf, gagal menyimpan data wilayah: ' + err.message)
+            alert('Gagal menyimpan wilayah: ' + err.message)
         } finally {
             setLoading(false)
         }

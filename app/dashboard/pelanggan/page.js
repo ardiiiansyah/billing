@@ -55,6 +55,7 @@ export default function PelangganPage() {
     kode_pelanggan: '',
     nama: '',
     no_wa: '',
+    alamat: '',
     odp: '',
     wilayah_id: '',
     paket_id: '',
@@ -134,6 +135,7 @@ export default function PelangganPage() {
         kode_pelanggan: pelanggan.kode_pelanggan,
         nama: pelanggan.nama,
         no_wa: pelanggan.no_wa,
+        alamat: pelanggan.alamat || '',
         odp: pelanggan.odp || '',
         wilayah_id: pelanggan.wilayah_id || '',
         paket_id: pelanggan.paket_id || '',
@@ -149,6 +151,7 @@ export default function PelangganPage() {
         kode_pelanggan: nextCode,
         nama: '',
         no_wa: '',
+        alamat: '',
         odp: '',
         wilayah_id: '',
         paket_id: paketOptions[0]?.id || '',
@@ -177,6 +180,7 @@ export default function PelangganPage() {
         kode_pelanggan: formData.kode_pelanggan,
         nama: formData.nama,
         no_wa: formData.no_wa,
+        alamat: formData.alamat,
         odp: formData.odp || null,
         wilayah_id: formData.wilayah_id || null,
         paket_id: formData.paket_id || null,
@@ -198,7 +202,7 @@ export default function PelangganPage() {
       await fetchPelanggan()
     } catch (err) {
       console.error('DEBUG SUBMIT PELANGGAN ERROR:', err.message)
-      alert('Maaf, gagal menyimpan data pelanggan. Silakan periksa kembali isian form.')
+      alert('Gagal menyimpan pelanggan: ' + err.message)
     } finally {
       setLoading(false)
     }
@@ -810,6 +814,18 @@ export default function PelangganPage() {
                   />
                 </div>
               </div>
+
+                <div>
+                  <label className="block text-slate-400 font-medium mb-1">Alamat Lengkap</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Jl. Melati No. 12"
+                    value={formData.alamat}
+                    onChange={(e) => setFormData({ ...formData, alamat: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
 
               <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3 space-y-3">
                 <div className="flex items-center justify-between gap-3">
