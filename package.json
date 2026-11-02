@@ -6,6 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "test": "node --experimental-loader ./tests/alias-loader.mjs --test tests/*.test.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
     "start": "next start"
   },
   "dependencies": {
@@ -27,7 +30,9 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "autoprefixer": "^10.5.4",
+    "playwright": "^1.64.1",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.3.3"
   }
