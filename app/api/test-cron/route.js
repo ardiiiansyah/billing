@@ -109,6 +109,13 @@ export async function GET(request) {
           const customerFee = 240
           const total = amount + customerFee
 
+          console.log('[TEST-CRON] Creating payment link:', {
+            invoice_id: invoice.id,
+            amount: total,
+            customer: invoice.pelanggan?.nama,
+            due_date: invoice.tanggal_jatuh_tempo
+          })
+
           const payment = await createPaymentLink({
             amount: total,
             referenceId: `SULTAN-${invoice.id.slice(0, 8)}-${Date.now()}`,
@@ -141,7 +148,11 @@ export async function GET(request) {
           created++
         } catch (err) {
           failed++
-          console.error('Payment link creation failed:', err.message)
+          console.error('[TEST-CRON] Payment link creation failed:', {
+            invoice_id: invoice.id,
+            error: err.message,
+            stack: err.stack
+          })
         }
       }
 
