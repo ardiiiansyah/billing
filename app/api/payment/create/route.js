@@ -21,7 +21,15 @@ export async function POST(request) {
     // This prevents price tampering attacks
 
     const result = await createAttemptForInvoice(tagihan_id)
-    return Response.json({ sukses: true, payment_url: result.attempt.payment_url, order_id: result.attempt.gateway_order_id, reused: result.reused })
+    return Response.json({
+      sukses: true,
+      payment_url: result.attempt.payment_url,
+      order_id: result.attempt.gateway_order_id,
+      amount: Number(result.attempt.amount),
+      customer_fee: Number(result.attempt.customer_fee) || 0,
+      expires_at: result.attempt.payment_metadata?.expires_at || null,
+      reused: result.reused,
+    })
   } catch (err) {
     console.error('[PAYMENT] Create failed:', { message: err.message, code: err.code })
     const status = err instanceof PaymentError ? err.status : 500

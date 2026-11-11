@@ -14,7 +14,14 @@ export async function POST(request) {
       return Response.json({ error: 'tagihan_id tidak valid' }, { status: 400 })
     }
     const result = await createAttemptForInvoice(tagihan_id, { forceRenew: true })
-    return Response.json({ sukses: true, payment_url: result.attempt.payment_url, order_id: result.attempt.gateway_order_id })
+    return Response.json({
+      sukses: true,
+      payment_url: result.attempt.payment_url,
+      order_id: result.attempt.gateway_order_id,
+      amount: Number(result.attempt.amount),
+      customer_fee: Number(result.attempt.customer_fee) || 0,
+      expires_at: result.attempt.payment_metadata?.expires_at || null,
+    })
   } catch (error) {
     console.error('[PAYMENT] Renew failed:', { message: error.message, code: error.code })
     const status = error instanceof PaymentError ? error.status : 500

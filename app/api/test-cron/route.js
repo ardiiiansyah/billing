@@ -3,13 +3,19 @@
 // Access: https://beatnet.vercel.app/api/test-cron
 
 import { createClient } from '@supabase/supabase-js'
-import { buildPaymentRedirectUrl, createPaymentLink } from '@/lib/mayar'
-import { formatBulan } from '@/lib/whatsapp'
+import { createAttemptForInvoice, PaymentError } from '@/lib/payments'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 export async function GET(request) {
+  // SECURITY: this debug endpoint can create invoices and payment links.
+  const authHeader = request.headers.get('authorization')
+  const expectedSecret = process.env.CRON_SECRET
+  if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
+    return Response.json({ error: 'Unauthorized: Invalid or missing token' }, { status: 401 })
+  }
+
   const { searchParams } = new URL(request.url)
   const action = searchParams.get('action') || 'all'
   
@@ -95,8 +101,8 @@ export async function GET(request) {
     if (action === 'all' || action === 'generate-payment-links') {
       const { data: invoices } = await supabase
         .from('tagihan')
-        .select('id, bulan, tahun, jumlah_tagihan, tanggal_jatuh_tempo, pelanggan:pelanggan_id(nama, no_wa)')
-        .in('status_pembayaran', ['belum_bayar', 'UNPAID'])
+        .select('id')
+        .in('status_pembayaran', ['belum_bayar', 'UNPAID', 'OVERDUE'])
         .is('payment_url', null)
         .limit(5)
 
@@ -105,53 +111,14 @@ export async function GET(request) {
 
       for (const invoice of invoices || []) {
         try {
-          const amount = Number(invoice.jumlah_tagihan)
-          const customerFee = 240
-          const total = amount + customerFee
-
-          console.log('[TEST-CRON] Creating payment link:', {
-            invoice_id: invoice.id,
-            amount: total,
-            customer: invoice.pelanggan?.nama,
-            due_date: invoice.tanggal_jatuh_tempo
-          })
-
-          const payment = await createPaymentLink({
-            amount: total,
-            referenceId: `SULTAN-${invoice.id.slice(0, 8)}-${Date.now()}`,
-            customerName: invoice.pelanggan?.nama || 'Pelanggan',
-            customerPhone: invoice.pelanggan?.no_wa,
-            description: `Tagihan WiFi ${formatBulan(invoice.bulan)} ${invoice.tahun}`,
-            dueDate: invoice.tanggal_jatuh_tempo,
-            redirectUrl: buildPaymentRedirectUrl(invoice.id),
-            metadata: { tagihan_id: invoice.id },
-          })
-
-          await supabase.from('payment_attempts').insert({
-            tagihan_id: invoice.id,
-            provider: 'mayar',
-            gateway_order_id: payment.gatewayOrderId,
-            payment_url: payment.paymentUrl,
-            amount: total,
-            customer_fee: customerFee,
-            status: 'PENDING',
-            payment_metadata: payment.rawResponse,
-          })
-
-          await supabase.from('tagihan').update({
-            payment_url: payment.paymentUrl,
-            gateway_order_id: payment.gatewayOrderId,
-            gateway_provider: 'mayar',
-            customer_fee: customerFee,
-          }).eq('id', invoice.id)
-
-          created++
+          const result = await createAttemptForInvoice(invoice.id)
+          if (!result.reused) created++
         } catch (err) {
           failed++
           console.error('[TEST-CRON] Payment link creation failed:', {
             invoice_id: invoice.id,
-            error: err.message,
-            stack: err.stack
+            message: err.message,
+            status: err instanceof PaymentError ? err.status : undefined,
           })
         }
       }

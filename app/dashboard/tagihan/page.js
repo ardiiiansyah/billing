@@ -15,6 +15,7 @@ export default function TagihanPage() {
   const [showPayModal, setShowPayModal] = useState(false)
   const [selectedTagihan, setSelectedTagihan] = useState(null)
   const [sendingWa, setSendingWa] = useState(null)
+  const [checkingStatus, setCheckingStatus] = useState(null)
 
   // State Tagihan Manual
   const [showManualModal, setShowManualModal] = useState(false)
@@ -292,17 +293,30 @@ export default function TagihanPage() {
         return
       }
 
-      const nominalFormatted = Number(tagihan.jumlah_tagihan).toLocaleString('id-ID')
+      const nominalFormatted = Number(data.amount || tagihan.jumlah_tagihan).toLocaleString('id-ID')
+      const namaBulan = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+      const periode = `${namaBulan[tagihan.bulan] || tagihan.bulan} ${tagihan.tahun}`
+      const paket = tagihan.pelanggan?.paket
+      const paketLine = paket
+        ? `- Paket: ${paket.nama_paket}${paket.kecepatan ? ` (${paket.kecepatan})` : ''}\n`
+        : ''
+      const jatuhTempo = tagihan.tanggal_jatuh_tempo
+        ? new Date(`${tagihan.tanggal_jatuh_tempo}T00:00:00+07:00`).toLocaleDateString('id-ID', {
+            day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta',
+          })
+        : '-'
+
+      // PRD FR-5.2: template pesan tagihan resmi dengan payment link Mayar.
       const pesanWA =
-        `Halo Bapak/Ibu *${tagihan.pelanggan?.nama}* 🙏\n\n` +
-        `Pemberitahuan tagihan internet *Beat Net Indonesia*:\n` +
-        `📅 Periode: *${tagihan.bulan} ${tagihan.tahun}*\n` +
-        `💰 Jumlah: *Rp ${nominalFormatted}*\n\n` +
-        `💳 *Pembayaran dapat ditransfer melalui:*\n` +
-        `• *MANDIRI*: 60010685562 (Sultan Pasha)\n` +
-        `• *DANA*: 08986172767 (Sultan Pasha)\n\n` +
-        `Mohon kirimkan bukti transfer jika sudah membayar agar pembayaran dapat segera diproses. Terima kasih! 🙏\n\n` +
-        `_Mohon untuk di-save nomor ini karena segala informasi mengenai layanan akan diinfokan di sini 🙏_`
+        `Yth. Bapak/Ibu *${tagihan.pelanggan?.nama}*,\n\n` +
+        `Berikut tagihan internet WiFi periode *${periode}*:\n` +
+        paketLine +
+        `- Total Tagihan: *Rp ${nominalFormatted}*\n` +
+        `- Batas Pembayaran: *${jatuhTempo}* (3 hari)\n\n` +
+        `Silakan lakukan pembayaran instan melalui tautan resmi berikut (Bisa QRIS, E-Wallet, atau Transfer Bank):\n` +
+        `${data.payment_url}\n\n` +
+        `_Pesan ini dikirim otomatis oleh sistem billing. Pembayaran akan terkonfirmasi secara instan tanpa perlu mengirim bukti transfer._\n` +
+        `Terima kasih.`
 
       const resWa = await fetch('/api/wa/kirim', {
         method: 'POST',
@@ -327,6 +341,44 @@ export default function TagihanPage() {
       setResultModal({ show: true, message: 'Error koneksi ke server.' })
     } finally {
       setSendingWa(null)
+    }
+  }
+
+  const handleCekStatus = async (tagihan) => {
+    setCheckingStatus(tagihan.id)
+
+    try {
+      const res = await fetch('/api/payment/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tagihan_id: tagihan.id }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || data.error) {
+        setResultModal({ show: true, message: 'Gagal cek status: ' + (data.error || 'Unknown error') })
+        return
+      }
+
+      if (data.synced) {
+        setResultModal({
+          show: true,
+          message: data.alreadyProcessed
+            ? 'Pembayaran ini sudah tercatat sebelumnya.'
+            : `Pembayaran terkonfirmasi via ${data.paymentMethod || 'Mayar'}. Status tagihan diperbarui menjadi LUNAS.`,
+        })
+      } else if (data.reason === 'NO_ATTEMPT') {
+        setResultModal({ show: true, message: 'Belum ada payment link Mayar untuk tagihan ini. Klik "Kirim WA" terlebih dahulu.' })
+      } else {
+        setResultModal({ show: true, message: `Status di Mayar: ${data.gatewayStatus || 'belum dibayar'}. Tagihan belum lunas.` })
+      }
+
+      fetchTagihan()
+    } catch (err) {
+      setResultModal({ show: true, message: 'Error koneksi ke server.' })
+    } finally {
+      setCheckingStatus(null)
     }
   }
 
@@ -772,6 +824,13 @@ export default function TagihanPage() {
                             <span>💬</span> {sendingWa === t.id ? 'Proses...' : 'Kirim WA'}
                           </button>
                           <button
+                            onClick={() => handleCekStatus(t)}
+                            disabled={checkingStatus === t.id}
+                            className="px-3 py-1.5 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 text-xs font-semibold rounded-xl transition border border-cyan-700/50 flex items-center gap-1 disabled:opacity-50"
+                          >
+                            <span>🔄</span> {checkingStatus === t.id ? '...' : 'Cek'}
+                          </button>
+                          <button
                             onClick={() => handleOpenPayModal(t)}
                             className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition border border-slate-700 flex items-center gap-1"
                           >
@@ -859,6 +918,14 @@ export default function TagihanPage() {
                                 {sendingWa === t.id ? '⏳...' : '💬 WA'}
                               </button>
                               <button
+                                onClick={() => handleCekStatus(t)}
+                                disabled={checkingStatus === t.id}
+                                className="px-2.5 py-1.5 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 text-[11px] font-semibold rounded-xl transition border border-cyan-700/50 flex items-center gap-1 disabled:opacity-50"
+                                title="Cek status pembayaran ke Mayar"
+                              >
+                                {checkingStatus === t.id ? '⏳...' : '🔄 Cek'}
+                              </button>
+                              <button
                                 onClick={() => handleOpenPayModal(t)}
                                 className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold rounded-xl transition border border-slate-700 flex items-center gap-1"
                               >
@@ -888,7 +955,8 @@ export default function TagihanPage() {
         </div>
         <div>• <span className="text-cyan-400 font-semibold">+ Tagihan Manual</span> — Membuat tagihan kustom untuk pelanggan tertentu dengan pencarian autocomplete (pemasangan baru, ganti perangkat, atau susulan).</div>
         <div>• <span className="text-emerald-400 font-semibold">Generate Bulanan</span> — Menghasilkan tagihan rutin otomatis untuk seluruh pelanggan aktif pada bulan berjalan.</div>
-        <div>• <span className="text-emerald-400 font-semibold">Kirim WA</span> — Menghasilkan link pembayaran online via Midtrans (QRIS / Transfer Bank / Minimarket) dan otomatis membuka WhatsApp pelanggan.</div>
+        <div>• <span className="text-emerald-400 font-semibold">Kirim WA</span> — Menghasilkan link pembayaran online via Mayar (QRIS / e-wallet / Transfer Bank) dan otomatis mengirim tagihan ke WhatsApp pelanggan.</div>
+        <div>• <span className="text-cyan-400 font-semibold">🔄 Cek</span> — Menanyakan status pembayaran langsung ke Mayar. Gunakan jika webhook terlambat atau pembayaran belum tercatat otomatis.</div>
         <div>• <span className="text-slate-300 font-semibold">Tunai</span> — Mencatat pembayaran tunai atau transfer manual secara langsung oleh kasir.</div>
         <div>• Status tagihan akan berubah otomatis menjadi <span className="text-emerald-400 font-semibold">Lunas</span> setelah pembayaran terkonfirmasi.</div>
       </div>

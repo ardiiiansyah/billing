@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { buildPaymentRedirectUrl, createPaymentLink } from '@/lib/mayar'
-import { formatBulan } from '@/lib/whatsapp'
+import { createAttemptForInvoice, PaymentError } from '@/lib/payments'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -21,8 +20,8 @@ export async function GET(request) {
 
   const { data: invoices, error } = await supabase
     .from('tagihan')
-    .select('id, jumlah_tagihan, bulan, tahun, tanggal_jatuh_tempo, status_pembayaran, payment_url, pelanggan:pelanggan_id(nama, no_wa)')
-    .in('status_pembayaran', ['belum_bayar', 'UNPAID'])
+    .select('id')
+    .in('status_pembayaran', ['belum_bayar', 'UNPAID', 'OVERDUE'])
     .is('payment_url', null)
     .order('created_at', { ascending: true })
     .limit(MAX_INVOICES_PER_RUN)
@@ -33,54 +32,33 @@ export async function GET(request) {
   }
 
   let created = 0
+  let reused = 0
   let failed = 0
+  const errors = []
+
   for (const invoice of invoices || []) {
     try {
-      const amount = Number(invoice.jumlah_tagihan)
-      if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error('Nominal tagihan tidak valid')
-
-      const customerFee = 240
-      const payment = await createPaymentLink({
-        amount: amount + customerFee,
-        referenceId: `SULTAN-${invoice.id.slice(0, 8)}-${Date.now()}`,
-        customerName: invoice.pelanggan?.nama || 'Pelanggan',
-        customerPhone: invoice.pelanggan?.no_wa,
-        description: `Tagihan WiFi ${formatBulan(invoice.bulan)} ${invoice.tahun}`,
-        dueDate: invoice.tanggal_jatuh_tempo,
-        redirectUrl: buildPaymentRedirectUrl(invoice.id),
-        metadata: { tagihan_id: invoice.id },
-      })
-
-      const { error: attemptError } = await supabase.from('payment_attempts').insert({
-        tagihan_id: invoice.id,
-        provider: 'mayar',
-        gateway_order_id: payment.gatewayOrderId,
-        payment_url: payment.paymentUrl,
-        amount: amount + customerFee,
-        customer_fee: customerFee,
-        status: 'PENDING',
-        payment_metadata: payment.rawResponse,
-      })
-      if (attemptError) throw attemptError
-
-      const { error: updateError } = await supabase
-        .from('tagihan')
-        .update({
-          payment_url: payment.paymentUrl,
-          gateway_order_id: payment.gatewayOrderId,
-          gateway_provider: 'mayar',
-          customer_fee: customerFee,
-        })
-        .eq('id', invoice.id)
-        .is('payment_url', null)
-      if (updateError) throw updateError
-
-      created++
+      const result = await createAttemptForInvoice(invoice.id)
+      if (result.reused) reused++
+      else created++
     } catch (err) {
       failed++
-      console.error('[CRON PAYMENT LINKS] Failed:', { invoiceId: invoice.id, message: err.message })
+      // A 429 from Mayar is expected when two invoices share the same nominal
+      // within one minute; the next cron run will pick the invoice up again.
+      if (!(err instanceof PaymentError && err.status === 429)) {
+        console.error('[CRON PAYMENT LINKS] Failed:', { invoiceId: invoice.id, message: err.message })
+      }
+      if (errors.length < 10) errors.push({ invoice_id: invoice.id, message: err.message, status: err.status })
     }
   }
 
-  return NextResponse.json({ success: true, scanned: invoices?.length || 0, created, failed })
+  return NextResponse.json({
+    success: true,
+    scanned: invoices?.length || 0,
+    created,
+    reused,
+    failed,
+    errors,
+    environment: process.env.MAYAR_ENV || 'sandbox',
+  })
 }

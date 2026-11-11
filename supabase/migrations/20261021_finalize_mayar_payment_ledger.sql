@@ -100,7 +100,9 @@ BEGIN
         'Mayar',
         'Pembayaran gateway Mayar; event ' || p_event_id
     )
-    ON CONFLICT (tagihan_id, referensi_pembayaran) DO NOTHING;
+    ON CONFLICT (tagihan_id, referensi_pembayaran)
+      WHERE referensi_pembayaran IS NOT NULL
+      DO NOTHING;
 
     UPDATE public.tagihan
     SET status_pembayaran = 'lunas',
